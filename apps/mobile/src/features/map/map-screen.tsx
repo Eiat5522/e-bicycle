@@ -1,28 +1,25 @@
+import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppState, ScrollView, Pressable, Text, View } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 
 import type { Coordinates, NearbyBikesResult } from "@glide/shared";
 import { formatDistanceKm } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
-import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
 import { configuredBikeService } from "@/lib/bike-service";
 import { colors, spacing } from "@/theme/tokens";
 
+import { calculateDistanceKm, sortBikesByDistance } from "./bike-distance";
 import { MapCanvas } from "./map-canvas";
 
 export const DEFAULT_NEARBY_RADIUS_METERS = 1500;
 export const MAP_POLL_INTERVAL_MS = 15000;
 
 type LoadState = "loading" | "ready" | "permission_denied" | "error";
-
-function getSelectedBike(result: NearbyBikesResult | undefined, bikeId?: string) {
-  return result?.bikes.find((bike) => bike.id === bikeId);
-}
 
 export function MapScreen() {
   const isFocused = useIsFocused();
@@ -33,6 +30,7 @@ export function MapScreen() {
   const [userCoordinates, setUserCoordinates] = useState<Coordinates>();
   const [nearbyResult, setNearbyResult] = useState<NearbyBikesResult>();
   const [selectedBikeId, setSelectedBikeId] = useState<string>();
+  const [quickActionsBikeId, setQuickActionsBikeId] = useState<string>();
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   const loadNearbyBikes = useCallback(
@@ -46,6 +44,9 @@ export function MapScreen() {
 
       setNearbyResult(result);
       setSelectedBikeId((currentId) => currentId ?? result.bikes[0]?.id);
+      setQuickActionsBikeId((currentId) =>
+        currentId && result.bikes.some((bike) => bike.id === currentId) ? currentId : undefined
+      );
       setLoadState("ready");
       setErrorMessage(undefined);
       setRefreshError(undefined);
@@ -146,12 +147,64 @@ export function MapScreen() {
     };
   }, [loadNearbyBikes, nearbyResult, userCoordinates]);
 
-  const selectedBike = getSelectedBike(nearbyResult, selectedBikeId);
+  const handleSelectBike = useCallback((bikeId: string) => {
+    setSelectedBikeId(bikeId);
+    setQuickActionsBikeId((currentId) => (currentId === bikeId ? currentId : undefined));
+  }, []);
+
+  const handleOpenQuickActions = useCallback((bikeId: string) => {
+    setSelectedBikeId(bikeId);
+    setQuickActionsBikeId(bikeId);
+    void Haptics.selectionAsync();
+  }, []);
+
+  const handleRecenterToCurrentLocation = useCallback(async () => {
+    try {
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced
+      });
+      const coordinates = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      };
+
+      setUserCoordinates(coordinates);
+      await loadNearbyBikes(coordinates);
+    } catch (error) {
+      setRefreshError(
+        error instanceof Error ? error.message : "Unable to recenter to your current location."
+      );
+    }
+  }, [loadNearbyBikes]);
+
+  const sortedBikes = useMemo(
+    () => sortBikesByDistance(nearbyResult?.bikes ?? [], userCoordinates),
+    [nearbyResult?.bikes, userCoordinates]
+  );
+
+  const bikeDistanceLabels = useMemo(() => {
+    if (!userCoordinates) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      sortedBikes.map((bike) => [
+        bike.id,
+        `${formatDistanceKm(calculateDistanceKm(userCoordinates, bike.coordinates))} away`
+      ])
+    );
+  }, [sortedBikes, userCoordinates]);
 
   return (
-    <ScreenShell
-      title="Find a bike near you"
-      description="Live nearby bikes now load from the shared bike service with location permission, marker selection, and polling-based refresh.">
+    <ScrollView
+      contentContainerStyle={{
+        gap: spacing.lg,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.xxl
+      }}
+      contentInsetAdjustmentBehavior="automatic"
+    >
       {loadState === "loading" ? (
         <SurfaceCard tone="accent">
           <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
@@ -206,44 +259,83 @@ export function MapScreen() {
           ) : null}
 
           <MapCanvas
-            bikes={nearbyResult?.bikes ?? []}
+            bikes={sortedBikes}
+            bikeDistanceLabels={bikeDistanceLabels}
+            onRecenter={() => void handleRecenterToCurrentLocation()}
             selectedBikeId={selectedBikeId}
             userCoordinates={userCoordinates}
-            onSelectBike={setSelectedBikeId}
+            onSelectBike={handleSelectBike}
           />
 
-          {nearbyResult?.bikes.length ? (
+          {sortedBikes.length ? (
             <View style={{ gap: spacing.md }}>
               <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-                Updated {new Date(nearbyResult.serverTime).toLocaleTimeString([], {
-                  hour: "numeric",
-                  minute: "2-digit"
-                })}
+                {nearbyResult?.serverTime
+                  ? `Updated ${new Date(nearbyResult.serverTime).toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit"
+                    })}`
+                  : "Last updated: Unknown"}
               </Text>
 
-              {selectedBike ? (
+              {sortedBikes.map((bike) => (
                 <Pressable
+                  key={bike.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`View details for ${selectedBike.model}`}
-                  onPress={() => router.push(`/bike/${selectedBike.id}`)}
+                  accessibilityLabel={`Select ${bike.model}`}
+                  onLongPress={() => handleOpenQuickActions(bike.id)}
+                  onPress={() => handleSelectBike(bike.id)}
                 >
-                  <SurfaceCard>
+                  <SurfaceCard tone={bike.id === selectedBikeId ? "accent" : "default"}>
                     <Text
                       selectable
                       style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}
                     >
-                      {selectedBike.model}
+                      {bike.model}
                     </Text>
                     <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                      {selectedBike.location} · {selectedBike.pricingLabel}
+                      {bike.location} · {bike.pricingLabel}
                     </Text>
                     <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                      Range {formatDistanceKm(selectedBike.estimatedRangeKm)} · Status{" "}
-                      {selectedBike.status}
+                      {bikeDistanceLabels[bike.id] ?? "Distance unavailable"} · Range{" "}
+                      {formatDistanceKm(bike.estimatedRangeKm)} · Status {bike.status}
                     </Text>
+
+                    {bike.id === selectedBikeId ? (
+                      <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
+                        {quickActionsBikeId === bike.id ? (
+                          <SurfaceCard tone="muted">
+                            <Text
+                              selectable
+                              style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}
+                            >
+                              Quick actions
+                            </Text>
+                            <PrimaryButton
+                              label="View Details"
+                              onPress={() => router.push(`/bike/${bike.id}`)}
+                              variant="secondary"
+                            />
+                            <PrimaryButton
+                              label="Unlock and Ride"
+                              onPress={() => router.push(`/unlock/${bike.id}`)}
+                            />
+                            <PrimaryButton
+                              label="Need Help?"
+                              onPress={() => router.push("/help")}
+                              variant="secondary"
+                            />
+                          </SurfaceCard>
+                        ) : (
+                          <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+                            Long press this card for quick actions.
+                          </Text>
+                        )}
+                      </View>
+                    ) : null}
                   </SurfaceCard>
                 </Pressable>
-              ) : null}
+              ))}
             </View>
           ) : (
             <SurfaceCard>
@@ -258,6 +350,6 @@ export function MapScreen() {
           )}
         </>
       ) : null}
-    </ScreenShell>
+    </ScrollView>
   );
 }

@@ -21,6 +21,10 @@ export default function RootLayout() {
         <Stack.Screen name="bike/[id]" options={{ title: "Bike Details" }} />
         <Stack.Screen name="unlock/[id]" options={{ title: "Unlock Bike" }} />
         <Stack.Screen name="ride/active" options={{ title: "Active Ride" }} />
+        <Stack.Screen
+          name="ride/history/[id]"
+          options={{ presentation: "modal", title: "Ride Details" }}
+        />
         <Stack.Screen name="ride/summary" options={{ title: "Ride Summary" }} />
         <Stack.Screen name="help/index" options={{ title: "Support" }} />
       </Stack>

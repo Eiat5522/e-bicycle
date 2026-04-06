@@ -1,7 +1,9 @@
 import {
   bikeService,
   createHttpBikeService,
+  getRideHistoryById,
   mockAdminOverview,
+  mockRideHistory,
   supportService,
   walletService
 } from "../src/index";
@@ -13,14 +15,22 @@ describe("mock api services", () => {
       longitude: -122.4194,
       radiusMeters: 1500
     });
-    expect(result.bikes).toHaveLength(2);
+    expect(result.bikes).toHaveLength(6);
     expect(result.bikes[0]?.id).toBe("G-104");
+    expect(result.bikes.some((bike) => bike.status === "in_use")).toBe(true);
     expect(result.serverTime).toBeTruthy();
   });
 
   it("returns wallet data", async () => {
     const wallet = await walletService.getWallet();
     expect(wallet.balance).toBe(24.5);
+  });
+
+  it("exposes ride history with replay checkpoints", () => {
+    expect(mockRideHistory).toHaveLength(3);
+    expect(mockRideHistory[0]?.route.length).toBeGreaterThan(1);
+    expect(mockRideHistory[0]?.checkpoints[1]?.label).toBeTruthy();
+    expect(getRideHistoryById("ride-history-2")?.endLocation).toBe("Lumphini Park West Gate");
   });
 
   it("creates a live agent session", async () => {

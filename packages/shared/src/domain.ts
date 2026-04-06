@@ -1,6 +1,15 @@
 export type BikeStatus = "available" | "reserved" | "in_use" | "maintenance";
 export type RideStatus = "ready" | "active" | "paused" | "completed";
 export type SupportMode = "chatbot" | "live_agent";
+export type UnlockMethod = "qr" | "bluetooth";
+export type UnlockStatus =
+  | "idle"
+  | "scanning"
+  | "connecting"
+  | "authorizing"
+  | "unlocking"
+  | "success"
+  | "failed";
 
 export interface Coordinates {
   readonly latitude: number;
@@ -33,6 +42,28 @@ export interface NearbyBikesResult {
   readonly searchCenter?: Coordinates;
 }
 
+export interface UnlockRequest {
+  readonly bikeId: string;
+  readonly method: UnlockMethod;
+  readonly attempt: number;
+}
+
+export interface UnlockPhase {
+  readonly status: Extract<UnlockStatus, "scanning" | "connecting" | "authorizing" | "unlocking">;
+  readonly label: string;
+  readonly description: string;
+}
+
+export interface UnlockResult {
+  readonly bikeId: string;
+  readonly method: UnlockMethod;
+  readonly attempt: number;
+  readonly phases: readonly UnlockPhase[];
+  readonly finalStatus: Extract<UnlockStatus, "success" | "failed">;
+  readonly successMessage: string;
+  readonly failureMessage?: string;
+}
+
 export interface Ride {
   readonly id: string;
   readonly bikeId: string;
@@ -51,6 +82,32 @@ export interface RideSummary {
   readonly distanceKm: number;
   readonly co2SavedKg: number;
   readonly routeLabel: string;
+}
+
+export interface RideHistoryCheckpoint {
+  readonly id: string;
+  readonly label: string;
+  readonly description: string;
+  readonly coordinates: Coordinates;
+  readonly elapsedSec: number;
+}
+
+export interface RideHistoryItem {
+  readonly id: string;
+  readonly bikeId: string;
+  readonly bikeModel: string;
+  readonly startedAt: string;
+  readonly completedAt: string;
+  readonly durationSec: number;
+  readonly distanceKm: number;
+  readonly totalCost: number;
+  readonly co2SavedKg: number;
+  readonly startLocation: string;
+  readonly endLocation: string;
+  readonly routeLabel: string;
+  readonly paymentLabel: string;
+  readonly route: readonly Coordinates[];
+  readonly checkpoints: readonly RideHistoryCheckpoint[];
 }
 
 export interface WalletTransaction {
