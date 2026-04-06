@@ -1,54 +1,263 @@
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState, Pressable, Text, View } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 
-import { mockBikes } from "@glide/api";
+import type { Coordinates, NearbyBikesResult } from "@glide/shared";
 import { formatDistanceKm } from "@glide/shared";
 
+import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { configuredBikeService } from "@/lib/bike-service";
 import { colors, spacing } from "@/theme/tokens";
 
+import { MapCanvas } from "./map-canvas";
+
+export const DEFAULT_NEARBY_RADIUS_METERS = 1500;
+export const MAP_POLL_INTERVAL_MS = 15000;
+
+type LoadState = "loading" | "ready" | "permission_denied" | "error";
+
+function getSelectedBike(result: NearbyBikesResult | undefined, bikeId?: string) {
+  return result?.bikes.find((bike) => bike.id === bikeId);
+}
+
 export function MapScreen() {
+  const isFocused = useIsFocused();
   const router = useRouter();
+  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [errorMessage, setErrorMessage] = useState<string>();
+  const [refreshError, setRefreshError] = useState<string>();
+  const [userCoordinates, setUserCoordinates] = useState<Coordinates>();
+  const [nearbyResult, setNearbyResult] = useState<NearbyBikesResult>();
+  const [selectedBikeId, setSelectedBikeId] = useState<string>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+
+  const loadNearbyBikes = useCallback(
+    async (coordinates: Coordinates) => {
+      const result = await configuredBikeService.listNearby({
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        radiusMeters: DEFAULT_NEARBY_RADIUS_METERS,
+        limit: 50
+      });
+
+      setNearbyResult(result);
+      setSelectedBikeId((currentId) => currentId ?? result.bikes[0]?.id);
+      setLoadState("ready");
+      setErrorMessage(undefined);
+      setRefreshError(undefined);
+    },
+    []
+  );
+
+  const requestLocationAndLoad = useCallback(async () => {
+    setLoadState("loading");
+
+    const permission = await Location.requestForegroundPermissionsAsync();
+
+    if (!permission.granted) {
+      setLoadState("permission_denied");
+      setErrorMessage("Location permission is required to show bikes near you.");
+      setRefreshError(undefined);
+      return;
+    }
+
+    try {
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced
+      });
+      const coordinates = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      };
+
+      setUserCoordinates(coordinates);
+      await loadNearbyBikes(coordinates);
+    } catch (error) {
+      setLoadState("error");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "We could not determine your current location."
+      );
+      setRefreshError(undefined);
+    }
+  }, [loadNearbyBikes]);
+
+  useEffect(() => {
+    void requestLocationAndLoad();
+  }, [requestLocationAndLoad]);
+
+  useEffect(() => {
+    if (!isFocused || !userCoordinates) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      return;
+    }
+
+    intervalRef.current = setInterval(() => {
+      void loadNearbyBikes(userCoordinates).catch((error: unknown) => {
+        const message =
+          error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
+
+        setErrorMessage(message);
+
+        if (!nearbyResult) {
+          setLoadState("error");
+          return;
+        }
+
+        setRefreshError("Unable to refresh right now. Showing the latest available bikes.");
+      });
+    }, MAP_POLL_INTERVAL_MS);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isFocused, loadNearbyBikes, nearbyResult, userCoordinates]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && userCoordinates) {
+        void loadNearbyBikes(userCoordinates).catch((error: unknown) => {
+          const message =
+            error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
+
+          setErrorMessage(message);
+
+          if (!nearbyResult) {
+            setLoadState("error");
+            return;
+          }
+
+          setRefreshError("Unable to refresh right now. Showing the latest available bikes.");
+        });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [loadNearbyBikes, nearbyResult, userCoordinates]);
+
+  const selectedBike = getSelectedBike(nearbyResult, selectedBikeId);
 
   return (
     <ScreenShell
       title="Find a bike near you"
-      description="The initial mobile scaffold mirrors the Stitch map entry point and keeps room for map SDK integration, search, and live availability.">
-      <SurfaceCard tone="accent">
-        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-          Search and live map integrations are next.
-        </Text>
-        <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-          This placeholder canvas marks where Google Maps or Mapbox will mount once the backend and
-          location stack are ready.
-        </Text>
-      </SurfaceCard>
+      description="Live nearby bikes now load from the shared bike service with location permission, marker selection, and polling-based refresh.">
+      {loadState === "loading" ? (
+        <SurfaceCard tone="accent">
+          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            Finding your location
+          </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+            Glide is requesting location access and loading bikes within 1.5 km.
+          </Text>
+        </SurfaceCard>
+      ) : null}
 
-      <View style={{ gap: spacing.md }}>
-        {mockBikes.map((bike) => (
-          <Pressable
-            key={bike.id}
-            onPress={() => router.push(`/bike/${bike.id}`)}
-            accessibilityRole="button"
-            accessibilityLabel={`View details for ${bike.model} at ${bike.location}`}
-          >
-            <View>
-              <SurfaceCard>
-                <Text selectable style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}>
-                  {bike.model}
-                </Text>
-                <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                  {bike.location} · {bike.batteryPercent}% battery
-                </Text>
-                <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                  Range {formatDistanceKm(bike.estimatedRangeKm)} · {bike.pricingLabel}
-                </Text>
-              </SurfaceCard>
+      {loadState === "permission_denied" ? (
+        <SurfaceCard tone="accent">
+          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            Location access is off
+          </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+            {errorMessage}
+          </Text>
+          <PrimaryButton label="Try Again" onPress={() => void requestLocationAndLoad()} />
+        </SurfaceCard>
+      ) : null}
+
+      {loadState === "error" ? (
+        <SurfaceCard tone="accent">
+          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            We could not load nearby bikes
+          </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+            {errorMessage}
+          </Text>
+          <PrimaryButton label="Retry" onPress={() => void requestLocationAndLoad()} />
+        </SurfaceCard>
+      ) : null}
+
+      {loadState === "ready" ? (
+        <>
+          {refreshError ? (
+            <SurfaceCard tone="accent">
+              <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
+                Refresh paused
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                {refreshError}
+              </Text>
+              <PrimaryButton
+                label="Dismiss"
+                onPress={() => setRefreshError(undefined)}
+                variant="secondary"
+              />
+            </SurfaceCard>
+          ) : null}
+
+          <MapCanvas
+            bikes={nearbyResult?.bikes ?? []}
+            selectedBikeId={selectedBikeId}
+            userCoordinates={userCoordinates}
+            onSelectBike={setSelectedBikeId}
+          />
+
+          {nearbyResult?.bikes.length ? (
+            <View style={{ gap: spacing.md }}>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+                Updated {new Date(nearbyResult.serverTime).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit"
+                })}
+              </Text>
+
+              {selectedBike ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View details for ${selectedBike.model}`}
+                  onPress={() => router.push(`/bike/${selectedBike.id}`)}
+                >
+                  <SurfaceCard>
+                    <Text
+                      selectable
+                      style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}
+                    >
+                      {selectedBike.model}
+                    </Text>
+                    <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+                      {selectedBike.location} · {selectedBike.pricingLabel}
+                    </Text>
+                    <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+                      Range {formatDistanceKm(selectedBike.estimatedRangeKm)} · Status{" "}
+                      {selectedBike.status}
+                    </Text>
+                  </SurfaceCard>
+                </Pressable>
+              ) : null}
             </View>
-          </Pressable>
-        ))}
-      </View>
+          ) : (
+            <SurfaceCard>
+              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+                No bikes nearby right now
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                Try refreshing in a moment or moving to a busier pickup area.
+              </Text>
+              <PrimaryButton label="Refresh Nearby Bikes" onPress={() => void requestLocationAndLoad()} />
+            </SurfaceCard>
+          )}
+        </>
+      ) : null}
     </ScreenShell>
   );
 }

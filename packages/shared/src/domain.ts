@@ -11,13 +11,26 @@ export interface Bike {
   readonly id: string;
   readonly model: string;
   readonly rideClass?: string;
-  readonly batteryPercent: number;
   readonly estimatedRangeKm: number;
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
   readonly status: BikeStatus;
   readonly location: string;
   readonly coordinates: Coordinates;
+  readonly lastReportedAt: string;
+}
+
+export interface NearbyBikesQuery {
+  readonly latitude: number;
+  readonly longitude: number;
+  readonly radiusMeters: number;
+  readonly limit?: number;
+}
+
+export interface NearbyBikesResult {
+  readonly bikes: readonly Bike[];
+  readonly serverTime: string;
+  readonly searchCenter?: Coordinates;
 }
 
 export interface Ride {

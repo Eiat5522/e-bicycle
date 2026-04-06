@@ -29,7 +29,7 @@ export function BikeDetailsScreen() {
   return (
     <ScreenShell
       title={selectedBike.model}
-      description={`${selectedBike.id} is ready to glide with ${selectedBike.batteryPercent}% battery and ${formatDistanceKm(selectedBike.estimatedRangeKm)} of range.`}>
+      description={`${selectedBike.id} is ready to glide with ${formatDistanceKm(selectedBike.estimatedRangeKm)} of estimated range.`}>
       <SurfaceCard tone="accent">
         <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
           {selectedBike.pricingLabel}

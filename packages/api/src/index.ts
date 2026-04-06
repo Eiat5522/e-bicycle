@@ -1,6 +1,8 @@
 import type {
   AdminOverview,
   Bike,
+  NearbyBikesQuery,
+  NearbyBikesResult,
   Ride,
   RideSummary,
   SupportSession,
@@ -14,7 +16,7 @@ export interface AuthService {
 }
 
 export interface BikeService {
-  listNearby(): Promise<readonly Bike[]>;
+  listNearby(query: NearbyBikesQuery): Promise<NearbyBikesResult>;
   getById(id: string): Promise<Bike | undefined>;
 }
 
@@ -42,27 +44,33 @@ export const mockBikes: readonly Bike[] = [
     id: "G-104",
     model: "Glide Pro X",
     rideClass: "Pro",
-    batteryPercent: 85,
     estimatedRangeKm: 45,
     topSpeedKmh: 25,
     pricingLabel: "$1.20 / 10 min",
     status: "available",
     location: "Mission District",
-    coordinates: { latitude: 37.7599, longitude: -122.4148 }
+    coordinates: { latitude: 37.7599, longitude: -122.4148 },
+    lastReportedAt: "2026-04-06T08:55:00Z"
   },
   {
     id: "G-205",
     model: "Glide City",
     rideClass: "City",
-    batteryPercent: 72,
     estimatedRangeKm: 31,
     topSpeedKmh: 22,
     pricingLabel: "$0.90 / 10 min",
     status: "available",
     location: "Market Street",
-    coordinates: { latitude: 37.7937, longitude: -122.395 }
+    coordinates: { latitude: 37.7937, longitude: -122.395 },
+    lastReportedAt: "2026-04-06T08:56:00Z"
   }
 ];
+
+export const mockNearbyBikesResult: NearbyBikesResult = {
+  bikes: mockBikes,
+  serverTime: "2026-04-06T09:00:00Z",
+  searchCenter: { latitude: 37.7749, longitude: -122.4194 }
+};
 
 export const mockActiveRide: Ride = {
   id: "ride-8821",
@@ -125,12 +133,77 @@ export const authService: AuthService = {
 
 export const bikeService: BikeService = {
   async listNearby() {
-    return mockBikes;
+    return mockNearbyBikesResult;
   },
   async getById(id) {
     return mockBikes.find((bike) => bike.id === id);
   }
 };
+
+interface CreateHttpBikeServiceOptions {
+  readonly baseUrl: string;
+  readonly fetchImpl?: FetchLike;
+}
+
+interface HttpResponseLike {
+  readonly ok: boolean;
+  readonly status: number;
+  json(): Promise<unknown>;
+}
+
+type FetchLike = (input: string) => Promise<HttpResponseLike>;
+
+export function createHttpBikeService({
+  baseUrl,
+  fetchImpl = async (input) => {
+    if (typeof globalThis.fetch !== "function") {
+      throw new Error("Global fetch is not available in this runtime.");
+    }
+
+    return (await globalThis.fetch(input)) as HttpResponseLike;
+  }
+}: CreateHttpBikeServiceOptions): BikeService {
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+
+  return {
+    async listNearby(query) {
+      const searchParams = new URLSearchParams({
+        lat: query.latitude.toString(),
+        lng: query.longitude.toString(),
+        radius: query.radiusMeters.toString()
+      });
+
+      if (query.limit !== undefined) {
+        searchParams.set("limit", query.limit.toString());
+      }
+
+      const response = await fetchImpl(
+        `${normalizedBaseUrl}/bikes/nearby?${searchParams.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch nearby bikes: ${response.status}`);
+      }
+
+      return (await response.json()) as NearbyBikesResult;
+    },
+    async getById(id) {
+      const response = await fetchImpl(
+        `${normalizedBaseUrl}/bikes/${encodeURIComponent(id)}`
+      );
+
+      if (response.status === 404) {
+        return undefined;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch bike: ${response.status}`);
+      }
+
+      return (await response.json()) as Bike;
+    }
+  };
+}
 
 export const rideService: RideService = {
   async getActiveRide() {
