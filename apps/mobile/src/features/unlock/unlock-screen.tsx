@@ -30,24 +30,28 @@ type TransactionState =
       readonly method?: UnlockMethod;
       readonly result?: undefined;
       readonly phaseIndex?: undefined;
+      readonly errorDetails?: undefined;
     }
   | {
       readonly status: "running";
       readonly method: UnlockMethod;
       readonly result: UnlockResult;
       readonly phaseIndex: number;
+      readonly errorDetails?: undefined;
     }
   | {
       readonly status: "failed";
       readonly method: UnlockMethod;
       readonly result: UnlockResult;
       readonly phaseIndex?: undefined;
+      readonly errorDetails?: string;
     }
   | {
       readonly status: "success";
       readonly method: UnlockMethod;
       readonly result: UnlockResult;
       readonly phaseIndex?: undefined;
+      readonly errorDetails?: undefined;
     };
 
 type PrepState =
@@ -127,6 +131,40 @@ function wait(ms: number) {
 
 function createMockQrPayload(bikeId: string, attempt: number) {
   return `GLIDE-${bikeId.replace(/[^A-Z0-9]/gi, "").toUpperCase()}-${String(attempt).padStart(2, "0")}`;
+}
+
+function getUnlockErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.length > 0) {
+    return error;
+  }
+
+  return "Unlock could not be started.";
+}
+
+function createUnlockFailureResult({
+  bikeId,
+  method,
+  attempt,
+  failureMessage
+}: {
+  readonly bikeId: string;
+  readonly method: UnlockMethod;
+  readonly attempt: number;
+  readonly failureMessage: string;
+}): UnlockResult {
+  return {
+    bikeId,
+    method,
+    attempt,
+    phases: [],
+    finalStatus: "failed",
+    successMessage: "",
+    failureMessage
+  };
 }
 
 function MethodVisual({
@@ -409,72 +447,108 @@ export function UnlockScreen() {
     }));
     setPrepState({ status: "idle", modalVisible: false, method: null, mockCode: null });
 
-    const result = await configuredUnlockService.startUnlock({
-      bikeId,
-      method,
-      attempt: nextAttempt
-    });
-
-    if (!result.phases[0]) {
-      throw new Error("Unlock transaction phases are required.");
-    }
-
-    setTransaction({
-      status: "running",
-      method,
-      result,
-      phaseIndex: 0
-    });
-
-    for (let phaseIndex = 1; phaseIndex < result.phases.length; phaseIndex += 1) {
-      await wait(PHASE_DELAY_MS);
+    try {
+      const result = await configuredUnlockService.startUnlock({
+        bikeId,
+        method,
+        attempt: nextAttempt
+      });
 
       if (!isMountedRef.current || runIdRef.current !== runId) {
         return;
+      }
+
+      if (!result.phases[0]) {
+        throw new Error("Unlock transaction phases are required.");
       }
 
       setTransaction({
         status: "running",
         method,
         result,
-        phaseIndex
-      });
-    }
-
-    await wait(COMPLETION_DELAY_MS);
-
-    if (!isMountedRef.current || runIdRef.current !== runId) {
-      return;
-    }
-
-    if (result.finalStatus === "success") {
-      setTransaction({
-        status: "success",
-        method,
-        result
+        phaseIndex: 0
       });
 
-      await wait(REDIRECT_DELAY_MS);
+      for (let phaseIndex = 1; phaseIndex < result.phases.length; phaseIndex += 1) {
+        await wait(PHASE_DELAY_MS);
+
+        if (!isMountedRef.current || runIdRef.current !== runId) {
+          return;
+        }
+
+        setTransaction({
+          status: "running",
+          method,
+          result,
+          phaseIndex
+        });
+      }
+
+      await wait(COMPLETION_DELAY_MS);
 
       if (!isMountedRef.current || runIdRef.current !== runId) {
         return;
       }
 
-      router.push({
-        pathname: "/ride/active",
-        params: {
-          bikeId,
-          entry: "unlock"
-        }
-      });
-      return;
-    }
+      if (result.finalStatus === "success") {
+        setTransaction({
+          status: "success",
+          method,
+          result
+        });
 
-    setTransaction({
-      status: "failed",
-      method,
-      result
-    });
+        await wait(REDIRECT_DELAY_MS);
+
+        if (!isMountedRef.current || runIdRef.current !== runId) {
+          return;
+        }
+
+        router.push({
+          pathname: "/ride/active",
+          params: {
+            bikeId,
+            entry: "unlock"
+          }
+        });
+        return;
+      }
+
+      setTransaction({
+        status: "failed",
+        method,
+        result
+      });
+    } catch (error) {
+      if (!isMountedRef.current || runIdRef.current !== runId) {
+        return;
+      }
+
+      const errorDetails =
+        error instanceof Error ? `${error.name}: ${error.message}` : getUnlockErrorMessage(error);
+      const failureMessage =
+        error instanceof Error && error.message === "Unlock transaction phases are required."
+          ? "Unlock could not start because the transaction details were incomplete."
+          : `Unlock could not start. ${getUnlockErrorMessage(error)}`;
+
+      console.error("Unlock flow failed to start.", {
+        bikeId,
+        method,
+        attempt: nextAttempt,
+        error
+      });
+
+      setTransaction({
+        status: "failed",
+        method,
+        result: createUnlockFailureResult({
+          bikeId,
+          method,
+          attempt: nextAttempt,
+          failureMessage
+        }),
+        errorDetails
+      });
+    }
   }
 
   async function startMethodExperience(method: UnlockMethod) {
@@ -704,6 +778,11 @@ export function UnlockScreen() {
             <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
               {`Method: ${methodLabels[transaction.method]} · Attempt ${transaction.result.attempt}`}
             </Text>
+            {transaction.errorDetails ? (
+              <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 20 }}>
+                {transaction.errorDetails}
+              </Text>
+            ) : null}
           </SurfaceCard>
         ) : null}
 
@@ -721,7 +800,7 @@ export function UnlockScreen() {
           </SurfaceCard>
         ) : null}
 
-        {showMethodActions ? (
+        {showMethodActions && transaction.status !== "failed" ? (
           <View style={{ gap: spacing.sm }}>
             <PrimaryButton
               label="Generate ride QR pass"

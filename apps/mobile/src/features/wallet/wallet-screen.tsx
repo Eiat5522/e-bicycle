@@ -1,58 +1,957 @@
-import { Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  Text,
+  View
+} from "react-native";
 
 import { mockWallet } from "@glide/api";
 import { formatCurrency } from "@glide/shared";
+import type { WalletTransaction } from "@glide/shared";
 
+import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
-import { colors, spacing } from "@/theme/tokens";
+import { colors, radii, spacing } from "@/theme/tokens";
+
+const isTestEnvironment = process.env.NODE_ENV === "test";
+
+type PaymentMethod = "card" | "mobile_pay" | "voucher";
+
+type TopUpState =
+  | { status: "idle"; amount: number | null; method: PaymentMethod | null }
+  | { status: "processing"; amount: number; method: PaymentMethod; stepIndex: number }
+  | { status: "success"; amount: number; method: PaymentMethod }
+  | { status: "failed"; amount: number; method: PaymentMethod; error: string };
+
+type ModalState =
+  | { visible: false; type: null }
+  | { visible: true; type: "topup_confirm"; amount: number; method: PaymentMethod }
+  | { visible: true; type: "payment_success"; amount: number; method: PaymentMethod }
+  | { visible: true; type: "voucher_redeem"; code: string };
+
+const PAYMENT_STEPS = [
+  { label: "Verifying payment method", description: "Checking your selected payment source..." },
+  { label: "Processing payment", description: "Contacting payment gateway securely..." },
+  { label: "Confirming transaction", description: "Finalizing your top-up..." },
+  { label: "Updating balance", description: "Adding funds to your wallet..." }
+];
+
+const VOUCHER_STEPS = [
+  { label: "Validating voucher code", description: "Checking code format and expiry..." },
+  { label: "Verifying eligibility", description: "Confirming voucher hasn't been used..." },
+  { label: "Applying credit", description: "Adding voucher value to your balance..." }
+];
+
+const methodLabels: Record<PaymentMethod, string> = {
+  card: "Credit/Debit Card",
+  mobile_pay: "Mobile Pay",
+  voucher: "Gift Voucher"
+};
+
+const methodIcons: Record<PaymentMethod, string> = {
+  card: "💳",
+  mobile_pay: "📱",
+  voucher: "🎁"
+};
+
+const TOP_UP_AMOUNTS = [5, 10, 20, 50] as const;
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function CardVisual({
+  isAnimating,
+  method
+}: {
+  readonly isAnimating: boolean;
+  readonly method: PaymentMethod;
+}) {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isTestEnvironment || !isAnimating) {
+      pulse.setValue(0);
+      return;
+    }
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: false
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 1200,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: false
+        })
+      ])
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [pulse, isAnimating]);
+
+  if (method === "card") {
+    const shimmerLeft = pulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-120, 280]
+    });
+
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: "#1a1a2e",
+          borderRadius: radii.large,
+          minHeight: 160,
+          overflow: "hidden",
+          padding: spacing.lg,
+          position: "relative"
+        }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
+          <View style={{ flexDirection: "row", gap: 4 }}>
+            <View style={{ backgroundColor: colors.coral, borderRadius: 4, height: 16, width: 24 }} />
+            <View style={{ backgroundColor: colors.yellow, borderRadius: 4, height: 16, width: 24 }} />
+          </View>
+          <Text selectable style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
+            VISA
+          </Text>
+        </View>
+
+        <Text
+          selectable
+          style={{
+            color: "rgba(255,255,255,0.8)",
+            fontSize: 18,
+            fontWeight: "600",
+            letterSpacing: 3,
+            marginTop: spacing.xl
+          }}>
+          •••• •••• •••• 4242
+        </Text>
+
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: spacing.lg, width: "100%" }}>
+          <Text selectable style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>
+            CARD HOLDER
+          </Text>
+          <Text selectable style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}>
+            EXPIRES
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", width: "100%" }}>
+          <Text selectable style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: "600" }}>
+            DEMO USER
+          </Text>
+          <Text selectable style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, fontWeight: "600" }}>
+            12/28
+          </Text>
+        </View>
+
+        {isAnimating && (
+          <Animated.View
+            style={{
+              backgroundColor: "rgba(255,255,255,0.15)",
+              borderRadius: radii.medium,
+              height: 40,
+              left: shimmerLeft,
+              position: "absolute",
+              top: 0,
+              width: 80
+            }}
+          />
+        )}
+      </View>
+    );
+  }
+
+  if (method === "mobile_pay") {
+    const ringScale = pulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.8, 1.3]
+    });
+    const ringOpacity = pulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.5, 0]
+    });
+
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: "#f0f4ff",
+          borderRadius: radii.large,
+          justifyContent: "center",
+          minHeight: 160,
+          overflow: "hidden",
+          padding: spacing.lg,
+          position: "relative"
+        }}>
+        {[0, 1, 2].map((ring) => (
+          <Animated.View
+            key={`ring-${ring}`}
+            style={{
+              borderColor: colors.teal,
+              borderRadius: radii.pill,
+              borderWidth: 2,
+              height: 60 + ring * 30,
+              opacity: isAnimating ? ringOpacity : 0,
+              position: "absolute",
+              transform: [{ scale: ringScale }],
+              width: 60 + ring * 30
+            }}
+          />
+        ))}
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.teal,
+            borderRadius: radii.pill,
+            height: 64,
+            justifyContent: "center",
+            width: 64
+          }}>
+          <Text selectable style={{ color: colors.surface, fontSize: 24, fontWeight: "800" }}>
+            📱
+          </Text>
+        </View>
+        <Text
+          selectable
+          style={{
+            color: colors.textMuted,
+            fontSize: 13,
+            marginTop: spacing.md,
+            textAlign: "center"
+          }}>
+          {isAnimating ? "Connecting to mobile wallet..." : "Tap to pay with your mobile wallet"}
+        </Text>
+      </View>
+    );
+  }
+
+  const glowOpacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.2, 0.6]
+  });
+
+  return (
+    <View
+      style={{
+        alignItems: "center",
+        backgroundColor: "#fff8f0",
+        borderRadius: radii.large,
+        justifyContent: "center",
+        minHeight: 160,
+        overflow: "hidden",
+        padding: spacing.lg,
+        position: "relative"
+      }}>
+      {isAnimating && (
+        <Animated.View
+          style={{
+            backgroundColor: colors.coral,
+            borderRadius: radii.pill,
+            height: 120,
+            opacity: glowOpacity,
+            position: "absolute",
+            width: 200
+          }}
+        />
+      )}
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: colors.coral,
+          borderRadius: radii.medium,
+          height: 80,
+          justifyContent: "center",
+          width: 140
+        }}>
+        <Text selectable style={{ color: colors.surface, fontSize: 28, fontWeight: "800" }}>
+          🎁
+        </Text>
+      </View>
+      <Text
+        selectable
+        style={{
+          color: colors.textMuted,
+          fontSize: 13,
+          marginTop: spacing.md,
+          textAlign: "center"
+        }}>
+        {isAnimating ? "Validating voucher code..." : "Enter your gift voucher code"}
+      </Text>
+    </View>
+  );
+}
+
+function TransactionIcon({ type }: { readonly type: string }) {
+  const iconMap: Record<string, string> = {
+    topup: "💰",
+    ride: "🚲",
+    refund: "↩️",
+    bonus: "🎉"
+  };
+  return (
+    <View
+      style={{
+        alignItems: "center",
+        backgroundColor: colors.surfaceMuted,
+        borderRadius: radii.medium,
+        height: 40,
+        justifyContent: "center",
+        width: 40
+      }}>
+      <Text selectable style={{ fontSize: 18 }}>
+        {iconMap[type] ?? "💵"}
+      </Text>
+    </View>
+  );
+}
 
 export function WalletScreen() {
+  const router = useRouter();
+  const runIdRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const panelOpacity = useRef(new Animated.Value(0)).current;
+  const panelTranslateY = useRef(new Animated.Value(12)).current;
+  const modalScale = useRef(new Animated.Value(0.92)).current;
+  const modalOpacity = useRef(new Animated.Value(0)).current;
+  const balanceScale = useRef(new Animated.Value(1)).current;
+
+  const [balance, setBalance] = useState(mockWallet.balance);
+  const [points, setPoints] = useState(mockWallet.points);
+  const [transactions, setTransactions] = useState(mockWallet.transactions);
+  const [topUp, setTopUp] = useState<TopUpState>({ status: "idle", amount: null, method: null });
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [modal, setModal] = useState<ModalState>({ visible: false, type: null });
+  const [voucherCode, setVoucherCode] = useState("");
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (topUp.status === "idle") {
+      panelOpacity.setValue(0);
+      panelTranslateY.setValue(12);
+      return;
+    }
+
+    if (isTestEnvironment) {
+      panelOpacity.setValue(1);
+      panelTranslateY.setValue(0);
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(panelOpacity, {
+        toValue: 1,
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.timing(panelTranslateY, {
+        toValue: 0,
+        duration: 260,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [topUp.status, panelOpacity, panelTranslateY]);
+
+  useEffect(() => {
+    if (!modal.visible) {
+      modalOpacity.setValue(0);
+      modalScale.setValue(0.92);
+      return;
+    }
+
+    if (isTestEnvironment) {
+      modalOpacity.setValue(1);
+      modalScale.setValue(1);
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(modalOpacity, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.spring(modalScale, {
+        damping: 18,
+        mass: 0.8,
+        stiffness: 180,
+        toValue: 1,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [modal.visible, modalOpacity, modalScale]);
+
+  function animateBalance() {
+    if (isTestEnvironment) {
+      balanceScale.setValue(1.15);
+      return;
+    }
+    Animated.sequence([
+      Animated.timing(balanceScale, {
+        toValue: 1.15,
+        duration: 150,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true
+      }),
+      Animated.spring(balanceScale, {
+        toValue: 1,
+        damping: 12,
+        stiffness: 150,
+        useNativeDriver: true
+      })
+    ]).start();
+  }
+
+  async function processTopUp(amount: number, method: PaymentMethod) {
+    const runId = runIdRef.current + 1;
+    runIdRef.current = runId;
+
+    const steps = method === "voucher" ? VOUCHER_STEPS : PAYMENT_STEPS;
+
+    setTopUp({ status: "processing", amount, method, stepIndex: 0 });
+
+    for (let i = 0; i < steps.length; i++) {
+      await wait(1000);
+      if (!isMountedRef.current || runIdRef.current !== runId) return;
+      setTopUp({ status: "processing", amount, method, stepIndex: i });
+    }
+
+    await wait(600);
+    if (!isMountedRef.current || runIdRef.current !== runId) return;
+
+    const isSuccess = method !== "voucher" || voucherCode.length >= 6;
+
+    if (isSuccess) {
+      setTopUp({ status: "success", amount, method });
+      setBalance((prev) => prev + amount);
+      setPoints((prev) => prev + Math.floor(amount * 10));
+
+      const newTransaction: WalletTransaction = {
+        id: `txn_${Date.now()}`,
+        title: method === "voucher" ? "Voucher Credit" : "Wallet Top-up",
+        subtitle: `Via ${methodLabels[method]}`,
+        amount,
+        type: "top_up",
+        timestamp: new Date().toISOString()
+      };
+      setTransactions((prev) => [newTransaction, ...prev]);
+
+      animateBalance();
+
+      setModal({ visible: true, type: "payment_success", amount, method });
+    } else {
+      setTopUp({
+        status: "failed",
+        amount,
+        method,
+        error: "Invalid voucher code. Please enter a code with at least 6 characters."
+      });
+    }
+  }
+
+  function startTopUpFlow() {
+    if (selectedAmount === null || selectedMethod === null) return;
+
+    if (selectedMethod === "voucher") {
+      setModal({ visible: true, type: "voucher_redeem", code: "" });
+      return;
+    }
+
+    setModal({ visible: true, type: "topup_confirm", amount: selectedAmount, method: selectedMethod });
+  }
+
+  function confirmTopUp() {
+    if (modal.type !== "topup_confirm" && modal.type !== "voucher_redeem") return;
+
+    const amount = modal.type === "topup_confirm" ? modal.amount : selectedAmount ?? 0;
+    const method = modal.type === "topup_confirm" ? modal.method : "voucher";
+
+    setModal({ visible: false, type: null });
+    void processTopUp(amount, method);
+  }
+
+  function closeModal() {
+    setModal({ visible: false, type: null });
+  }
+
+  function resetTopUp() {
+    runIdRef.current += 1;
+    setTopUp({ status: "idle", amount: null, method: null });
+    setSelectedAmount(null);
+    setSelectedMethod(null);
+    setVoucherCode("");
+  }
+
+  const isProcessing = topUp.status === "processing";
+  const progressWidth = useMemo(() => {
+    if (topUp.status !== "processing") return "0%";
+    const steps = topUp.method === "voucher" ? VOUCHER_STEPS : PAYMENT_STEPS;
+    return `${((topUp.stepIndex + 1) / steps.length) * 100}%`;
+  }, [topUp]);
+
+  const currentStep =
+    topUp.status === "processing"
+      ? (topUp.method === "voucher" ? VOUCHER_STEPS : PAYMENT_STEPS)[topUp.stepIndex]
+      : null;
+
   return (
-    <ScreenShell
-      title="Wallet"
-      description="Wallet and transaction history are scaffolded with shared domain models so admin and mobile can read the same shape later.">
-      <SurfaceCard tone="accent">
-        <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-          Current balance
-        </Text>
-        <Text selectable style={{ color: colors.text, fontSize: 32, fontWeight: "800" }}>
-          {formatCurrency(mockWallet.balance)}
-        </Text>
-        <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-          {mockWallet.points} loyalty points
-        </Text>
-      </SurfaceCard>
-
-      <View style={{ flexDirection: "row", gap: spacing.sm }}>
-        {["$10", "$20", "$50"].map((amount) => (
-          <View key={amount} style={{ flex: 1 }}>
-            <SurfaceCard>
-              <Text
-                selectable
-                style={{ color: colors.text, fontSize: 16, fontWeight: "700", textAlign: "center" }}>
-                {amount}
-              </Text>
-            </SurfaceCard>
-          </View>
-        ))}
-      </View>
-
-      <View style={{ gap: spacing.md }}>
-        {mockWallet.transactions.map((transaction) => (
-          <SurfaceCard key={transaction.id}>
-            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-              {transaction.title}
+    <>
+      <ScreenShell
+        title="Wallet"
+        description="Top up your balance, redeem vouchers, and track your ride spending — all in one place.">
+        <Animated.View style={{ transform: [{ scale: balanceScale }] }}>
+          <SurfaceCard tone="accent">
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+              Current balance
+            </Text>
+            <Text
+              selectable
+              style={{
+                color: colors.text,
+                fontSize: 36,
+                fontWeight: "800",
+                marginVertical: spacing.xs
+              }}>
+              {formatCurrency(balance)}
             </Text>
             <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-              {transaction.subtitle}
-            </Text>
-            <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-              {formatCurrency(transaction.amount)}
+              {points} loyalty points
             </Text>
           </SurfaceCard>
-        ))}
-      </View>
-    </ScreenShell>
+        </Animated.View>
+
+        <View style={{ gap: spacing.md }}>
+          <Text selectable style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}>
+            Top up your wallet
+          </Text>
+
+          <View>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 14, marginBottom: spacing.sm }}>
+              Select amount
+            </Text>
+            <View style={{ flexDirection: "row", gap: spacing.sm }}>
+              {TOP_UP_AMOUNTS.map((amount) => (
+                <Pressable
+                  key={amount}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${formatCurrency(amount)}`}
+                  disabled={isProcessing}
+                  onPress={() => setSelectedAmount(amount)}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    alignItems: "center",
+                    backgroundColor:
+                      selectedAmount === amount ? colors.coral : colors.surface,
+                    borderColor: selectedAmount === amount ? colors.coral : colors.outline,
+                    borderCurve: "continuous",
+                    borderRadius: radii.medium,
+                    borderWidth: 2,
+                    opacity: isProcessing ? 0.5 : pressed ? 0.7 : 1,
+                    padding: spacing.md
+                  })}>
+                  <Text
+                    selectable
+                    style={{
+                      color: selectedAmount === amount ? colors.surface : colors.text,
+                      fontSize: 16,
+                      fontWeight: "700"
+                    }}>
+                    {formatCurrency(amount)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <View>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 14, marginBottom: spacing.sm }}>
+              Payment method
+            </Text>
+            <View style={{ gap: spacing.sm }}>
+              {(["card", "mobile_pay", "voucher"] as PaymentMethod[]).map((method) => (
+                <Pressable
+                  key={method}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${methodLabels[method]}`}
+                  disabled={isProcessing}
+                  onPress={() => setSelectedMethod(method)}
+                  style={({ pressed }) => ({
+                    alignItems: "center",
+                    backgroundColor:
+                      selectedMethod === method ? colors.yellow : colors.surface,
+                    borderColor: selectedMethod === method ? colors.coral : colors.outline,
+                    borderCurve: "continuous",
+                    borderRadius: radii.large,
+                    borderWidth: 1,
+                    flexDirection: "row",
+                    gap: spacing.md,
+                    opacity: isProcessing ? 0.5 : pressed ? 0.7 : 1,
+                    padding: spacing.lg
+                  })}>
+                  <Text selectable style={{ fontSize: 24 }}>
+                    {methodIcons[method]}
+                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      selectable
+                      style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
+                      {methodLabels[method]}
+                    </Text>
+                    <Text
+                      selectable
+                      style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
+                      {method === "card" && "Pay with your saved card ending in 4242"}
+                      {method === "mobile_pay" && "Use Apple Pay or Google Pay"}
+                      {method === "voucher" && "Redeem a gift voucher or promo code"}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      borderColor: selectedMethod === method ? colors.coral : colors.outline,
+                      borderRadius: radii.pill,
+                      borderWidth: 2,
+                      height: 22,
+                      width: 22
+                    }}>
+                    {selectedMethod === method && (
+                      <View
+                        style={{
+                          backgroundColor: colors.coral,
+                          borderRadius: radii.pill,
+                          height: 14,
+                          margin: 2,
+                          width: 14
+                        }}
+                      />
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {selectedAmount !== null && selectedMethod !== null && (
+            <CardVisual isAnimating={isProcessing} method={selectedMethod} />
+          )}
+
+          {topUp.status === "processing" && currentStep && (
+            <SurfaceCard tone="accent">
+              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+                {currentStep.label}
+              </Text>
+              <View
+                style={{
+                  backgroundColor: "rgba(45, 47, 47, 0.12)",
+                  borderRadius: radii.pill,
+                  height: 10,
+                  marginVertical: spacing.sm,
+                  overflow: "hidden"
+                }}>
+                <View
+                  style={{
+                    backgroundColor: colors.teal,
+                    borderRadius: radii.pill,
+                    height: "100%",
+                    width: progressWidth as `${number}%`
+                  }}
+                />
+              </View>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20 }}>
+                {currentStep.description}
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 13, marginTop: spacing.xs }}>
+                {`Method: ${methodLabels[topUp.method]} · ${formatCurrency(topUp.amount)}`}
+              </Text>
+            </SurfaceCard>
+          )}
+
+          {topUp.status === "success" && (
+            <SurfaceCard tone="accent">
+              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+                Top-up successful!
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                {formatCurrency(topUp.amount)} has been added to your wallet via {methodLabels[topUp.method]}.
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
+                You earned {Math.floor(topUp.amount * 10)} loyalty points!
+              </Text>
+            </SurfaceCard>
+          )}
+
+          {topUp.status === "failed" && (
+            <SurfaceCard tone="accent">
+              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+                Top-up failed
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                {topUp.error}
+              </Text>
+            </SurfaceCard>
+          )}
+
+          <View style={{ gap: spacing.sm }}>
+            <PrimaryButton
+              label="Top up now"
+              onPress={startTopUpFlow}
+              disabled={
+                isProcessing ||
+                selectedAmount === null ||
+                selectedMethod === null
+              }
+            />
+            {topUp.status !== "idle" && (
+              <PrimaryButton
+                label="Start over"
+                onPress={resetTopUp}
+                variant="secondary"
+              />
+            )}
+          </View>
+        </View>
+
+        <View style={{ gap: spacing.md }}>
+          <Text selectable style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}>
+            Transaction history
+          </Text>
+
+          {transactions.map((transaction) => (
+            <SurfaceCard key={transaction.id}>
+              <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.md }}>
+                <TransactionIcon type={transaction.type} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    selectable
+                    style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
+                    {transaction.title}
+                  </Text>
+                  <Text
+                    selectable
+                    style={{ color: colors.textMuted, fontSize: 13 }}>
+                    {transaction.subtitle}
+                  </Text>
+                </View>
+                <Text
+                  selectable
+                  style={{
+                    color: transaction.amount >= 0 ? colors.teal : colors.coral,
+                    fontSize: 16,
+                    fontWeight: "700"
+                  }}>
+                  {transaction.amount >= 0 ? "+" : ""}
+                  {formatCurrency(transaction.amount)}
+                </Text>
+              </View>
+            </SurfaceCard>
+          ))}
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push({ pathname: "/unlock/[id]", params: { id: "DEMO-BIKE" } })}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            backgroundColor: colors.surfaceMuted,
+            borderCurve: "continuous",
+            borderRadius: radii.medium,
+            flexDirection: "row",
+            gap: spacing.md,
+            justifyContent: "center",
+            opacity: pressed ? 0.7 : 1,
+            padding: spacing.md
+          })}>
+          <Text selectable style={{ fontSize: 18 }}>
+            🚲
+          </Text>
+          <Text
+            selectable
+            style={{ color: colors.teal, fontSize: 15, fontWeight: "600" }}>
+            Unlock a bike to start riding
+          </Text>
+        </Pressable>
+      </ScreenShell>
+
+      <Modal
+        animationType="none"
+        onRequestClose={closeModal}
+        transparent
+        visible={modal.visible}>
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: "rgba(45, 47, 47, 0.55)",
+            flex: 1,
+            justifyContent: "center",
+            padding: spacing.lg
+          }}>
+          <Animated.View
+            style={{
+              opacity: modalOpacity,
+              transform: [{ scale: modalScale }],
+              width: "100%"
+            }}>
+            <SurfaceCard tone="default">
+              {modal.type === "topup_confirm" && (
+                <>
+                  <Text
+                    selectable
+                    style={{ color: colors.text, fontSize: 20, fontWeight: "800" }}>
+                    Confirm top-up
+                  </Text>
+                  <Text
+                    selectable
+                    style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                    You are about to add {formatCurrency(modal.amount)} to your wallet using {methodLabels[modal.method]}.
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: colors.surfaceMuted,
+                      borderCurve: "continuous",
+                      borderRadius: radii.medium,
+                      gap: spacing.xs,
+                      padding: spacing.md
+                    }}>
+                    <Text
+                      selectable
+                      style={{ color: colors.textMuted, fontSize: 13 }}>
+                      Amount
+                    </Text>
+                    <Text
+                      selectable
+                      style={{
+                        color: colors.teal,
+                        fontSize: 24,
+                        fontWeight: "800"
+                      }}>
+                      {formatCurrency(modal.amount)}
+                    </Text>
+                  </View>
+                  <View style={{ gap: spacing.sm }}>
+                    <PrimaryButton
+                      label="Confirm & pay"
+                      onPress={confirmTopUp}
+                    />
+                    <PrimaryButton
+                      label="Cancel"
+                      onPress={closeModal}
+                      variant="secondary"
+                    />
+                  </View>
+                </>
+              )}
+
+              {modal.type === "payment_success" && (
+                <>
+                  <Text
+                    selectable
+                    style={{
+                      color: colors.text,
+                      fontSize: 20,
+                      fontWeight: "800",
+                      textAlign: "center"
+                    }}>
+                    🎉 Payment successful!
+                  </Text>
+                  <Text
+                    selectable
+                    style={{
+                      color: colors.textMuted,
+                      fontSize: 15,
+                      lineHeight: 22,
+                      textAlign: "center"
+                    }}>
+                    {formatCurrency(modal.amount)} has been added to your wallet. Your new balance is {formatCurrency(balance)}.
+                  </Text>
+                  <View style={{ gap: spacing.sm }}>
+                    <PrimaryButton
+                      label="Done"
+                      onPress={closeModal}
+                    />
+                  </View>
+                </>
+              )}
+
+              {modal.type === "voucher_redeem" && (
+                <>
+                  <Text
+                    selectable
+                    style={{ color: colors.text, fontSize: 20, fontWeight: "800" }}>
+                    Redeem voucher
+                  </Text>
+                  <Text
+                    selectable
+                    style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                    Enter your voucher code below. Demo: use any code with 6+ characters.
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: colors.surfaceMuted,
+                      borderCurve: "continuous",
+                      borderRadius: radii.medium,
+                      padding: spacing.md
+                    }}>
+                    <Pressable
+                      onPress={() => {
+                        const codes = ["RIDE2026", "GLIDE50", "FREERIDE", "DEMO123"];
+                        const code = codes[Math.floor(Math.random() * codes.length)] ?? "DEMO123";
+                        setVoucherCode(code);
+                      }}
+                      style={{
+                        alignItems: "center",
+                        flexDirection: "row",
+                        gap: spacing.sm
+                      }}>
+                      <Text
+                        selectable
+                        style={{
+                          color: voucherCode ? colors.teal : colors.textMuted,
+                          fontSize: 18,
+                          fontWeight: "700",
+                          flex: 1
+                        }}>
+                        {voucherCode || "Tap to generate a code"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={{ gap: spacing.sm }}>
+                    <PrimaryButton
+                      label="Redeem voucher"
+                      onPress={confirmTopUp}
+                      disabled={voucherCode.length < 6}
+                    />
+                    <PrimaryButton
+                      label="Cancel"
+                      onPress={closeModal}
+                      variant="secondary"
+                    />
+                  </View>
+                </>
+              )}
+            </SurfaceCard>
+          </Animated.View>
+        </View>
+      </Modal>
+    </>
   );
 }

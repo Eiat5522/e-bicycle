@@ -123,6 +123,7 @@ describe("UnlockScreen", () => {
 
     await flushTimers();
     expect(screen.getByText("Unlock failed")).toBeTruthy();
+    expect(screen.queryByText("Generate ride QR pass")).toBeNull();
 
     expect(startUnlock).toHaveBeenNthCalledWith(1, {
       bikeId: "G-205",
@@ -215,5 +216,53 @@ describe("UnlockScreen", () => {
     expect(screen.queryByText("Unlock failed")).toBeNull();
     expect(screen.getByText("Bluetooth unlock simulation")).toBeTruthy();
     expect(screen.getByText("Connect to bike")).toBeTruthy();
+  });
+
+  it("shows a failed transaction when unlock startup rejects", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    startUnlock.mockRejectedValueOnce(new Error("Service unavailable."));
+
+    render(<UnlockScreen />);
+
+    fireEvent.press(screen.getByLabelText("Choose QR unlock"));
+    fireEvent.press(screen.getByText("Generate ride QR pass"));
+    await flushTimers(900);
+    fireEvent.press(screen.getByText("Unlock bike now"));
+    await act(async () => {});
+
+    expect(screen.getByText("Unlock failed")).toBeTruthy();
+    expect(screen.getByText("Unlock could not start. Service unavailable.")).toBeTruthy();
+    expect(screen.getByText("Error: Service unavailable.")).toBeTruthy();
+    expect(screen.getByText("Retry QR")).toBeTruthy();
+    expect(consoleError).toHaveBeenCalled();
+
+    consoleError.mockRestore();
+  });
+
+  it("shows a failed transaction when unlock phases are missing", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    startUnlock.mockResolvedValueOnce({
+      ...createResult("qr", 1, "failed"),
+      phases: []
+    });
+
+    render(<UnlockScreen />);
+
+    fireEvent.press(screen.getByLabelText("Choose QR unlock"));
+    fireEvent.press(screen.getByText("Generate ride QR pass"));
+    await flushTimers(900);
+    fireEvent.press(screen.getByText("Unlock bike now"));
+    await act(async () => {});
+
+    expect(screen.getByText("Unlock failed")).toBeTruthy();
+    expect(
+      screen.getByText("Unlock could not start because the transaction details were incomplete.")
+    ).toBeTruthy();
+    expect(screen.getByText("Error: Unlock transaction phases are required.")).toBeTruthy();
+    expect(consoleError).toHaveBeenCalled();
+
+    consoleError.mockRestore();
   });
 });
