@@ -360,6 +360,7 @@ export const bikeService: BikeService = {
 interface CreateHttpBikeServiceOptions {
   readonly baseUrl: string;
   readonly fetchImpl?: FetchLike;
+  readonly getAccessToken?: () => Promise<string | undefined>;
 }
 
 interface HttpResponseLike {
@@ -368,17 +369,22 @@ interface HttpResponseLike {
   json(): Promise<unknown>;
 }
 
-type FetchLike = (input: string) => Promise<HttpResponseLike>;
+interface FetchInitLike {
+  readonly headers?: Readonly<Record<string, string>>;
+}
+
+type FetchLike = (input: string, init?: FetchInitLike) => Promise<HttpResponseLike>;
 
 export function createHttpBikeService({
   baseUrl,
-  fetchImpl = async (input) => {
+  fetchImpl = async (input, init) => {
     if (typeof globalThis.fetch !== "function") {
       throw new Error("Global fetch is not available in this runtime.");
     }
 
-    return (await globalThis.fetch(input)) as HttpResponseLike;
-  }
+    return (await globalThis.fetch(input, init)) as HttpResponseLike;
+  },
+  getAccessToken
 }: CreateHttpBikeServiceOptions): BikeService {
   const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
 
@@ -394,8 +400,10 @@ export function createHttpBikeService({
         searchParams.set("limit", query.limit.toString());
       }
 
+      const init = await getAuthorizationInit(getAccessToken);
       const response = await fetchImpl(
-        `${normalizedBaseUrl}/bikes/nearby?${searchParams.toString()}`
+        `${normalizedBaseUrl}/bikes/nearby?${searchParams.toString()}`,
+        init
       );
 
       if (!response.ok) {
@@ -405,8 +413,10 @@ export function createHttpBikeService({
       return (await response.json()) as NearbyBikesResult;
     },
     async getById(id) {
+      const init = await getAuthorizationInit(getAccessToken);
       const response = await fetchImpl(
-        `${normalizedBaseUrl}/bikes/${encodeURIComponent(id)}`
+        `${normalizedBaseUrl}/bikes/${encodeURIComponent(id)}`,
+        init
       );
 
       if (response.status === 404) {
@@ -420,6 +430,12 @@ export function createHttpBikeService({
       return (await response.json()) as Bike;
     }
   };
+}
+
+async function getAuthorizationInit(getAccessToken?: () => Promise<string | undefined>) {
+  const accessToken = await getAccessToken?.();
+
+  return accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined;
 }
 
 export const rideService: RideService = {

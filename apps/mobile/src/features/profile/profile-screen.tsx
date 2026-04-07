@@ -1,26 +1,50 @@
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { mockRideHistory, mockUser } from "@glide/api";
-import { formatCurrency, formatDistanceKm } from "@glide/shared";
+import { formatCurrency, formatDistanceKm, type User } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { useAuth } from "@/features/auth/auth-context";
+import { configuredUserService } from "@/lib/user-service";
 import { colors, spacing } from "@/theme/tokens";
 
 import { formatRideDate, formatRideDurationLabel } from "../ride/ride-history-formatters";
 
 export function ProfileScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
+  const [user, setUser] = useState<User>(mockUser);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void configuredUserService
+      .getCurrentUser()
+      .then((currentUser) => {
+        if (isMounted) {
+          setUser(currentUser);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <ScreenShell
-      title={mockUser.firstName}
-      description="Profile, settings, and support entry points are scaffolded here without coupling them to backend auth yet.">
+      title={user.firstName}
+      description="Profile, settings, and support entry points are connected to your rider account.">
       <SurfaceCard>
         <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-          {mockUser.email}
+          {user.email}
         </Text>
         <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
           Notifications, payment methods, and ride preferences will live in this feature area.
@@ -81,6 +105,13 @@ export function ProfileScreen() {
         <PrimaryButton
           label="View Wallet"
           onPress={() => router.push("/(tabs)/wallet")}
+          variant="secondary"
+        />
+        <PrimaryButton
+          label="Sign Out"
+          onPress={() => {
+            void signOut();
+          }}
           variant="secondary"
         />
       </View>

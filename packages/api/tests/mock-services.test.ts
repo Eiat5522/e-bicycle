@@ -64,7 +64,8 @@ describe("mock api services", () => {
     });
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://api.example.com/bikes/nearby?lat=13.7563&lng=100.5018&radius=1500&limit=20"
+      "https://api.example.com/bikes/nearby?lat=13.7563&lng=100.5018&radius=1500&limit=20",
+      undefined
     );
   });
 
@@ -82,7 +83,35 @@ describe("mock api services", () => {
     await service.getById("../bike?id=1");
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://api.example.com/bikes/..%2Fbike%3Fid%3D1"
+      "https://api.example.com/bikes/..%2Fbike%3Fid%3D1",
+      undefined
+    );
+  });
+
+  it("adds a bearer token to http bike service requests", async () => {
+    const fetchImpl = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        bikes: [],
+        serverTime: "2026-04-06T09:00:00Z"
+      })
+    });
+    const service = createHttpBikeService({
+      baseUrl: "https://api.example.com",
+      fetchImpl,
+      getAccessToken: async () => "token-123"
+    });
+
+    await service.listNearby({
+      latitude: 13.7563,
+      longitude: 100.5018,
+      radiusMeters: 1500
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://api.example.com/bikes/nearby?lat=13.7563&lng=100.5018&radius=1500",
+      { headers: { Authorization: "Bearer token-123" } }
     );
   });
 });

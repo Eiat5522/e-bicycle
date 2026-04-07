@@ -1,7 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useRouter } from "expo-router";
 
+import { mockUser } from "@glide/api";
+
 import { ProfileScreen } from "./profile-screen";
+
+jest.mock("@/features/auth/auth-context", () => ({
+  useAuth: jest.fn(() => ({
+    signOut: jest.fn()
+  }))
+}));
+
+jest.mock("@/lib/user-service", () => ({
+  configuredUserService: {
+    getCurrentUser: jest.fn(async () => mockUser)
+  }
+}));
 
 jest.mock("expo-router", () => ({
   useRouter: jest.fn()
