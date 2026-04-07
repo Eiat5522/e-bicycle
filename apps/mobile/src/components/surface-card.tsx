@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import { View } from "react-native";
 
-import { colors, radii, spacing } from "@/theme/tokens";
+import { colors, radii, shadows, spacing } from "@/theme/tokens";
 
 interface SurfaceCardProps {
   readonly children: ReactNode;
-  readonly tone?: "default" | "muted" | "accent";
+  readonly tone?: "default" | "muted" | "accent" | "success";
 }
 
 export function SurfaceCard({
@@ -17,17 +17,20 @@ export function SurfaceCard({
       ? colors.yellow
       : tone === "muted"
         ? colors.surfaceMuted
+        : tone === "success"
+          ? "#E9F8EF"
         : colors.surface;
 
   return (
     <View
       style={{
         backgroundColor,
-        borderCurve: "continuous",
         borderRadius: radii.large,
         gap: spacing.sm,
-        padding: spacing.lg
-      }}>
+        padding: spacing.lg,
+        ...shadows.soft
+      }}
+    >
       {children}
     </View>
   );

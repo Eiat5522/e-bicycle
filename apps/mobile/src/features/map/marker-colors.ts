@@ -1,18 +1,24 @@
+import type { Bike } from "@glide/shared";
+
 import { colors } from "@/theme/tokens";
 
-export function getBikeMarkerColor(status: string, isSelected: boolean) {
+export function getBikeMarkerColor(status: Bike["status"], isSelected: boolean) {
   if (isSelected) {
-    return colors.coral;
+    return colors.markerSelected;
   }
 
-  if (status === "in_use") {
-    return colors.yellow;
+  if (status === "reserved") {
+    return colors.markerReserved;
   }
 
-  return colors.teal;
+  if (status === "maintenance") {
+    return colors.markerMaintenance;
+  }
+
+  return colors.markerAvailable;
 }
 
-export function getBikeStatusLabel(status: string) {
+export function getBikeStatusLabel(status: Bike["status"]) {
   if (status === "in_use") {
     return "Active session";
   }
@@ -21,5 +27,9 @@ export function getBikeStatusLabel(status: string) {
     return "Available for rental";
   }
 
-  return status;
+  if (status === "reserved") {
+    return "Reserved";
+  }
+
+  return "Maintenance";
 }

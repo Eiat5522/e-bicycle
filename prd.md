@@ -47,7 +47,7 @@ The scope for this project focuses on the **customer-facing mobile application (
     - Password recovery flow.
 2.  **Bike Discovery & Booking:**
     - **Map View:** Display real-time locations of available e-bikes on an interactive map.
-    - **Bike Selection:** Ability to tap on a bike icon to view details (e.g., battery level, estimated range, current location details).
+    - **Bike Selection:** Ability to tap on a bike icon to view details (e.g., availability, estimated range, current location details).
     - **Booking Confirmation:** Clear flow for users to confirm their chosen bike and initiate the rental period.
 3.  **Bike Unlock:**
     - **QR Code Scanner:** In-app scanner to unlock bikes via QR code.
@@ -85,7 +85,7 @@ The scope for this project focuses on the **customer-facing mobile application (
 - As a **new user**, I want to **easily sign up** using my email and password via Firebase Auth so I can start renting bikes.
 - As an **existing user**, I want to **log in quickly** using my Firebase credentials so I can access the app.
 - As a **user**, I want to **see available bikes displayed clearly on a map** so I can find the closest one.
-- As a **user**, I want to **tap on a bike icon** to view its details (battery, exact location) so I can make an informed decision.
+- As a **user**, I want to **tap on a bike icon** to view its details (availability, exact location) so I can make an informed decision.
 - As a **user**, I want to **confirm my booking** with a clear call-to-action so I know the bike is reserved for me.
 - As a **user**, I want to **unlock the bike using a QR code scanner** so I can start my ride quickly.
 - As a **user**, I want the app to **track my ride in real-time** and show me duration/cost so I know how much I'm spending.

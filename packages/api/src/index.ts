@@ -56,8 +56,8 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 25,
     pricingLabel: "$1.20 / 10 min",
     status: "available",
-    location: "Siam Square",
-    coordinates: { latitude: 13.7466, longitude: 100.5328 },
+    location: "Punnawithi Station",
+    coordinates: { latitude: 13.7182, longitude: 100.5468 },
     lastReportedAt: "2026-04-06T08:55:00Z"
   },
   {
@@ -68,8 +68,8 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 22,
     pricingLabel: "$0.90 / 10 min",
     status: "in_use",
-    location: "อโศก Interchange",
-    coordinates: { latitude: 13.7372, longitude: 100.5606 },
+    location: "Sukhumvit 101/1",
+    coordinates: { latitude: 13.7139, longitude: 100.5505 },
     lastReportedAt: "2026-04-06T08:56:00Z"
   },
   {
@@ -80,8 +80,8 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 20,
     pricingLabel: "$0.80 / 10 min",
     status: "available",
-    location: "Ari Soi 1",
-    coordinates: { latitude: 13.7797, longitude: 100.5446 },
+    location: "Bang Chak Market",
+    coordinates: { latitude: 13.7214, longitude: 100.5531 },
     lastReportedAt: "2026-04-06T08:58:00Z"
   },
   {
@@ -92,8 +92,8 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 20,
     pricingLabel: "$1.40 / 10 min",
     status: "available",
-    location: "Lumphini Park West Gate",
-    coordinates: { latitude: 13.7305, longitude: 100.5418 },
+    location: "Soi Wachiratham Sathit",
+    coordinates: { latitude: 13.7098, longitude: 100.5432 },
     lastReportedAt: "2026-04-06T08:57:00Z"
   },
   {
@@ -104,8 +104,8 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 23,
     pricingLabel: "$1.00 / 10 min",
     status: "available",
-    location: "Silom Complex",
-    coordinates: { latitude: 13.7286, longitude: 100.5345 },
+    location: "Bang Chak Station",
+    coordinates: { latitude: 13.7241, longitude: 100.5448 },
     lastReportedAt: "2026-04-06T08:54:00Z"
   },
   {
@@ -116,8 +116,8 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 25,
     pricingLabel: "$1.20 / 10 min",
     status: "available",
-    location: "Phrom Phong BTS",
-    coordinates: { latitude: 13.7301, longitude: 100.5697 },
+    location: "Sukhumvit 101",
+    coordinates: { latitude: 13.7161, longitude: 100.558 },
     lastReportedAt: "2026-04-06T08:59:00Z"
   }
 ];
@@ -125,7 +125,7 @@ export const mockBikes: readonly Bike[] = [
 export const mockNearbyBikesResult: NearbyBikesResult = {
   bikes: mockBikes,
   serverTime: "2026-04-06T09:00:00Z",
-  searchCenter: { latitude: 13.7563, longitude: 100.5018 }
+  searchCenter: { latitude: 13.7173889, longitude: 100.5471253 }
 };
 
 export const mockActiveRide: Ride = {

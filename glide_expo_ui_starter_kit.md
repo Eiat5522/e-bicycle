@@ -83,7 +83,7 @@ export const colors = {
   mapLand: "#EDE8DD",
   markerAvailable: "#0A7B53",
   markerReserved: "#FDBA10",
-  markerLowBattery: "#FE7E4F",
+  markerMaintenance: "#FE7E4F",
   markerSelected: "#111827",
   shadow: "#000000"
 } as const;
@@ -550,14 +550,14 @@ import { colors, radii, sizes, shadows } from "@/theme/tokens";
 
 interface BikeMarkerProps {
   readonly selected?: boolean;
-  readonly lowBattery?: boolean;
+  readonly maintenance?: boolean;
   readonly reserved?: boolean;
   readonly onPress: () => void;
 }
 
 export function BikeMarker({
   selected = false,
-  lowBattery = false,
+  maintenance = false,
   reserved = false,
   onPress
 }: BikeMarkerProps) {
@@ -565,8 +565,8 @@ export function BikeMarker({
     ? colors.markerSelected
     : reserved
       ? colors.markerReserved
-      : lowBattery
-        ? colors.markerLowBattery
+      : maintenance
+        ? colors.markerMaintenance
         : colors.markerAvailable;
 
   const size = selected ? sizes.markerSelected : sizes.marker;
@@ -687,11 +687,11 @@ export function BikeCard({
             {bike.location} · {distanceLabel ?? "Distance unavailable"}
           </AppText>
           <AppText variant="caption">
-            Range {formatDistanceKm(bike.estimatedRangeKm)} · Battery {bike.batteryLevel}%
+            Range {formatDistanceKm(bike.estimatedRangeKm)} · {bike.pricingLabel}
           </AppText>
         </View>
         <Chip
-          label={bike.status === "available" ? "Ready" : bike.status === "reserved" ? "Reserved" : "Low battery"}
+          label={bike.status === "available" ? "Ready" : bike.status === "reserved" ? "Reserved" : "Maintenance"}
           active={bike.status === "available"}
         />
       </View>
@@ -804,7 +804,7 @@ export function MapCanvas({
               <BikeMarker
                 selected={selected}
                 reserved={bike.status === "reserved"}
-                lowBattery={bike.batteryLevel < 25 || bike.status === "maintenance"}
+                maintenance={bike.status === "maintenance"}
                 onPress={() => onSelectBike(bike.id)}
               />
             </Marker>
@@ -892,7 +892,7 @@ export function MapCanvas({
               <BikeMarker
                 selected={selected}
                 reserved={bike.status === "reserved"}
-                lowBattery={bike.batteryLevel < 25 || bike.status === "maintenance"}
+                maintenance={bike.status === "maintenance"}
                 onPress={() => onSelectBike(bike.id)}
               />
               <AppText variant="label">{bike.model}</AppText>
@@ -1215,7 +1215,6 @@ export const mockNearbyBikes: NearbyBikesResult = {
       location: "Trafalgar Square",
       pricingLabel: "£0.33 / min",
       estimatedRangeKm: 64,
-      batteryLevel: 83,
       status: "available",
       coordinates: { latitude: 51.5081, longitude: -0.1281 }
     },
@@ -1225,7 +1224,6 @@ export const mockNearbyBikes: NearbyBikesResult = {
       location: "Covent Garden",
       pricingLabel: "£0.33 / min",
       estimatedRangeKm: 41,
-      batteryLevel: 44,
       status: "reserved",
       coordinates: { latitude: 51.5117, longitude: -0.124 }
     },
@@ -1235,7 +1233,6 @@ export const mockNearbyBikes: NearbyBikesResult = {
       location: "Charing Cross",
       pricingLabel: "£0.33 / min",
       estimatedRangeKm: 22,
-      batteryLevel: 18,
       status: "maintenance",
       coordinates: { latitude: 51.5075, longitude: -0.1246 }
     }
@@ -1283,4 +1280,3 @@ pnpm --filter @glide/mobile dev
 3. Add scan-to-unlock CTA block
 4. Add live ride state banner on top of the map
 5. Add pass selection screen linked from `PricingCard`
-

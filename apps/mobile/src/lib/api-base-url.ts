@@ -9,7 +9,7 @@ interface ApiBaseUrlOptions {
 }
 
 export function getApiBaseUrl({
-  hostUri = Constants.expoConfig?.hostUri ?? Constants.platform?.hostUri,
+  hostUri = getDefaultHostUri(),
   platformOS = Platform.OS
 }: ApiBaseUrlOptions = {}) {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
@@ -31,16 +31,31 @@ export function getApiBaseUrl({
   }
 }
 
+function getDefaultHostUri() {
+  return (
+    Constants.expoConfig?.hostUri ??
+    Constants.platform?.hostUri ??
+    Constants.linkingUri ??
+    Constants.experienceUrl
+  );
+}
+
 function getNativeLoopbackHostname(platformOS: typeof Platform.OS, hostUri?: string) {
+  const nativeDevServerHost = getNativeDevServerHost(hostUri);
+
+  if (nativeDevServerHost) {
+    return nativeDevServerHost;
+  }
+
   if (platformOS === "android") {
-    return getNativeDevServerHost(hostUri) ?? "10.0.2.2";
+    return "10.0.2.2";
   }
 
   if (platformOS === "ios") {
     return undefined;
   }
 
-  return getNativeDevServerHost(hostUri);
+  return undefined;
 }
 
 function getNativeDevServerHost(hostUri?: string) {

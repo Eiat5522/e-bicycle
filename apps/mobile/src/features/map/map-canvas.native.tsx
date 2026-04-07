@@ -1,12 +1,12 @@
-import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, View } from "react-native";
-import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
+import { useEffect, useMemo, useRef } from "react";
+import { View } from "react-native";
+import MapView, { Marker, PROVIDER_DEFAULT, type Region } from "react-native-maps";
 
 import type { Bike, Coordinates } from "@glide/shared";
 
-import { colors, radii, spacing } from "@/theme/tokens";
-
-import { getBikeMarkerColor, getBikeStatusLabel } from "./marker-colors";
+import { BikeMarker } from "@/components/bike/bike-marker";
+import { IconButton } from "@/components/ui/icon-button";
+import { colors, radii, shadows, spacing } from "@/theme/tokens";
 
 interface MapCanvasProps {
   readonly bikes: readonly Bike[];
@@ -17,68 +17,102 @@ interface MapCanvasProps {
   readonly onSelectBike: (bikeId: string) => void;
 }
 
-const DEFAULT_DELTA = {
-  latitudeDelta: 0.03,
-  longitudeDelta: 0.03
-} as const;
+const DEFAULT_REGION: Region = {
+  latitude: 51.5072,
+  longitude: -0.1276,
+  latitudeDelta: 0.018,
+  longitudeDelta: 0.018
+};
 
 export function MapCanvas({
   bikes,
-  bikeDistanceLabels,
   onRecenter,
   selectedBikeId,
   userCoordinates,
   onSelectBike
 }: MapCanvasProps) {
-  const initialCenter = userCoordinates ?? bikes[0]?.coordinates;
-  const initialRegion = initialCenter
-    ? {
-        ...initialCenter,
-        ...DEFAULT_DELTA
-      }
-    : undefined;
+  const mapRef = useRef<MapView | null>(null);
+  const selectedBike = useMemo(
+    () => bikes.find((bike) => bike.id === selectedBikeId),
+    [bikes, selectedBikeId]
+  );
+  const initialRegion = useMemo<Region>(() => {
+    if (selectedBike) {
+      return {
+        latitude: selectedBike.coordinates.latitude,
+        longitude: selectedBike.coordinates.longitude,
+        latitudeDelta: 0.018,
+        longitudeDelta: 0.018
+      };
+    }
+
+    if (userCoordinates) {
+      return {
+        latitude: userCoordinates.latitude,
+        longitude: userCoordinates.longitude,
+        latitudeDelta: 0.018,
+        longitudeDelta: 0.018
+      };
+    }
+
+    return DEFAULT_REGION;
+  }, [selectedBike, userCoordinates]);
+
+  useEffect(() => {
+    if (!mapRef.current) {
+      return;
+    }
+
+    mapRef.current.animateToRegion(initialRegion, 350);
+  }, [initialRegion]);
 
   return (
-    <View style={{ height: 460, overflow: "hidden", borderRadius: radii.large }}>
+    <View
+      style={{
+        flex: 1,
+        borderRadius: radii.xl,
+        overflow: "hidden",
+        backgroundColor: colors.surface,
+        ...shadows.floating
+      }}
+    >
       <MapView
+        ref={mapRef}
         accessibilityLabel="Nearby bike map"
         provider={PROVIDER_DEFAULT}
         style={{ flex: 1 }}
         showsUserLocation={Boolean(userCoordinates)}
         showsMyLocationButton={false}
-        {...(initialRegion ? { initialRegion } : {})}
+        initialRegion={initialRegion}
       >
         {bikes.map((bike) => (
           <Marker
             key={bike.id}
             coordinate={bike.coordinates}
             title={bike.model}
-            description={`${getBikeStatusLabel(bike.status)} • ${bike.location} • ${bikeDistanceLabels?.[bike.id] ?? "Distance unavailable"} • ${bike.pricingLabel}`}
-            pinColor={getBikeMarkerColor(bike.status, bike.id === selectedBikeId)}
+            description={`${bike.location} • ${bike.pricingLabel}`}
             onPress={() => onSelectBike(bike.id)}
-          />
+            tracksViewChanges={false}
+          >
+            <BikeMarker
+              selected={bike.id === selectedBikeId}
+              reserved={bike.status === "reserved"}
+              maintenance={bike.status === "maintenance"}
+              onPress={() => onSelectBike(bike.id)}
+            />
+          </Marker>
         ))}
       </MapView>
 
-      <Pressable
-        accessibilityLabel="Recenter map"
-        accessibilityRole="button"
-        onPress={onRecenter}
-        style={({ pressed }) => ({
+      <View
+        style={{
           position: "absolute",
           top: spacing.md,
-          right: spacing.md,
-          width: 48,
-          height: 48,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: colors.surface,
-          borderRadius: radii.pill,
-          opacity: pressed ? 0.8 : 1
-        })}
+          right: spacing.md
+        }}
       >
-        <MaterialIcons color={colors.text} name="my-location" size={22} />
-      </Pressable>
+        <IconButton icon="my-location" onPress={onRecenter} accessibilityLabel="Recenter map" />
+      </View>
     </View>
   );
 }

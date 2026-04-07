@@ -75,15 +75,17 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       user: session?.user ?? null,
       async signIn(email, password) {
         const supabase = getSupabaseClient();
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
           throw error;
         }
+
+        setSession(data.session);
       },
       async signUp({ email, firstName, password }) {
         const supabase = getSupabaseClient();
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -96,6 +98,12 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         if (error) {
           throw error;
         }
+
+        if (!data.session) {
+          throw new Error("Check your email to confirm your account before signing in.");
+        }
+
+        setSession(data.session);
       },
       async signOut() {
         const supabase = getSupabaseClient();
