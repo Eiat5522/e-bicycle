@@ -391,7 +391,7 @@ export function createHttpBikeService({
       });
 
       if (query.limit !== undefined) {
-        searchParams.set("limit", query.limit.toString());
+        searchParams.append("limit", query.limit.toString());
       }
 
       const response = await fetchImpl(

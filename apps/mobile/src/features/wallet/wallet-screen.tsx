@@ -62,7 +62,7 @@ const methodIcons: Record<PaymentMethod, string> = {
 const TOP_UP_AMOUNTS = [5, 10, 20, 50] as const;
 
 function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(() => resolve(undefined), ms));
 }
 
 function CardVisual({

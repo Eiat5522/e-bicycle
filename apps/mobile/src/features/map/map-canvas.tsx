@@ -1,12 +1,12 @@
-import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import type { Bike, Coordinates } from "@glide/shared";
 
+import { BikeMarker } from "@/components/bike/bike-marker";
 import { SurfaceCard } from "@/components/surface-card";
+import { AppText } from "@/components/ui/app-text";
+import { IconButton } from "@/components/ui/icon-button";
 import { colors, spacing } from "@/theme/tokens";
-
-import { getBikeMarkerColor, getBikeStatusLabel } from "./marker-colors";
 
 interface MapCanvasProps {
   readonly bikes: readonly Bike[];
@@ -26,56 +26,47 @@ export function MapCanvas({
   onSelectBike
 }: MapCanvasProps) {
   return (
-    <SurfaceCard tone="accent">
-      <View style={{ alignItems: "flex-end" }}>
-        <Pressable
-          accessibilityLabel="Recenter map"
-          accessibilityRole="button"
-          onPress={onRecenter}
-          style={({ pressed }) => ({
-            width: 48,
-            height: 48,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.surface,
-            borderRadius: 999,
-            opacity: pressed ? 0.8 : 1
-          })}
-        >
-          <MaterialIcons color={colors.text} name="my-location" size={22} />
-        </Pressable>
+    <SurfaceCard>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <AppText variant="h3">Nearby bikes</AppText>
+        <IconButton icon="my-location" onPress={onRecenter} accessibilityLabel="Recenter map" />
       </View>
-      <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-        Web builds keep a lightweight fallback. Current location:{" "}
+
+      <AppText variant="caption">
+        Web fallback · Current location:
         {userCoordinates
           ? `${userCoordinates.latitude.toFixed(4)}, ${userCoordinates.longitude.toFixed(4)}`
           : "unknown"}
-        . Nearby bikes loaded: {bikes.length}. Selected bike: {selectedBikeId ?? "none"}.
-      </Text>
-      <View accessibilityLabel="Map canvas fallback" style={{ gap: spacing.xs }}>
-        {bikes.map((bike) => (
-          <Pressable
-            key={bike.id}
-            accessibilityRole="button"
-            accessibilityLabel={`Select ${bike.model}`}
-            onPress={() => onSelectBike(bike.id)}
-          >
-            <Text
-              selectable
+      </AppText>
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
+        {bikes.map((bike) => {
+          const selected = bike.id === selectedBikeId;
+          return (
+            <Pressable
+              key={bike.id}
+              onPress={() => onSelectBike(bike.id)}
               style={{
-                color:
-                  bike.id === selectedBikeId
-                    ? colors.text
-                    : getBikeMarkerColor(bike.status, false),
-                fontSize: 15,
-                fontWeight: bike.id === selectedBikeId ? "700" : "500"
-              }}
-            >
-              {bike.model} · {getBikeStatusLabel(bike.status)} · {bike.location} ·{" "}
-              {bikeDistanceLabels?.[bike.id] ?? "Distance unavailable"}
-            </Text>
-          </Pressable>
-        ))}
+                minWidth: "47%",
+                padding: spacing.sm,
+                borderRadius: 16,
+                backgroundColor: selected ? colors.surfaceMuted : colors.surface,
+                borderWidth: 1,
+                borderColor: colors.outline,
+                gap: spacing.xs
+              }}>
+              <BikeMarker
+                selected={selected}
+                reserved={bike.status === "reserved"}
+                lowBattery={bike.status === "maintenance"}
+                onPress={() => onSelectBike(bike.id)}
+              />
+              <AppText variant="label">{bike.model}</AppText>
+              <AppText variant="caption">{bike.location}</AppText>
+              <AppText variant="caption">{bikeDistanceLabels?.[bike.id] ?? "Distance unavailable"}</AppText>
+            </Pressable>
+          );
+        })}
       </View>
     </SurfaceCard>
   );

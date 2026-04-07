@@ -2,16 +2,21 @@ import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AppState, ScrollView, Pressable, Text, View } from "react-native";
+import { AppState, View } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 
 import type { Coordinates, NearbyBikesResult } from "@glide/shared";
 import { formatDistanceKm } from "@glide/shared";
 
+import { BikeCard } from "@/components/bike/bike-card";
+import { Screen } from "@/components/layout/screen";
+import { Stack } from "@/components/layout/stack";
 import { PrimaryButton } from "@/components/primary-button";
 import { SurfaceCard } from "@/components/surface-card";
+import { AppText } from "@/components/ui/app-text";
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { configuredBikeService } from "@/lib/bike-service";
-import { colors, spacing } from "@/theme/tokens";
+import { spacing } from "@/theme/tokens";
 
 import { calculateDistanceKm, sortBikesByDistance } from "./bike-distance";
 import { MapCanvas } from "./map-canvas";
@@ -30,29 +35,23 @@ export function MapScreen() {
   const [userCoordinates, setUserCoordinates] = useState<Coordinates>();
   const [nearbyResult, setNearbyResult] = useState<NearbyBikesResult>();
   const [selectedBikeId, setSelectedBikeId] = useState<string>();
-  const [quickActionsBikeId, setQuickActionsBikeId] = useState<string>();
+  const [sheetVisible, setSheetVisible] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
-  const loadNearbyBikes = useCallback(
-    async (coordinates: Coordinates) => {
-      const result = await configuredBikeService.listNearby({
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        radiusMeters: DEFAULT_NEARBY_RADIUS_METERS,
-        limit: 50
-      });
+  const loadNearbyBikes = useCallback(async (coordinates: Coordinates) => {
+    const result = await configuredBikeService.listNearby({
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      radiusMeters: DEFAULT_NEARBY_RADIUS_METERS,
+      limit: 50
+    });
 
-      setNearbyResult(result);
-      setSelectedBikeId((currentId) => currentId ?? result.bikes[0]?.id);
-      setQuickActionsBikeId((currentId) =>
-        currentId && result.bikes.some((bike) => bike.id === currentId) ? currentId : undefined
-      );
-      setLoadState("ready");
-      setErrorMessage(undefined);
-      setRefreshError(undefined);
-    },
-    []
-  );
+    setNearbyResult(result);
+    setSelectedBikeId((currentId) => currentId ?? result.bikes[0]?.id);
+    setLoadState("ready");
+    setErrorMessage(undefined);
+    setRefreshError(undefined);
+  }, []);
 
   const requestLocationAndLoad = useCallback(async () => {
     setLoadState("loading");
@@ -80,9 +79,7 @@ export function MapScreen() {
     } catch (error) {
       setLoadState("error");
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "We could not determine your current location."
+        error instanceof Error ? error.message : "We could not determine your current location."
       );
       setRefreshError(undefined);
     }
@@ -102,8 +99,7 @@ export function MapScreen() {
 
     intervalRef.current = setInterval(() => {
       void loadNearbyBikes(userCoordinates).catch((error: unknown) => {
-        const message =
-          error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
+        const message = error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
 
         setErrorMessage(message);
 
@@ -127,8 +123,7 @@ export function MapScreen() {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active" && userCoordinates) {
         void loadNearbyBikes(userCoordinates).catch((error: unknown) => {
-          const message =
-            error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
+          const message = error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
 
           setErrorMessage(message);
 
@@ -147,14 +142,32 @@ export function MapScreen() {
     };
   }, [loadNearbyBikes, nearbyResult, userCoordinates]);
 
+  const sortedBikes = useMemo(
+    () => sortBikesByDistance(nearbyResult?.bikes ?? [], userCoordinates),
+    [nearbyResult?.bikes, userCoordinates]
+  );
+
+  const selectedBike = useMemo(
+    () => sortedBikes.find((bike) => bike.id === selectedBikeId) ?? sortedBikes[0],
+    [selectedBikeId, sortedBikes]
+  );
+
+  const bikeDistanceLabels = useMemo(() => {
+    if (!userCoordinates) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      sortedBikes.map((bike) => [
+        bike.id,
+        `${formatDistanceKm(calculateDistanceKm(userCoordinates, bike.coordinates))} away`
+      ])
+    );
+  }, [sortedBikes, userCoordinates]);
+
   const handleSelectBike = useCallback((bikeId: string) => {
     setSelectedBikeId(bikeId);
-    setQuickActionsBikeId((currentId) => (currentId === bikeId ? currentId : undefined));
-  }, []);
-
-  const handleOpenQuickActions = useCallback((bikeId: string) => {
-    setSelectedBikeId(bikeId);
-    setQuickActionsBikeId(bikeId);
+    setSheetVisible(true);
     void Haptics.selectionAsync();
   }, []);
 
@@ -177,179 +190,83 @@ export function MapScreen() {
     }
   }, [loadNearbyBikes]);
 
-  const sortedBikes = useMemo(
-    () => sortBikesByDistance(nearbyResult?.bikes ?? [], userCoordinates),
-    [nearbyResult?.bikes, userCoordinates]
-  );
-
-  const bikeDistanceLabels = useMemo(() => {
-    if (!userCoordinates) {
-      return {};
-    }
-
-    return Object.fromEntries(
-      sortedBikes.map((bike) => [
-        bike.id,
-        `${formatDistanceKm(calculateDistanceKm(userCoordinates, bike.coordinates))} away`
-      ])
-    );
-  }, [sortedBikes, userCoordinates]);
-
   return (
-    <ScrollView
-      contentContainerStyle={{
-        gap: spacing.lg,
-        paddingHorizontal: spacing.lg,
-        paddingTop: spacing.lg,
-        paddingBottom: spacing.xxl
-      }}
-      contentInsetAdjustmentBehavior="automatic"
-    >
-      {loadState === "loading" ? (
-        <SurfaceCard tone="accent">
-          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-            Finding your location
-          </Text>
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-            Glide is requesting location access and loading bikes within 1.5 km.
-          </Text>
-        </SurfaceCard>
-      ) : null}
+    <Screen>
+      <View style={{ flex: 1 }}>
+        {loadState === "loading" ? (
+          <View style={{ padding: spacing.md }}>
+            <SurfaceCard tone="muted">
+              <AppText variant="h3">Finding your location</AppText>
+              <AppText variant="body">
+                Glide is requesting location access and loading bikes within 1.5 km.
+              </AppText>
+            </SurfaceCard>
+          </View>
+        ) : null}
 
-      {loadState === "permission_denied" ? (
-        <SurfaceCard tone="accent">
-          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-            Location access is off
-          </Text>
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-            {errorMessage}
-          </Text>
-          <PrimaryButton label="Try Again" onPress={() => void requestLocationAndLoad()} />
-        </SurfaceCard>
-      ) : null}
-
-      {loadState === "error" ? (
-        <SurfaceCard tone="accent">
-          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-            We could not load nearby bikes
-          </Text>
-          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-            {errorMessage}
-          </Text>
-          <PrimaryButton label="Retry" onPress={() => void requestLocationAndLoad()} />
-        </SurfaceCard>
-      ) : null}
-
-      {loadState === "ready" ? (
-        <>
-          {refreshError ? (
+        {loadState === "permission_denied" ? (
+          <View style={{ padding: spacing.md }}>
             <SurfaceCard tone="accent">
-              <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
-                Refresh paused
-              </Text>
-              <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-                {refreshError}
-              </Text>
-              <PrimaryButton
-                label="Dismiss"
-                onPress={() => setRefreshError(undefined)}
-                variant="secondary"
-              />
+              <Stack gap={spacing.sm}>
+                <AppText variant="h3">Location access is off</AppText>
+                <AppText variant="body">{errorMessage}</AppText>
+                <PrimaryButton label="Try Again" onPress={() => void requestLocationAndLoad()} />
+              </Stack>
             </SurfaceCard>
-          ) : null}
+          </View>
+        ) : null}
 
-          <MapCanvas
-            bikes={sortedBikes}
-            bikeDistanceLabels={bikeDistanceLabels}
-            onRecenter={() => void handleRecenterToCurrentLocation()}
-            selectedBikeId={selectedBikeId}
-            userCoordinates={userCoordinates}
-            onSelectBike={handleSelectBike}
-          />
-
-          {sortedBikes.length ? (
-            <View style={{ gap: spacing.md }}>
-              <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-                {nearbyResult?.serverTime
-                  ? `Updated ${new Date(nearbyResult.serverTime).toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit"
-                    })}`
-                  : "Last updated: Unknown"}
-              </Text>
-
-              {sortedBikes.map((bike) => (
-                <Pressable
-                  key={bike.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select ${bike.model}`}
-                  onLongPress={() => handleOpenQuickActions(bike.id)}
-                  onPress={() => handleSelectBike(bike.id)}
-                >
-                  <SurfaceCard tone={bike.id === selectedBikeId ? "accent" : "default"}>
-                    <Text
-                      selectable
-                      style={{ color: colors.text, fontSize: 18, fontWeight: "700" }}
-                    >
-                      {bike.model}
-                    </Text>
-                    <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                      {bike.location} · {bike.pricingLabel}
-                    </Text>
-                    <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                      {bikeDistanceLabels[bike.id] ?? "Distance unavailable"} · Range{" "}
-                      {formatDistanceKm(bike.estimatedRangeKm)} · Status {bike.status}
-                    </Text>
-
-                    {bike.id === selectedBikeId ? (
-                      <View style={{ gap: spacing.sm, marginTop: spacing.xs }}>
-                        {quickActionsBikeId === bike.id ? (
-                          <SurfaceCard tone="muted">
-                            <Text
-                              selectable
-                              style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}
-                            >
-                              Quick actions
-                            </Text>
-                            <PrimaryButton
-                              label="View Details"
-                              onPress={() => router.push(`/bike/${bike.id}`)}
-                              variant="secondary"
-                            />
-                            <PrimaryButton
-                              label="Unlock and Ride"
-                              onPress={() => router.push(`/unlock/${bike.id}`)}
-                            />
-                            <PrimaryButton
-                              label="Need Help?"
-                              onPress={() => router.push("/help")}
-                              variant="secondary"
-                            />
-                          </SurfaceCard>
-                        ) : (
-                          <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-                            Long press this card for quick actions.
-                          </Text>
-                        )}
-                      </View>
-                    ) : null}
-                  </SurfaceCard>
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            <SurfaceCard>
-              <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-                No bikes nearby right now
-              </Text>
-              <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-                Try refreshing in a moment or moving to a busier pickup area.
-              </Text>
-              <PrimaryButton label="Refresh Nearby Bikes" onPress={() => void requestLocationAndLoad()} />
+        {loadState === "error" ? (
+          <View style={{ padding: spacing.md }}>
+            <SurfaceCard tone="accent">
+              <Stack gap={spacing.sm}>
+                <AppText variant="h3">We could not load nearby bikes</AppText>
+                <AppText variant="body">{errorMessage}</AppText>
+                <PrimaryButton label="Retry" onPress={() => void requestLocationAndLoad()} />
+              </Stack>
             </SurfaceCard>
-          )}
-        </>
-      ) : null}
-    </ScrollView>
+          </View>
+        ) : null}
+
+        {loadState === "ready" ? (
+          <>
+            <MapCanvas
+              bikes={sortedBikes}
+              bikeDistanceLabels={bikeDistanceLabels}
+              onRecenter={() => void handleRecenterToCurrentLocation()}
+              selectedBikeId={selectedBikeId}
+              userCoordinates={userCoordinates}
+              onSelectBike={handleSelectBike}
+            />
+
+            <BottomSheet
+              visible={sheetVisible && Boolean(selectedBike)}
+              title={selectedBike ? `${selectedBike.model}` : "Bike details"}
+              onClose={() => setSheetVisible(false)}>
+              {refreshError ? (
+                <SurfaceCard tone="muted">
+                  <AppText variant="label">Refresh paused</AppText>
+                  <AppText variant="body">{refreshError}</AppText>
+                </SurfaceCard>
+              ) : null}
+
+              {selectedBike ? (
+                <BikeCard
+                  bike={selectedBike}
+                  {...(bikeDistanceLabels[selectedBike.id]
+                    ? { distanceLabel: bikeDistanceLabels[selectedBike.id] }
+                    : {})}
+                  selected
+                  onRentNow={() => router.push(`/unlock/${selectedBike.id}`)}
+                  onHelp={() => router.push("/help")}
+                  onRing={() => void Haptics.selectionAsync()}
+                  onDamage={() => router.push(`/bike/${selectedBike.id}`)}
+                />
+              ) : null}
+            </BottomSheet>
+          </>
+        ) : null}
+      </View>
+    </Screen>
   );
 }
