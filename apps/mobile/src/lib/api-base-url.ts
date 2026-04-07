@@ -3,7 +3,15 @@ import { Platform } from "react-native";
 
 const localHostnames = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
 
-export function getApiBaseUrl() {
+interface ApiBaseUrlOptions {
+  readonly hostUri?: string;
+  readonly platformOS?: typeof Platform.OS;
+}
+
+export function getApiBaseUrl({
+  hostUri = Constants.expoConfig?.hostUri ?? Constants.platform?.hostUri,
+  platformOS = Platform.OS
+}: ApiBaseUrlOptions = {}) {
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 
   if (!apiBaseUrl) {
@@ -13,8 +21,8 @@ export function getApiBaseUrl() {
   try {
     const url = new URL(apiBaseUrl);
 
-    if (Platform.OS !== "web" && localHostnames.has(url.hostname)) {
-      url.hostname = getNativeDevServerHost() ?? (Platform.OS === "android" ? "10.0.2.2" : "localhost");
+    if (platformOS !== "web" && localHostnames.has(url.hostname)) {
+      url.hostname = getNativeLoopbackHostname(platformOS, hostUri) ?? url.hostname;
     }
 
     return removeTrailingSlash(url.toString());
@@ -23,8 +31,19 @@ export function getApiBaseUrl() {
   }
 }
 
-function getNativeDevServerHost() {
-  const hostUri = Constants.expoConfig?.hostUri ?? Constants.platform?.hostUri;
+function getNativeLoopbackHostname(platformOS: typeof Platform.OS, hostUri?: string) {
+  if (platformOS === "android") {
+    return getNativeDevServerHost(hostUri) ?? "10.0.2.2";
+  }
+
+  if (platformOS === "ios") {
+    return undefined;
+  }
+
+  return getNativeDevServerHost(hostUri);
+}
+
+function getNativeDevServerHost(hostUri?: string) {
   const hostname = hostUri ? parseHostname(hostUri) : undefined;
 
   return hostname && !localHostnames.has(hostname) ? hostname : undefined;
