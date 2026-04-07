@@ -9,11 +9,19 @@ let database: ReturnType<typeof drizzle<typeof schema>> | undefined;
 function getDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL?.trim();
 
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is required for database access.");
+  if (databaseUrl && !databaseUrl.includes("replace-with")) {
+    return databaseUrl;
   }
 
-  return databaseUrl;
+  const supabaseDatabasePassword = process.env.SUPABASE_DATABASE_PASSWORD?.trim();
+
+  if (supabaseDatabasePassword) {
+    return `postgresql://postgres:${encodeURIComponent(
+      supabaseDatabasePassword
+    )}@db.lcqxsopihpwhbvwrttvw.supabase.co:5432/postgres?sslmode=require`;
+  }
+
+  throw new Error("DATABASE_URL or SUPABASE_DATABASE_PASSWORD is required for database access.");
 }
 
 export function getDb() {

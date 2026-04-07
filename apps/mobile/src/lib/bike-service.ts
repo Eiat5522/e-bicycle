@@ -1,8 +1,9 @@
 import { bikeService, createHttpBikeService, type BikeService } from "@glide/api";
 
+import { getApiBaseUrl } from "./api-base-url";
 import { getMobileAccessToken } from "./supabase";
 
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+const apiBaseUrl = getApiBaseUrl();
 
 export const configuredBikeService: BikeService =
   apiBaseUrl && apiBaseUrl.length > 0

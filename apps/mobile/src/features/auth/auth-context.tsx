@@ -1,7 +1,7 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { useRouter, useSegments } from "expo-router";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { AppState } from "react-native";
+import { AppState, Platform } from "react-native";
 
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -49,6 +49,10 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+
     const subscription = AppState.addEventListener("change", (state) => {
       const supabase = getSupabaseClient();
 
