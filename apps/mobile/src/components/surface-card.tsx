@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { View } from "react-native";
 
-import { colors, radii, spacing } from "@/theme/tokens";
+import { borderWidths, colors, radii, shadows, spacing } from "@/theme/tokens";
 
 interface SurfaceCardProps {
   readonly children: ReactNode;
@@ -23,10 +23,12 @@ export function SurfaceCard({
     <View
       style={{
         backgroundColor,
-        borderCurve: "continuous",
+        borderColor: colors.shadow,
         borderRadius: radii.large,
+        borderWidth: borderWidths.thick,
         gap: spacing.sm,
-        padding: spacing.lg
+        padding: spacing.lg,
+        ...shadows.card
       }}>
       {children}
     </View>

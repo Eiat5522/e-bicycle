@@ -4,7 +4,7 @@ import { Pressable, Text, View } from "react-native";
 import type { Bike, Coordinates } from "@glide/shared";
 
 import { SurfaceCard } from "@/components/surface-card";
-import { colors, spacing } from "@/theme/tokens";
+import { borderWidths, colors, shadows, spacing, typography } from "@/theme/tokens";
 
 import { getBikeMarkerColor, getBikeStatusLabel } from "./marker-colors";
 
@@ -33,19 +33,23 @@ export function MapCanvas({
           accessibilityRole="button"
           onPress={onRecenter}
           style={({ pressed }) => ({
-            width: 48,
-            height: 48,
             alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.surface,
+            backgroundColor: colors.tealBright,
+            borderColor: colors.shadow,
             borderRadius: 999,
-            opacity: pressed ? 0.8 : 1
+            borderWidth: borderWidths.thick,
+            height: 48,
+            justifyContent: "center",
+            opacity: 1,
+            transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
+            width: 48,
+            ...(pressed ? shadows.pressed : shadows.floating)
           })}
         >
           <MaterialIcons color={colors.text} name="my-location" size={22} />
         </Pressable>
       </View>
-      <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+      <Text selectable style={{ ...typography.body, color: colors.textMuted }}>
         Web builds keep a lightweight fallback. Current location:{" "}
         {userCoordinates
           ? `${userCoordinates.latitude.toFixed(4)}, ${userCoordinates.longitude.toFixed(4)}`
@@ -63,12 +67,12 @@ export function MapCanvas({
             <Text
               selectable
               style={{
+                ...typography.bodyStrong,
                 color:
                   bike.id === selectedBikeId
                     ? colors.text
                     : getBikeMarkerColor(bike.status, false),
-                fontSize: 15,
-                fontWeight: bike.id === selectedBikeId ? "700" : "500"
+                fontFamily: bike.id === selectedBikeId ? typography.label.fontFamily : typography.bodyStrong.fontFamily
               }}
             >
               {bike.model} · {getBikeStatusLabel(bike.status)} · {bike.location} ·{" "}

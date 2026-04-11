@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -9,14 +10,21 @@ import {
   View
 } from "react-native";
 
-import { mockWallet } from "@glide/api";
 import { formatCurrency } from "@glide/shared";
-import type { WalletTransaction } from "@glide/shared";
+import type { Wallet } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
-import { colors, radii, spacing } from "@/theme/tokens";
+import { configuredWalletService } from "@/lib/wallet-service";
+import {
+  borderWidths,
+  colors,
+  radii,
+  shadows,
+  spacing,
+  typography
+} from "@/theme/tokens";
 
 const isTestEnvironment = process.env.NODE_ENV === "test";
 
@@ -53,16 +61,22 @@ const methodLabels: Record<PaymentMethod, string> = {
   voucher: "Gift Voucher"
 };
 
-const methodIcons: Record<PaymentMethod, string> = {
-  card: "💳",
-  mobile_pay: "📱",
-  voucher: "🎁"
-};
-
 const TOP_UP_AMOUNTS = [5, 10, 20, 50] as const;
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function PaymentMethodIcon({ method }: { readonly method: PaymentMethod }) {
+  if (method === "card") {
+    return <MaterialCommunityIcons color={colors.text} name="credit-card-outline" size={24} />;
+  }
+
+  if (method === "mobile_pay") {
+    return <MaterialCommunityIcons color={colors.text} name="cellphone-nfc" size={24} />;
+  }
+
+  return <MaterialCommunityIcons color={colors.text} name="ticket-percent-outline" size={24} />;
 }
 
 function CardVisual({
@@ -220,9 +234,7 @@ function CardVisual({
             justifyContent: "center",
             width: 64
           }}>
-          <Text selectable style={{ color: colors.surface, fontSize: 24, fontWeight: "800" }}>
-            📱
-          </Text>
+          <MaterialCommunityIcons color={colors.surface} name="cellphone-nfc" size={28} />
         </View>
         <Text
           selectable
@@ -276,9 +288,7 @@ function CardVisual({
           justifyContent: "center",
           width: 140
         }}>
-        <Text selectable style={{ color: colors.surface, fontSize: 28, fontWeight: "800" }}>
-          🎁
-        </Text>
+        <MaterialCommunityIcons color={colors.surface} name="ticket-percent-outline" size={32} />
       </View>
       <Text
         selectable
@@ -295,25 +305,28 @@ function CardVisual({
 }
 
 function TransactionIcon({ type }: { readonly type: string }) {
-  const iconMap: Record<string, string> = {
-    topup: "💰",
-    ride: "🚲",
-    refund: "↩️",
-    bonus: "🎉"
-  };
+  const iconName =
+    type === "top_up"
+      ? "wallet-plus-outline"
+      : type === "ride"
+        ? "bike-fast"
+        : type === "refund"
+          ? "backup-restore"
+          : "star-four-points-outline";
+
   return (
     <View
       style={{
         alignItems: "center",
         backgroundColor: colors.surfaceMuted,
+        borderColor: colors.shadow,
         borderRadius: radii.medium,
+        borderWidth: borderWidths.thin,
         height: 40,
         justifyContent: "center",
         width: 40
       }}>
-      <Text selectable style={{ fontSize: 18 }}>
-        {iconMap[type] ?? "💵"}
-      </Text>
+      <MaterialCommunityIcons color={colors.text} name={iconName} size={20} />
     </View>
   );
 }
@@ -328,9 +341,9 @@ export function WalletScreen() {
   const modalOpacity = useRef(new Animated.Value(0)).current;
   const balanceScale = useRef(new Animated.Value(1)).current;
 
-  const [balance, setBalance] = useState(mockWallet.balance);
-  const [points, setPoints] = useState(mockWallet.points);
-  const [transactions, setTransactions] = useState(mockWallet.transactions);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
+  const [isWalletLoading, setIsWalletLoading] = useState(true);
   const [topUp, setTopUp] = useState<TopUpState>({ status: "idle", amount: null, method: null });
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
@@ -340,6 +353,40 @@ export function WalletScreen() {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadWallet() {
+      try {
+        setIsWalletLoading(true);
+        const nextWallet = await configuredWalletService.getWallet();
+
+        if (!isActive) {
+          return;
+        }
+
+        setWallet(nextWallet);
+        setWalletError(null);
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setWalletError(error instanceof Error ? error.message : "Unable to load wallet.");
+      } finally {
+        if (isActive) {
+          setIsWalletLoading(false);
+        }
+      }
+    }
+
+    void loadWallet();
+
+    return () => {
+      isActive = false;
     };
   }, []);
 
@@ -443,19 +490,30 @@ export function WalletScreen() {
     const isSuccess = method !== "voucher" || voucherCode.length >= 6;
 
     if (isSuccess) {
-      setTopUp({ status: "success", amount, method });
-      setBalance((prev) => prev + amount);
-      setPoints((prev) => prev + Math.floor(amount * 10));
+      try {
+        const nextWallet = await configuredWalletService.applyTopUp({
+          amount,
+          methodLabel: methodLabels[method],
+          title: method === "voucher" ? "Voucher Credit" : "Wallet Top-up"
+        });
 
-      const newTransaction: WalletTransaction = {
-        id: `txn_${Date.now()}`,
-        title: method === "voucher" ? "Voucher Credit" : "Wallet Top-up",
-        subtitle: `Via ${methodLabels[method]}`,
-        amount,
-        type: "top_up",
-        timestamp: new Date().toISOString()
-      };
-      setTransactions((prev) => [newTransaction, ...prev]);
+        if (!isMountedRef.current || runIdRef.current !== runId) return;
+
+        setWallet(nextWallet);
+        setWalletError(null);
+        setTopUp({ status: "success", amount, method });
+      } catch (error) {
+        if (!isMountedRef.current || runIdRef.current !== runId) return;
+
+        setTopUp({
+          status: "failed",
+          amount,
+          method,
+          error: error instanceof Error ? error.message : "Unable to process your top-up."
+        });
+
+        return;
+      }
 
       animateBalance();
 
@@ -514,12 +572,37 @@ export function WalletScreen() {
     topUp.status === "processing"
       ? (topUp.method === "voucher" ? VOUCHER_STEPS : PAYMENT_STEPS)[topUp.stepIndex]
       : null;
+  const balance = wallet?.balance ?? 0;
+  const points = wallet?.points ?? 0;
+  const transactions = wallet?.transactions ?? [];
 
   return (
     <>
       <ScreenShell
         title="Wallet"
         description="Top up your balance, redeem vouchers, and track your ride spending — all in one place.">
+        {isWalletLoading ? (
+          <SurfaceCard tone="accent">
+            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+              Loading wallet
+            </Text>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+              Fetching your latest balance and wallet activity.
+            </Text>
+          </SurfaceCard>
+        ) : null}
+
+        {walletError ? (
+          <SurfaceCard tone="accent">
+            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+              Wallet unavailable
+            </Text>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+              {walletError}
+            </Text>
+          </SurfaceCard>
+        ) : null}
+
         <Animated.View style={{ transform: [{ scale: balanceScale }] }}>
           <SurfaceCard tone="accent">
             <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
@@ -559,26 +642,27 @@ export function WalletScreen() {
                   disabled={isProcessing}
                   onPress={() => setSelectedAmount(amount)}
                   style={({ pressed }) => ({
-                    flex: 1,
-                    alignItems: "center",
-                    backgroundColor:
-                      selectedAmount === amount ? colors.coral : colors.surface,
-                    borderColor: selectedAmount === amount ? colors.coral : colors.outline,
-                    borderCurve: "continuous",
-                    borderRadius: radii.medium,
-                    borderWidth: 2,
-                    opacity: isProcessing ? 0.5 : pressed ? 0.7 : 1,
-                    padding: spacing.md
-                  })}>
+                     flex: 1,
+                     alignItems: "center",
+                     backgroundColor:
+                       selectedAmount === amount ? colors.coral : colors.surface,
+                     borderColor: colors.shadow,
+                     borderRadius: radii.medium,
+                     borderWidth: borderWidths.thick,
+                     opacity: isProcessing ? 0.5 : 1,
+                     padding: spacing.md,
+                     transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
+                     ...(pressed ? shadows.pressed : shadows.floating)
+                   })}>
                   <Text
                     selectable
                     style={{
-                      color: selectedAmount === amount ? colors.surface : colors.text,
-                      fontSize: 16,
-                      fontWeight: "700"
-                    }}>
-                    {formatCurrency(amount)}
-                  </Text>
+                       ...typography.bodyStrong,
+                       color: colors.text,
+                       fontFamily: typography.button.fontFamily
+                     }}>
+                     {formatCurrency(amount)}
+                   </Text>
                 </Pressable>
               ))}
             </View>
@@ -597,24 +681,23 @@ export function WalletScreen() {
                   disabled={isProcessing}
                   onPress={() => setSelectedMethod(method)}
                   style={({ pressed }) => ({
-                    alignItems: "center",
-                    backgroundColor:
-                      selectedMethod === method ? colors.yellow : colors.surface,
-                    borderColor: selectedMethod === method ? colors.coral : colors.outline,
-                    borderCurve: "continuous",
-                    borderRadius: radii.large,
-                    borderWidth: 1,
-                    flexDirection: "row",
-                    gap: spacing.md,
-                    opacity: isProcessing ? 0.5 : pressed ? 0.7 : 1,
-                    padding: spacing.lg
-                  })}>
-                  <Text selectable style={{ fontSize: 24 }}>
-                    {methodIcons[method]}
-                  </Text>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      selectable
+                     alignItems: "center",
+                     backgroundColor:
+                       selectedMethod === method ? colors.yellow : colors.surface,
+                     borderColor: colors.shadow,
+                     borderRadius: radii.large,
+                     borderWidth: borderWidths.thick,
+                     flexDirection: "row",
+                     gap: spacing.md,
+                     opacity: isProcessing ? 0.5 : 1,
+                     padding: spacing.lg,
+                     transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
+                     ...(pressed ? shadows.pressed : shadows.floating)
+                   })}>
+                   <PaymentMethodIcon method={method} />
+                   <View style={{ flex: 1 }}>
+                     <Text
+                       selectable
                       style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
                       {methodLabels[method]}
                     </Text>
@@ -627,17 +710,17 @@ export function WalletScreen() {
                     </Text>
                   </View>
                   <View
-                    style={{
-                      borderColor: selectedMethod === method ? colors.coral : colors.outline,
-                      borderRadius: radii.pill,
-                      borderWidth: 2,
-                      height: 22,
-                      width: 22
-                    }}>
+                     style={{
+                       borderColor: colors.shadow,
+                       borderRadius: radii.pill,
+                       borderWidth: borderWidths.thin,
+                       height: 22,
+                       width: 22
+                     }}>
                     {selectedMethod === method && (
                       <View
                         style={{
-                          backgroundColor: colors.coral,
+                          backgroundColor: colors.coralDark,
                           borderRadius: radii.pill,
                           height: 14,
                           margin: 2,
@@ -660,12 +743,12 @@ export function WalletScreen() {
               <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
                 {currentStep.label}
               </Text>
-              <View
-                style={{
-                  backgroundColor: "rgba(45, 47, 47, 0.12)",
-                  borderRadius: radii.pill,
-                  height: 10,
-                  marginVertical: spacing.sm,
+                <View
+                  style={{
+                    backgroundColor: "rgba(23, 23, 23, 0.12)",
+                    borderRadius: radii.pill,
+                    height: 10,
+                    marginVertical: spacing.sm,
                   overflow: "hidden"
                 }}>
                 <View
@@ -716,6 +799,8 @@ export function WalletScreen() {
               label="Top up now"
               onPress={startTopUpFlow}
               disabled={
+                isWalletLoading ||
+                walletError !== null ||
                 isProcessing ||
                 selectedAmount === null ||
                 selectedMethod === null
@@ -773,17 +858,17 @@ export function WalletScreen() {
           style={({ pressed }) => ({
             alignItems: "center",
             backgroundColor: colors.surfaceMuted,
-            borderCurve: "continuous",
+            borderColor: colors.shadow,
             borderRadius: radii.medium,
+            borderWidth: borderWidths.thick,
             flexDirection: "row",
             gap: spacing.md,
             justifyContent: "center",
-            opacity: pressed ? 0.7 : 1,
-            padding: spacing.md
+            padding: spacing.md,
+            transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
+            ...(pressed ? shadows.pressed : shadows.floating)
           })}>
-          <Text selectable style={{ fontSize: 18 }}>
-            🚲
-          </Text>
+          <MaterialCommunityIcons color={colors.text} name="bike-fast" size={20} />
           <Text
             selectable
             style={{ color: colors.teal, fontSize: 15, fontWeight: "600" }}>
@@ -871,7 +956,7 @@ export function WalletScreen() {
                       fontWeight: "800",
                       textAlign: "center"
                     }}>
-                    🎉 Payment successful!
+                    Payment successful!
                   </Text>
                   <Text
                     selectable

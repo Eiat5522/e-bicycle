@@ -1,6 +1,19 @@
-import { Pressable, Text, type GestureResponderEvent } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  type GestureResponderEvent,
+  type ViewStyle
+} from "react-native";
 
-import { colors, radii, spacing } from "@/theme/tokens";
+import {
+  borderWidths,
+  colors,
+  radii,
+  shadows,
+  spacing,
+  typography
+} from "@/theme/tokens";
 
 interface PrimaryButtonProps {
   readonly label: string;
@@ -22,24 +35,47 @@ export function PrimaryButton({
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: isPrimary ? colors.coral : colors.surfaceStrong,
-        borderCurve: "continuous",
-        borderRadius: radii.pill,
-        paddingHorizontal: spacing.lg,
-        paddingVertical: spacing.md,
-        opacity: disabled ? 0.45 : pressed ? 0.7 : 1
-      })}>
+      style={({ pressed }) => [
+        styles.base,
+        isPrimary ? styles.primary : styles.secondary,
+        disabled ? styles.disabled : null,
+        pressed ? styles.pressed : null,
+        pressed ? shadows.pressed : shadows.button
+      ]}>
       <Text
-        selectable
-        style={{
-          color: isPrimary ? colors.surface : colors.text,
-          fontSize: 16,
-          fontWeight: "700",
-          textAlign: "center"
-        }}>
+        style={styles.label}>
         {label}
       </Text>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    alignItems: "center",
+    borderColor: colors.shadow,
+    borderRadius: radii.pill,
+    borderWidth: borderWidths.thick,
+    justifyContent: "center",
+    minHeight: 56,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md
+  },
+  primary: {
+    backgroundColor: colors.coral
+  },
+  secondary: {
+    backgroundColor: colors.tealBright
+  },
+  disabled: {
+    opacity: 0.5
+  },
+  pressed: {
+    transform: [{ translateX: 3 }, { translateY: 3 }]
+  } satisfies ViewStyle,
+  label: {
+    ...typography.button,
+    color: colors.text,
+    textAlign: "center"
+  }
+});

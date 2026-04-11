@@ -5,6 +5,7 @@ const createJestConfig = nextJest({
 });
 
 const customJestConfig = {
+  watchman: false,
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@glide/api$": "<rootDir>/../../packages/api/src/index.ts",

@@ -1,19 +1,85 @@
+import { SpaceGrotesk_400Regular, SpaceGrotesk_500Medium, SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
+import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
+import { useEffect } from "react";
+import { ActivityIndicator, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { colors } from "@/theme/tokens";
+import { AuthGate } from "@/features/auth/auth-gate";
+import { AuthProvider, useAuth } from "@/features/auth/auth-provider";
+import { colors, fontFamilies } from "@/theme/tokens";
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_700Bold
+  });
+
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(colors.background);
+  }, []);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
+  // If fonts failed to load, continue with system fonts as fallback
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="dark" />
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+function RootNavigator() {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: colors.background,
+          flex: 1,
+          gap: 16,
+          justifyContent: "center",
+          paddingHorizontal: 24
+        }}>
+        <ActivityIndicator color={colors.coralDark} size="large" />
+        <Text
+          selectable
+          style={{
+            color: colors.textMuted,
+            fontFamily: fontFamilies.medium,
+            fontSize: 16,
+            textAlign: "center"
+          }}>
+          Restoring your rider session...
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <AuthGate>
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: colors.background },
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: {
+            color: colors.text,
+            fontFamily: fontFamilies.bold,
+            fontSize: 18
+          }
         }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -28,6 +94,6 @@ export default function RootLayout() {
         <Stack.Screen name="ride/summary" options={{ title: "Ride Summary" }} />
         <Stack.Screen name="help/index" options={{ title: "Support" }} />
       </Stack>
-    </GestureHandlerRootView>
+    </AuthGate>
   );
 }

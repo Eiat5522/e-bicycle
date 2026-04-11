@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
-import { mockRideHistory, mockUser } from "@glide/api";
+import { mockRideHistory } from "@glide/api";
 import { formatCurrency, formatDistanceKm } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
@@ -9,21 +9,26 @@ import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
 import { colors, spacing } from "@/theme/tokens";
 
+import { useAuth } from "../auth/auth-provider";
 import { formatRideDate, formatRideDurationLabel } from "../ride/ride-history-formatters";
 
 export function ProfileScreen() {
   const router = useRouter();
+  const { profile, signOut, user } = useAuth();
+  const riderName = profile?.firstName ?? "Rider";
+  const email = user?.email ?? "No email available";
 
   return (
     <ScreenShell
-      title={mockUser.firstName}
-      description="Profile, settings, and support entry points are scaffolded here without coupling them to backend auth yet.">
+      title={riderName}
+      description="Manage your rider account, view ride history, and access support options.">
       <SurfaceCard>
         <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-          {mockUser.email}
+          {email}
         </Text>
         <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-          Notifications, payment methods, and ride preferences will live in this feature area.
+          Notifications, payment methods, and ride preferences can keep expanding from this
+          profile area without changing the auth flow.
         </Text>
       </SurfaceCard>
 
@@ -83,6 +88,7 @@ export function ProfileScreen() {
           onPress={() => router.push("/(tabs)/wallet")}
           variant="secondary"
         />
+        <PrimaryButton label="Sign Out" onPress={() => void signOut()} variant="secondary" />
       </View>
     </ScreenShell>
   );

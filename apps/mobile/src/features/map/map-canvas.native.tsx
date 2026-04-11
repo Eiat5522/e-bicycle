@@ -4,7 +4,7 @@ import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 
 import type { Bike, Coordinates } from "@glide/shared";
 
-import { colors, radii, spacing } from "@/theme/tokens";
+import { borderWidths, colors, radii, shadows, spacing } from "@/theme/tokens";
 
 import { getBikeMarkerColor, getBikeStatusLabel } from "./marker-colors";
 
@@ -39,7 +39,15 @@ export function MapCanvas({
     : undefined;
 
   return (
-    <View style={{ height: 460, overflow: "hidden", borderRadius: radii.large }}>
+    <View
+      style={{
+        borderColor: colors.shadow,
+        borderRadius: radii.large,
+        borderWidth: borderWidths.thick,
+        height: 460,
+        overflow: "hidden",
+        ...shadows.card
+      }}>
       <MapView
         accessibilityLabel="Nearby bike map"
         provider={PROVIDER_DEFAULT}
@@ -65,16 +73,19 @@ export function MapCanvas({
         accessibilityRole="button"
         onPress={onRecenter}
         style={({ pressed }) => ({
-          position: "absolute",
-          top: spacing.md,
-          right: spacing.md,
-          width: 48,
-          height: 48,
           alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: colors.surface,
+          backgroundColor: colors.tealBright,
+          borderColor: colors.shadow,
           borderRadius: radii.pill,
-          opacity: pressed ? 0.8 : 1
+          borderWidth: borderWidths.thick,
+          height: 48,
+          justifyContent: "center",
+          position: "absolute",
+          right: spacing.md,
+          top: spacing.md,
+          transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
+          width: 48,
+          ...(pressed ? shadows.pressed : shadows.floating)
         })}
       >
         <MaterialIcons color={colors.text} name="my-location" size={22} />
