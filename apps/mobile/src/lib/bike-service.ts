@@ -6,6 +6,8 @@ import { hasSupabaseConfig, supabase } from "./supabase";
 import type { Database } from "./supabase.types";
 
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+const recoverableNetworkMessagePattern =
+  /network request timed out|network request failed|failed to fetch|fetch failed|timed out/i;
 
 type BikeRow = Database["public"]["Tables"]["bikes"]["Row"];
 
@@ -104,9 +106,45 @@ function createSupabaseBikeService(): BikeService {
   };
 }
 
-export const configuredBikeService: BikeService =
+function shouldFallbackToMockBikes(error: unknown) {
+  return error instanceof Error && recoverableNetworkMessagePattern.test(error.message);
+}
+
+function createResilientBikeService(primaryService: BikeService): BikeService {
+  return {
+    async listNearby(query) {
+      try {
+        return await primaryService.listNearby(query);
+      } catch (error) {
+        if (!shouldFallbackToMockBikes(error)) {
+          throw error;
+        }
+
+        return bikeService.listNearby(query);
+      }
+    },
+    async getById(id) {
+      try {
+        return await primaryService.getById(id);
+      } catch (error) {
+        if (!shouldFallbackToMockBikes(error)) {
+          throw error;
+        }
+
+        return bikeService.getById(id);
+      }
+    }
+  };
+}
+
+const primaryBikeService: BikeService =
   apiBaseUrl && apiBaseUrl.length > 0
     ? createHttpBikeService({ baseUrl: apiBaseUrl })
     : hasSupabaseConfig
       ? createSupabaseBikeService()
       : bikeService;
+
+export const configuredBikeService: BikeService =
+  primaryBikeService === bikeService
+    ? bikeService
+    : createResilientBikeService(primaryBikeService);

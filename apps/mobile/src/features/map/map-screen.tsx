@@ -18,6 +18,10 @@ import { MapCanvas } from "./map-canvas";
 
 export const DEFAULT_NEARBY_RADIUS_METERS = 1500;
 export const MAP_POLL_INTERVAL_MS = 15000;
+export const DEFAULT_MAP_COORDINATES = {
+  latitude: 13.7563,
+  longitude: 100.5018
+} as const;
 
 type LoadState = "loading" | "ready" | "permission_denied" | "error";
 
@@ -67,16 +71,41 @@ export function MapScreen() {
     }
 
     try {
-      const position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced
-      });
-      const coordinates = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude
-      };
+      let coordinates: Coordinates;
+      let fallbackMessage: string | undefined;
+
+      try {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced
+        });
+
+        coordinates = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+      } catch {
+        const lastKnownPosition = await Location.getLastKnownPositionAsync();
+
+        if (lastKnownPosition) {
+          coordinates = {
+            latitude: lastKnownPosition.coords.latitude,
+            longitude: lastKnownPosition.coords.longitude
+          };
+          fallbackMessage =
+            "Live location timed out. Showing bikes near your last known position.";
+        } else {
+          coordinates = DEFAULT_MAP_COORDINATES;
+          fallbackMessage =
+            "Live location timed out. Showing bikes near central Bangkok for now.";
+        }
+      }
 
       setUserCoordinates(coordinates);
       await loadNearbyBikes(coordinates);
+
+      if (fallbackMessage) {
+        setRefreshError(fallbackMessage);
+      }
     } catch (error) {
       setLoadState("error");
       setErrorMessage(
@@ -160,16 +189,41 @@ export function MapScreen() {
 
   const handleRecenterToCurrentLocation = useCallback(async () => {
     try {
-      const position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced
-      });
-      const coordinates = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude
-      };
+      let coordinates: Coordinates;
+      let fallbackMessage: string | undefined;
+
+      try {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced
+        });
+
+        coordinates = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+      } catch {
+        const lastKnownPosition = await Location.getLastKnownPositionAsync();
+
+        if (lastKnownPosition) {
+          coordinates = {
+            latitude: lastKnownPosition.coords.latitude,
+            longitude: lastKnownPosition.coords.longitude
+          };
+          fallbackMessage =
+            "Live location timed out. Recentered to your last known position instead.";
+        } else {
+          coordinates = DEFAULT_MAP_COORDINATES;
+          fallbackMessage =
+            "Live location timed out. Recentered to central Bangkok instead.";
+        }
+      }
 
       setUserCoordinates(coordinates);
       await loadNearbyBikes(coordinates);
+
+      if (fallbackMessage) {
+        setRefreshError(fallbackMessage);
+      }
     } catch (error) {
       setRefreshError(
         error instanceof Error ? error.message : "Unable to recenter to your current location."

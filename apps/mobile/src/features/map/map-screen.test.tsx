@@ -23,6 +23,7 @@ jest.mock("expo-location", () => ({
     Balanced: "balanced"
   },
   getCurrentPositionAsync: jest.fn(),
+  getLastKnownPositionAsync: jest.fn(),
   requestForegroundPermissionsAsync: jest.fn()
 }));
 
@@ -46,6 +47,7 @@ describe("MapScreen", () => {
     Location.requestForegroundPermissionsAsync
   );
   const getCurrentPositionAsync = jest.mocked(Location.getCurrentPositionAsync);
+  const getLastKnownPositionAsync = jest.mocked(Location.getLastKnownPositionAsync);
   const selectionAsync = jest.mocked(Haptics.selectionAsync);
   const push = jest.fn();
   let consoleErrorSpy: jest.SpyInstance;
@@ -63,6 +65,7 @@ describe("MapScreen", () => {
         longitude: -122.4194
       }
     } as Location.LocationObject);
+    getLastKnownPositionAsync.mockResolvedValue(null);
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     listNearby.mockResolvedValue({
       bikes: [
@@ -109,6 +112,27 @@ describe("MapScreen", () => {
       radiusMeters: 1500,
       limit: 50
     });
+  });
+
+  it("falls back to the default map coordinates when live location times out", async () => {
+    getCurrentPositionAsync.mockRejectedValue(new Error("Network request timed out"));
+
+    await renderScreen();
+
+    await waitFor(() => {
+      expect(screen.getByText("Glide Pro X")).toBeTruthy();
+      expect(screen.getByText("Refresh paused")).toBeTruthy();
+    });
+
+    expect(listNearby).toHaveBeenCalledWith({
+      latitude: 13.7563,
+      longitude: 100.5018,
+      radiusMeters: 1500,
+      limit: 50
+    });
+    expect(
+      screen.getByText("Live location timed out. Showing bikes near central Bangkok for now.")
+    ).toBeTruthy();
   });
 
   it("passes available and in-use bikes to the map canvas", async () => {

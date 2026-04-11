@@ -111,4 +111,43 @@ describe("configuredBikeService", () => {
       })
     );
   });
+
+  it("falls back to the mock bike list when Supabase times out", async () => {
+    const order = jest.fn().mockResolvedValue({
+      data: null,
+      error: {
+        message: "Network request timed out"
+      }
+    });
+    const select = jest.fn(() => ({
+      order
+    }));
+    const from = jest.fn(() => ({
+      select
+    }));
+
+    jest.doMock("./supabase", () => ({
+      hasSupabaseConfig: true,
+      supabase: {
+        from
+      }
+    }));
+
+    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const result = await configuredBikeService.listNearby({
+      latitude: 13.7563,
+      longitude: 100.5018,
+      radiusMeters: 1500,
+      limit: 10
+    });
+
+    expect(result.bikes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "G-104",
+          model: "Glide Pro X"
+        })
+      ])
+    );
+  });
 });

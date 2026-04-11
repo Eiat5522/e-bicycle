@@ -63,6 +63,41 @@ const methodLabels: Record<PaymentMethod, string> = {
 
 const TOP_UP_AMOUNTS = [5, 10, 20, 50] as const;
 
+const pressedStyle = {
+  transform: [{ translateX: 2 }, { translateY: 2 }]
+} as const;
+
+const amountButtonBaseStyle = {
+  flex: 1,
+  alignItems: "center",
+  borderColor: colors.shadow,
+  borderRadius: radii.medium,
+  borderWidth: borderWidths.thick,
+  padding: spacing.md
+} as const;
+
+const paymentMethodButtonBaseStyle = {
+  alignItems: "center",
+  borderColor: colors.shadow,
+  borderRadius: radii.large,
+  borderWidth: borderWidths.thick,
+  flexDirection: "row",
+  gap: spacing.md,
+  padding: spacing.lg
+} as const;
+
+const unlockButtonBaseStyle = {
+  alignItems: "center",
+  backgroundColor: colors.surfaceMuted,
+  borderColor: colors.shadow,
+  borderRadius: radii.medium,
+  borderWidth: borderWidths.thick,
+  flexDirection: "row",
+  gap: spacing.md,
+  justifyContent: "center",
+  padding: spacing.md
+} as const;
+
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -641,19 +676,16 @@ export function WalletScreen() {
                   accessibilityLabel={`Select ${formatCurrency(amount)}`}
                   disabled={isProcessing}
                   onPress={() => setSelectedAmount(amount)}
-                  style={({ pressed }) => ({
-                     flex: 1,
-                     alignItems: "center",
-                     backgroundColor:
-                       selectedAmount === amount ? colors.coral : colors.surface,
-                     borderColor: colors.shadow,
-                     borderRadius: radii.medium,
-                     borderWidth: borderWidths.thick,
-                     opacity: isProcessing ? 0.5 : 1,
-                     padding: spacing.md,
-                     transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
-                     ...(pressed ? shadows.pressed : shadows.floating)
-                   })}>
+                  style={({ pressed }) => [
+                    amountButtonBaseStyle,
+                    {
+                      backgroundColor:
+                        selectedAmount === amount ? colors.coral : colors.surface,
+                      opacity: isProcessing ? 0.5 : 1
+                    },
+                    pressed ? pressedStyle : shadows.floating,
+                    pressed ? shadows.pressed : undefined
+                  ]}>
                   <Text
                     selectable
                     style={{
@@ -680,20 +712,16 @@ export function WalletScreen() {
                   accessibilityLabel={`Select ${methodLabels[method]}`}
                   disabled={isProcessing}
                   onPress={() => setSelectedMethod(method)}
-                  style={({ pressed }) => ({
-                     alignItems: "center",
-                     backgroundColor:
-                       selectedMethod === method ? colors.yellow : colors.surface,
-                     borderColor: colors.shadow,
-                     borderRadius: radii.large,
-                     borderWidth: borderWidths.thick,
-                     flexDirection: "row",
-                     gap: spacing.md,
-                     opacity: isProcessing ? 0.5 : 1,
-                     padding: spacing.lg,
-                     transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
-                     ...(pressed ? shadows.pressed : shadows.floating)
-                   })}>
+                  style={({ pressed }) => [
+                    paymentMethodButtonBaseStyle,
+                    {
+                      backgroundColor:
+                        selectedMethod === method ? colors.yellow : colors.surface,
+                      opacity: isProcessing ? 0.5 : 1
+                    },
+                    pressed ? pressedStyle : shadows.floating,
+                    pressed ? shadows.pressed : undefined
+                  ]}>
                    <PaymentMethodIcon method={method} />
                    <View style={{ flex: 1 }}>
                      <Text
@@ -855,19 +883,11 @@ export function WalletScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push({ pathname: "/unlock/[id]", params: { id: "DEMO-BIKE" } })}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            backgroundColor: colors.surfaceMuted,
-            borderColor: colors.shadow,
-            borderRadius: radii.medium,
-            borderWidth: borderWidths.thick,
-            flexDirection: "row",
-            gap: spacing.md,
-            justifyContent: "center",
-            padding: spacing.md,
-            transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
-            ...(pressed ? shadows.pressed : shadows.floating)
-          })}>
+          style={({ pressed }) => [
+            unlockButtonBaseStyle,
+            pressed ? pressedStyle : shadows.floating,
+            pressed ? shadows.pressed : undefined
+          ]}>
           <MaterialCommunityIcons color={colors.text} name="bike-fast" size={20} />
           <Text
             selectable
