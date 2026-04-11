@@ -16,6 +16,8 @@ apps/mobile/web-build/
 apps/web/.next/
 apps/web/out/
 
+supabase/.temp/
+
 ios/
 android/
 apps/mobile/ios/
