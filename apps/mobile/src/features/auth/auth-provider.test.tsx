@@ -8,10 +8,17 @@ const mockOnAuthStateChange = jest.fn();
 const mockSignInWithPassword = jest.fn();
 const mockSignUp = jest.fn();
 const mockSignOut = jest.fn();
+const mockSetSession = jest.fn();
 const mockFrom = jest.fn();
 const mockSelect = jest.fn();
 const mockEq = jest.fn();
 const mockMaybeSingle = jest.fn();
+const mockUpdate = jest.fn();
+const mockUpdateEq = jest.fn();
+const mockUpdateSelect = jest.fn();
+const mockUpdateSingle = jest.fn();
+
+let latestAuth: ReturnType<typeof useAuth> | undefined;
 
 let authStateChangeCallback:
   | ((event: string, session: { user: { id: string; email: string } } | null) => void)
@@ -25,14 +32,24 @@ jest.mock("@/lib/supabase", () => ({
       onAuthStateChange: (...args: unknown[]) => mockOnAuthStateChange(...args),
       signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
       signUp: (...args: unknown[]) => mockSignUp(...args),
-      signOut: (...args: unknown[]) => mockSignOut(...args)
+      signOut: (...args: unknown[]) => mockSignOut(...args),
+      setSession: (...args: unknown[]) => mockSetSession(...args)
     },
     from: (...args: unknown[]) => mockFrom(...args)
   }
 }));
 
+jest.mock("expo-linking", () => ({
+  addEventListener: jest.fn(() => ({
+    remove: jest.fn()
+  })),
+  createURL: jest.fn(() => "exp://127.0.0.1:8081/--/callback"),
+  getInitialURL: jest.fn(() => Promise.resolve(null))
+}));
+
 function AuthProbe() {
-  const { isLoading, profile, session, user } = useAuth();
+  latestAuth = useAuth();
+  const { isLoading, profile, session, user } = latestAuth;
 
   return (
     <>
@@ -87,12 +104,42 @@ describe("AuthProvider", () => {
       maybeSingle: mockMaybeSingle
     });
 
+    mockUpdateSingle.mockResolvedValue({
+      data: {
+        id: "user-1",
+        first_name: "Taylor",
+        created_at: "2026-04-11T00:00:00Z",
+        updated_at: "2026-04-11T01:00:00Z"
+      },
+      error: null
+    });
+
+    mockUpdateSelect.mockReturnValue({
+      single: mockUpdateSingle
+    });
+
+    mockUpdateEq.mockReturnValue({
+      select: mockUpdateSelect
+    });
+
+    mockUpdate.mockReturnValue({
+      eq: mockUpdateEq
+    });
+
     mockSelect.mockReturnValue({
       eq: mockEq
     });
 
+    mockSetSession.mockResolvedValue({
+      data: {
+        session: null
+      },
+      error: null
+    });
+
     mockFrom.mockReturnValue({
-      select: mockSelect
+      select: mockSelect,
+      update: mockUpdate
     });
   });
 
@@ -131,5 +178,55 @@ describe("AuthProvider", () => {
     expect(screen.getByText("no-session")).toBeTruthy();
     expect(screen.getByText("no-email")).toBeTruthy();
     expect(screen.getByText("no-profile")).toBeTruthy();
+  });
+
+  it("updates the display name and refreshes the in-memory profile", async () => {
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Alex")).toBeTruthy();
+    });
+
+    await act(async () => {
+      await latestAuth?.updateDisplayName("Taylor");
+    });
+
+    expect(mockFrom).toHaveBeenCalledWith("profiles");
+    expect(mockUpdate).toHaveBeenCalledWith({ first_name: "Taylor" });
+    expect(mockUpdateEq).toHaveBeenCalledWith("id", "user-1");
+    expect(screen.getByText("Taylor")).toBeTruthy();
+  });
+
+  it("includes a native redirect URL when signing up", async () => {
+    mockSignUp.mockResolvedValueOnce({ error: null });
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ready")).toBeTruthy();
+    });
+
+    await act(async () => {
+      await latestAuth?.signUp("Alex", "Alex@RideGlide.App ", "secret-pass");
+    });
+
+    expect(mockSignUp).toHaveBeenCalledWith({
+      email: "alex@rideglide.app",
+      password: "secret-pass",
+      options: {
+        emailRedirectTo: "exp://127.0.0.1:8081/--/callback",
+        data: {
+          first_name: "Alex"
+        }
+      }
+    });
   });
 });

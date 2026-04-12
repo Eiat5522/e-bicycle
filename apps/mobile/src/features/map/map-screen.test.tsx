@@ -1,5 +1,4 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 
@@ -31,14 +30,19 @@ jest.mock("@react-navigation/native", () => ({
   useIsFocused: jest.fn(() => true)
 }));
 
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: jest.fn(() => ({
+    top: 44,
+    right: 0,
+    bottom: 0,
+    left: 0
+  }))
+}));
+
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn()
   }))
-}));
-
-jest.mock("expo-haptics", () => ({
-  selectionAsync: jest.fn()
 }));
 
 describe("MapScreen", () => {
@@ -48,7 +52,6 @@ describe("MapScreen", () => {
   );
   const getCurrentPositionAsync = jest.mocked(Location.getCurrentPositionAsync);
   const getLastKnownPositionAsync = jest.mocked(Location.getLastKnownPositionAsync);
-  const selectionAsync = jest.mocked(Haptics.selectionAsync);
   const push = jest.fn();
   let consoleErrorSpy: jest.SpyInstance;
 
@@ -96,15 +99,19 @@ describe("MapScreen", () => {
     render(<MapScreen />);
   }
 
-  it("requests location and renders the selected nearby bike", async () => {
+  async function waitForMapCanvas() {
+    await waitFor(() => {
+      expect(jest.mocked(MapCanvas)).toHaveBeenCalled();
+    });
+  }
+
+  it("requests location and renders the full-screen map", async () => {
     await renderScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText("Glide Pro X")).toBeTruthy();
-    });
+    await waitForMapCanvas();
 
     expect(screen.queryByText("View Details")).toBeNull();
-    expect(screen.getByText("Long press this card for quick actions.")).toBeTruthy();
+    expect(screen.queryByText("Tap a marker to see bike actions")).toBeNull();
 
     expect(listNearby).toHaveBeenCalledWith({
       latitude: 37.7749,
@@ -119,8 +126,8 @@ describe("MapScreen", () => {
 
     await renderScreen();
 
+    await waitForMapCanvas();
     await waitFor(() => {
-      expect(screen.getByText("Glide Pro X")).toBeTruthy();
       expect(screen.getByText("Refresh paused")).toBeTruthy();
     });
 
@@ -168,9 +175,7 @@ describe("MapScreen", () => {
 
     await renderScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText("Glide Pro X")).toBeTruthy();
-    });
+    await waitForMapCanvas();
 
     const mapCanvasMock = jest.mocked(MapCanvas);
     const latestCall = mapCanvasMock.mock.calls.at(-1);
@@ -187,7 +192,7 @@ describe("MapScreen", () => {
     });
   });
 
-  it("renders cards for all nearby bikes below the map", async () => {
+  it("removes the instruction card and keeps bike details in the drawer flow", async () => {
     listNearby.mockResolvedValue({
       bikes: [
         {
@@ -232,13 +237,10 @@ describe("MapScreen", () => {
 
     await renderScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText("Glide Pro X")).toBeTruthy();
-      expect(screen.getByText("Glide City")).toBeTruthy();
-      expect(screen.getByText("Glide Lite")).toBeTruthy();
-    });
+    await waitForMapCanvas();
 
-    expect(screen.getAllByText(/km away/).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Glide City")).toBeNull();
+    expect(screen.queryByText("Tap a marker to see bike actions")).toBeNull();
   });
 
   it("sorts bikes by distance from the current user location", async () => {
@@ -292,9 +294,7 @@ describe("MapScreen", () => {
 
     await renderScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText("Glide Street+")).toBeTruthy();
-    });
+    await waitForMapCanvas();
 
     const mapCanvasMock = jest.mocked(MapCanvas);
     const latestCall = mapCanvasMock.mock.calls.at(-1);
@@ -303,7 +303,7 @@ describe("MapScreen", () => {
     expect(orderedIds).toEqual(["G-104", "G-318", "G-620"]);
   });
 
-  it("selects a card without navigating and shows actions for the selected bike", async () => {
+  it("opens the bottom drawer when a marker is pressed", async () => {
     listNearby.mockResolvedValue({
       bikes: [
         {
@@ -336,68 +336,24 @@ describe("MapScreen", () => {
 
     await renderScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText("Glide City")).toBeTruthy();
-    });
-
-    fireEvent.press(screen.getByLabelText("Select Glide City"));
-
-    expect(push).not.toHaveBeenCalled();
-    expect(screen.queryByText("View Details")).toBeNull();
-    expect(screen.getByText("Long press this card for quick actions.")).toBeTruthy();
-  });
-
-  it("lets marker selection drive the selected card", async () => {
-    listNearby.mockResolvedValue({
-      bikes: [
-        {
-          id: "G-104",
-          model: "Glide Pro X",
-          rideClass: "Pro",
-          estimatedRangeKm: 45,
-          topSpeedKmh: 25,
-          pricingLabel: "$1.20 / 10 min",
-          status: "available",
-          location: "Siam Square",
-          coordinates: { latitude: 13.7466, longitude: 100.5328 },
-          lastReportedAt: "2026-04-06T08:55:00Z"
-        },
-        {
-          id: "G-205",
-          model: "Glide City",
-          rideClass: "City",
-          estimatedRangeKm: 31,
-          topSpeedKmh: 22,
-          pricingLabel: "$0.90 / 10 min",
-          status: "in_use",
-          location: "อโศก Interchange",
-          coordinates: { latitude: 13.7372, longitude: 100.5606 },
-          lastReportedAt: "2026-04-06T08:56:00Z"
-        }
-      ],
-      serverTime: "2026-04-06T09:00:00Z"
-    });
-
-    await renderScreen();
-
-    await waitFor(() => {
-      expect(screen.getByText("Glide City")).toBeTruthy();
-    });
+    await waitForMapCanvas();
 
     const mapCanvasMock = jest.mocked(MapCanvas);
-    const selectBikeFromMap = mapCanvasMock.mock.calls.at(-1)?.[0].onSelectBike;
+    const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
-    expect(selectBikeFromMap).toBeDefined();
+    expect(pressMarker).toBeDefined();
 
     act(() => {
-      selectBikeFromMap?.("G-205");
+      pressMarker?.("G-205");
     });
 
-    expect(screen.queryByText("View Details")).toBeNull();
-    expect(screen.getByText("Long press this card for quick actions.")).toBeTruthy();
+    expect(screen.getByText("View Details")).toBeTruthy();
+    expect(screen.getByText("Unlock and Ride")).toBeTruthy();
+    expect(screen.getByText("Need Help?")).toBeTruthy();
+    expect(screen.getByText("G-205 · อโศก Interchange")).toBeTruthy();
   });
 
-  it("opens quick actions on long press and routes from explicit actions", async () => {
+  it("dismisses the marker drawer without affecting the selected card", async () => {
     listNearby.mockResolvedValue({
       bikes: [
         {
@@ -430,22 +386,78 @@ describe("MapScreen", () => {
 
     await renderScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText("Glide City")).toBeTruthy();
+    await waitForMapCanvas();
+
+    const mapCanvasMock = jest.mocked(MapCanvas);
+    const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
+
+    act(() => {
+      pressMarker?.("G-205");
     });
 
-    fireEvent(screen.getByLabelText("Select Glide City"), "longPress");
+    expect(screen.getByText("G-205 · อโศก Interchange")).toBeTruthy();
 
-    expect(selectionAsync).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Quick actions")).toBeTruthy();
-    expect(screen.getByText("View Details")).toBeTruthy();
-    expect(screen.queryByText("Hide Quick Actions")).toBeNull();
+    fireEvent.press(screen.getByLabelText("Dismiss bike drawer"));
+
+    expect(screen.queryByText("G-205 · อโศก Interchange")).toBeNull();
+    expect(screen.queryByText("Tap a marker to see bike actions")).toBeNull();
+  });
+
+  it("routes from the marker drawer actions", async () => {
+    listNearby.mockResolvedValue({
+      bikes: [
+        {
+          id: "G-104",
+          model: "Glide Pro X",
+          rideClass: "Pro",
+          estimatedRangeKm: 45,
+          topSpeedKmh: 25,
+          pricingLabel: "$1.20 / 10 min",
+          status: "available",
+          location: "Siam Square",
+          coordinates: { latitude: 13.7466, longitude: 100.5328 },
+          lastReportedAt: "2026-04-06T08:55:00Z"
+        },
+        {
+          id: "G-205",
+          model: "Glide City",
+          rideClass: "City",
+          estimatedRangeKm: 31,
+          topSpeedKmh: 22,
+          pricingLabel: "$0.90 / 10 min",
+          status: "in_use",
+          location: "อโศก Interchange",
+          coordinates: { latitude: 13.7372, longitude: 100.5606 },
+          lastReportedAt: "2026-04-06T08:56:00Z"
+        }
+      ],
+      serverTime: "2026-04-06T09:00:00Z"
+    });
+
+    await renderScreen();
+
+    await waitForMapCanvas();
+
+    const mapCanvasMock = jest.mocked(MapCanvas);
+    const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
+
+    act(() => {
+      pressMarker?.("G-205");
+    });
 
     fireEvent.press(screen.getByText("Unlock and Ride"));
     expect(push).toHaveBeenCalledWith("/unlock/G-205");
 
+    act(() => {
+      pressMarker?.("G-205");
+    });
+
     fireEvent.press(screen.getByText("Need Help?"));
     expect(push).toHaveBeenCalledWith("/help");
+
+    act(() => {
+      pressMarker?.("G-205");
+    });
 
     fireEvent.press(screen.getByText("View Details"));
     expect(push).toHaveBeenCalledWith("/bike/G-205");
@@ -523,9 +535,7 @@ describe("MapScreen", () => {
 
     await renderScreen();
 
-    await waitFor(() => {
-      expect(screen.getByText("Glide Pro X")).toBeTruthy();
-    });
+    await waitForMapCanvas();
 
     await act(async () => {
       jest.advanceTimersByTime(MAP_POLL_INTERVAL_MS);
@@ -535,6 +545,6 @@ describe("MapScreen", () => {
       expect(screen.getByText("Refresh paused")).toBeTruthy();
     });
 
-    expect(screen.getByText("Glide Pro X")).toBeTruthy();
+    expect(screen.queryByText("Tap a marker to see bike actions")).toBeNull();
   });
 });

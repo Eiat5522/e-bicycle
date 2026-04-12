@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -329,9 +330,7 @@ function MethodVisual({
           justifyContent: "center",
           width: 72
         }}>
-        <Text selectable style={{ color: colors.surface, fontSize: 28, fontWeight: "800" }}>
-          BT
-        </Text>
+        <MaterialCommunityIcons color={colors.surface} name="bluetooth" size={34} />
       </View>
       <Text
         selectable

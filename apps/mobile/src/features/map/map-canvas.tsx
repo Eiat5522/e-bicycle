@@ -14,7 +14,7 @@ interface MapCanvasProps {
   readonly onRecenter: () => void;
   readonly selectedBikeId: string | undefined;
   readonly userCoordinates: Coordinates | undefined;
-  readonly onSelectBike: (bikeId: string) => void;
+  readonly onPressMarker: (bikeId: string) => void;
 }
 
 export function MapCanvas({
@@ -23,7 +23,7 @@ export function MapCanvas({
   onRecenter,
   selectedBikeId,
   userCoordinates,
-  onSelectBike
+  onPressMarker
 }: MapCanvasProps) {
   return (
     <SurfaceCard tone="accent">
@@ -62,7 +62,7 @@ export function MapCanvas({
             key={bike.id}
             accessibilityRole="button"
             accessibilityLabel={`Select ${bike.model}`}
-            onPress={() => onSelectBike(bike.id)}
+            onPress={() => onPressMarker(bike.id)}
           >
             <Text
               selectable

@@ -1,9 +1,19 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode
+} from "react";
+import * as Linking from "expo-linking";
+import { Platform } from "react-native";
 
 import type { Session, User } from "@supabase/supabase-js";
 
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
-import type { Profile } from "@/lib/supabase.types";
+import type { Database, Profile } from "@/lib/supabase.types";
 
 interface AuthContextValue {
   readonly session: Session | null;
@@ -15,12 +25,16 @@ interface AuthContextValue {
   signUp(firstName: string, email: string, password: string): Promise<void>;
   signOut(): Promise<void>;
   refreshProfile(): Promise<void>;
+  updateDisplayName(displayName: string): Promise<void>;
 }
 
 const missingConfigMessage =
   "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+
+const nativeEmailRedirectPath = "callback";
 
 function normalizeError(error: unknown, fallbackMessage: string) {
   if (error instanceof Error && error.message.length > 0) {
@@ -30,18 +44,62 @@ function normalizeError(error: unknown, fallbackMessage: string) {
   return new Error(fallbackMessage);
 }
 
-function mapProfileRow(row: {
-  id: string;
-  first_name: string;
-  created_at: string;
-  updated_at: string;
-}): Profile {
+function mapProfileRow(row: ProfileRow): Profile {
   return {
     id: row.id,
     firstName: row.first_name,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+function getEmailRedirectUrl() {
+  if (Platform.OS === "web") {
+    return undefined;
+  }
+
+  return Linking.createURL(nativeEmailRedirectPath);
+}
+
+function getSessionTokensFromUrl(url: string) {
+  try {
+    const parsedUrl = new URL(url);
+    const hashParams = new URLSearchParams(parsedUrl.hash.startsWith("#") ? parsedUrl.hash.slice(1) : "");
+    const queryParams = parsedUrl.searchParams;
+    const accessToken = hashParams.get("access_token") ?? queryParams.get("access_token");
+    const refreshToken = hashParams.get("refresh_token") ?? queryParams.get("refresh_token");
+
+    if (!accessToken || !refreshToken) {
+      return null;
+    }
+
+    return {
+      accessToken,
+      refreshToken
+    };
+  } catch (error) {
+    console.warn("Failed to parse auth redirect URL", error);
+    return null;
+  }
+}
+
+async function restoreSessionFromUrl(url: string) {
+  const tokens = getSessionTokensFromUrl(url);
+
+  if (!tokens) {
+    return false;
+  }
+
+  const { error } = await supabase.auth.setSession({
+    access_token: tokens.accessToken,
+    refresh_token: tokens.refreshToken
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
 }
 
 async function fetchProfile(userId: string) {
@@ -78,9 +136,24 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       }
 
       try {
-        const {
+        let {
           data: { session: currentSession }
         } = await supabase.auth.getSession();
+
+        if (Platform.OS !== "web" && !currentSession) {
+          const initialUrl = await Linking.getInitialURL();
+
+          if (initialUrl) {
+            await restoreSessionFromUrl(initialUrl);
+
+            const {
+              data: { session: restoredSession }
+            } = await supabase.auth.getSession();
+
+            currentSession = restoredSession;
+          }
+        }
+
         const nextProfile = currentSession?.user ? await fetchProfile(currentSession.user.id) : null;
 
         if (!isMounted) {
@@ -134,13 +207,23 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         });
     });
 
+    const nativeLinkSubscription =
+      Platform.OS === "web"
+        ? null
+        : Linking.addEventListener("url", ({ url }) => {
+            void restoreSessionFromUrl(url).catch((error) => {
+              console.warn("Failed to restore Supabase session from deep link", error);
+            });
+          });
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      nativeLinkSubscription?.remove();
     };
   }, []);
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     if (!hasSupabaseConfig) {
       throw new Error(missingConfigMessage);
     }
@@ -155,9 +238,9 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     } catch (error) {
       throw normalizeError(error, "Unable to refresh profile.");
     }
-  }
+  }, [user]);
 
-  async function signIn(email: string, password: string) {
+  const signIn = useCallback(async (email: string, password: string) => {
     if (!hasSupabaseConfig) {
       throw new Error(missingConfigMessage);
     }
@@ -171,20 +254,22 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     if (error) {
       throw normalizeError(error, "Unable to sign in.");
     }
-  }
+  }, []);
 
-  async function signUp(firstName: string, email: string, password: string) {
+  const signUp = useCallback(async (firstName: string, email: string, password: string) => {
     if (!hasSupabaseConfig) {
       throw new Error(missingConfigMessage);
     }
 
     const trimmedEmail = email.trim().toLowerCase();
     const normalizedFirstName = firstName.trim();
+    const emailRedirectTo = getEmailRedirectUrl();
 
     const { error } = await supabase.auth.signUp({
       email: trimmedEmail,
       password,
       options: {
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
         data: {
           first_name: normalizedFirstName
         }
@@ -194,9 +279,9 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     if (error) {
       throw normalizeError(error, "Unable to create your account.");
     }
-  }
+  }, []);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     if (!hasSupabaseConfig) {
       throw new Error(missingConfigMessage);
     }
@@ -206,7 +291,39 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     if (error) {
       throw normalizeError(error, "Unable to sign out.");
     }
-  }
+  }, []);
+
+  const updateDisplayName = useCallback(
+    async (displayName: string) => {
+      if (!hasSupabaseConfig) {
+        throw new Error(missingConfigMessage);
+      }
+
+      if (!user) {
+        throw new Error("You need to sign in before updating your display name.");
+      }
+
+      const normalizedDisplayName = displayName.trim();
+
+      if (!normalizedDisplayName) {
+        throw new Error("Enter a display name.");
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({ first_name: normalizedDisplayName })
+        .eq("id", user.id)
+        .select("id, first_name, created_at, updated_at")
+        .single();
+
+      if (error) {
+        throw normalizeError(error, "Unable to update your display name.");
+      }
+
+      setProfile(mapProfileRow(data));
+    },
+    [user]
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -218,9 +335,10 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       signIn,
       signUp,
       signOut,
-      refreshProfile
+      refreshProfile,
+      updateDisplayName
     }),
-    [isLoading, profile, session, user]
+    [isLoading, profile, refreshProfile, session, signIn, signOut, signUp, updateDisplayName, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

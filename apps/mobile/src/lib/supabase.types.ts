@@ -1,5 +1,8 @@
 export interface Database {
   public: {
+    Views: {
+      [_ in never]: never;
+    };
     Functions: {
       apply_wallet_top_up: {
         Args: {
@@ -135,6 +138,12 @@ export interface Database {
         };
         Relationships: [];
       };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

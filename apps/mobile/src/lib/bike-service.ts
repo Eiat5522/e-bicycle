@@ -6,6 +6,7 @@ import { hasSupabaseConfig, supabase } from "./supabase";
 import type { Database } from "./supabase.types";
 
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+const bikeDataSource = process.env.EXPO_PUBLIC_BIKE_DATA_SOURCE?.trim()?.toLowerCase();
 const recoverableNetworkMessagePattern =
   /network request timed out|network request failed|failed to fetch|fetch failed|timed out/i;
 
@@ -137,12 +138,33 @@ function createResilientBikeService(primaryService: BikeService): BikeService {
   };
 }
 
-const primaryBikeService: BikeService =
-  apiBaseUrl && apiBaseUrl.length > 0
-    ? createHttpBikeService({ baseUrl: apiBaseUrl })
-    : hasSupabaseConfig
-      ? createSupabaseBikeService()
-      : bikeService;
+function createPrimaryBikeService(): BikeService {
+  if (bikeDataSource === "mock") {
+    return bikeService;
+  }
+
+  if (bikeDataSource === "api" && apiBaseUrl) {
+    return createHttpBikeService({ baseUrl: apiBaseUrl });
+  }
+
+  if (bikeDataSource === "api" && !apiBaseUrl) {
+    console.warn(
+      "EXPO_PUBLIC_BIKE_DATA_SOURCE is set to \"api\" but EXPO_PUBLIC_API_BASE_URL is missing. Falling back to the next available bike data source."
+    );
+  }
+
+  if (hasSupabaseConfig) {
+    return createSupabaseBikeService();
+  }
+
+  if (apiBaseUrl) {
+    return createHttpBikeService({ baseUrl: apiBaseUrl });
+  }
+
+  return bikeService;
+}
+
+const primaryBikeService: BikeService = createPrimaryBikeService();
 
 export const configuredBikeService: BikeService =
   primaryBikeService === bikeService

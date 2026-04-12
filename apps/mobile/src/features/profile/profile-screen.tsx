@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 import { mockRideHistory } from "@glide/api";
 import { formatCurrency, formatDistanceKm } from "@glide/shared";
@@ -7,29 +8,105 @@ import { formatCurrency, formatDistanceKm } from "@glide/shared";
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
-import { colors, spacing } from "@/theme/tokens";
+import { colors, spacing, typography } from "@/theme/tokens";
 
+import { authFieldInputStyle, authFieldLabelStyle } from "../auth/auth-form-styles";
 import { useAuth } from "../auth/auth-provider";
 import { formatRideDate, formatRideDurationLabel } from "../ride/ride-history-formatters";
 
 export function ProfileScreen() {
   const router = useRouter();
-  const { profile, signOut, user } = useAuth();
+  const { profile, signOut, updateDisplayName, user } = useAuth();
   const riderName = profile?.firstName ?? "Rider";
   const email = user?.email ?? "No email available";
+  const [displayName, setDisplayName] = useState(profile?.firstName ?? "");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isEditingDisplayName, setIsEditingDisplayName] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setDisplayName(profile?.firstName ?? "");
+    setIsEditingDisplayName(false);
+  }, [profile?.firstName]);
+
+  async function handleSaveDisplayName() {
+    const trimmedDisplayName = displayName.trim();
+
+    if (!trimmedDisplayName) {
+      setErrorMessage("Enter a display name.");
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage(null);
+
+    try {
+      await updateDisplayName(trimmedDisplayName);
+      setDisplayName(trimmedDisplayName);
+      setIsEditingDisplayName(false);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to update your display name."
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
     <ScreenShell
       title={riderName}
       description="Manage your rider account, view ride history, and access support options.">
       <SurfaceCard>
+        <Text selectable style={authFieldLabelStyle}>
+          Display name
+        </Text>
+        <TextInput
+          autoCapitalize="words"
+          autoCorrect={false}
+          autoComplete="name"
+          editable={isEditingDisplayName}
+          placeholder="Enter your display name"
+          placeholderTextColor={colors.textMuted}
+          selectionColor={colors.coral}
+          value={displayName}
+          onChangeText={setDisplayName}
+          style={{
+            ...authFieldInputStyle,
+            opacity: isEditingDisplayName ? 1 : 0.65
+          }}
+        />
         <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
           {email}
         </Text>
         <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-          Notifications, payment methods, and ride preferences can keep expanding from this
-          profile area without changing the auth flow.
+          Update the name shown across your rider profile while keeping your ride history and
+          account details intact.
         </Text>
+        {errorMessage ? (
+          <Text
+            selectable
+            accessibilityRole="alert"
+            style={{ ...typography.bodyStrong, color: colors.coralDark }}>
+            {errorMessage}
+          </Text>
+        ) : null}
+        {isEditingDisplayName ? (
+          <PrimaryButton
+            label={isSaving ? "Saving..." : "Save Display Name"}
+            onPress={() => void handleSaveDisplayName()}
+            disabled={isSaving}
+          />
+        ) : (
+          <PrimaryButton
+            label="Edit"
+            onPress={() => {
+              setErrorMessage(null);
+              setIsEditingDisplayName(true);
+            }}
+            variant="secondary"
+          />
+        )}
       </SurfaceCard>
 
       <View style={{ gap: spacing.md }}>

@@ -1,6 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, View } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { Bike, Coordinates } from "@glide/shared";
 
@@ -14,7 +15,7 @@ interface MapCanvasProps {
   readonly onRecenter: () => void;
   readonly selectedBikeId: string | undefined;
   readonly userCoordinates: Coordinates | undefined;
-  readonly onSelectBike: (bikeId: string) => void;
+  readonly onPressMarker: (bikeId: string) => void;
 }
 
 const DEFAULT_DELTA = {
@@ -28,8 +29,9 @@ export function MapCanvas({
   onRecenter,
   selectedBikeId,
   userCoordinates,
-  onSelectBike
+  onPressMarker
 }: MapCanvasProps) {
+  const insets = useSafeAreaInsets();
   const initialCenter = userCoordinates ?? bikes[0]?.coordinates;
   const initialRegion = initialCenter
     ? {
@@ -41,12 +43,8 @@ export function MapCanvas({
   return (
     <View
       style={{
-        borderColor: colors.shadow,
-        borderRadius: radii.large,
-        borderWidth: borderWidths.thick,
-        height: 460,
-        overflow: "hidden",
-        ...shadows.card
+        flex: 1,
+        overflow: "hidden"
       }}>
       <MapView
         accessibilityLabel="Nearby bike map"
@@ -63,7 +61,7 @@ export function MapCanvas({
             title={bike.model}
             description={`${getBikeStatusLabel(bike.status)} • ${bike.location} • ${bikeDistanceLabels?.[bike.id] ?? "Distance unavailable"} • ${bike.pricingLabel}`}
             pinColor={getBikeMarkerColor(bike.status, bike.id === selectedBikeId)}
-            onPress={() => onSelectBike(bike.id)}
+            onPress={() => onPressMarker(bike.id)}
           />
         ))}
       </MapView>
@@ -81,8 +79,8 @@ export function MapCanvas({
           height: 48,
           justifyContent: "center",
           position: "absolute",
-          right: spacing.md,
-          top: spacing.md,
+          bottom: insets.bottom + 92,
+          left: spacing.md,
           transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
           width: 48,
           ...(pressed ? shadows.pressed : shadows.floating)

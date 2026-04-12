@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
-import { borderWidths, colors, fontFamilies, radii } from "@/theme/tokens";
+import { borderWidths, colors, fontFamilies, radii, spacing } from "@/theme/tokens";
 
 export default function TabsLayout() {
   return (
@@ -21,30 +21,33 @@ export default function TabsLayout() {
         tabBarActiveBackgroundColor: colors.yellow,
         tabBarInactiveBackgroundColor: colors.surface,
         tabBarIconStyle: {
-          marginBottom: 2
+          marginBottom: 0
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontFamily: fontFamilies.bold
         },
         tabBarItemStyle: {
           borderRadius: radii.medium,
-          marginHorizontal: 4
+          marginHorizontal: 3,
+          marginVertical: 3
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderColor: colors.shadow,
-          borderTopLeftRadius: radii.large,
-          borderTopRightRadius: radii.large,
-          borderWidth: borderWidths.thick,
-          height: 84,
-          paddingBottom: 12,
-          paddingTop: 10
+          borderRadius: radii.large,
+          borderWidth: borderWidths.thick + 1,
+          height: 72,
+          marginBottom: spacing.xs,
+          marginHorizontal: spacing.xs,
+          paddingBottom: 8,
+          paddingTop: 6
         }
       }}>
       <Tabs.Screen
         name="index"
         options={{
+          headerShown: false,
           title: "Map",
           tabBarLabel: "Map",
           tabBarIcon: ({ color, size }) => (

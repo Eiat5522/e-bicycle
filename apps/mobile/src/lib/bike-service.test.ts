@@ -9,6 +9,7 @@ describe("configuredBikeService", () => {
 
     if (env) {
       delete env.EXPO_PUBLIC_API_BASE_URL;
+      delete env.EXPO_PUBLIC_BIKE_DATA_SOURCE;
     }
   });
 
@@ -149,5 +150,180 @@ describe("configuredBikeService", () => {
         })
       ])
     );
+  });
+
+  it("prefers Supabase over the HTTP bike API unless the API is explicitly selected", async () => {
+    const env = (
+      globalThis as typeof globalThis & {
+        process?: { env?: Record<string, string | undefined> };
+      }
+    ).process?.env;
+
+    if (env) {
+      env.EXPO_PUBLIC_API_BASE_URL = "http://172.20.10.6:3000/api";
+    }
+
+    const order = jest.fn().mockResolvedValue({
+      data: [
+        {
+          id: "G-104",
+          model: "Glide Pro X",
+          ride_class: "Pro",
+          estimated_range_km: 45,
+          top_speed_kmh: 25,
+          pricing_label: "$1.20 / 10 min",
+          status: "available",
+          location: "Siam Square",
+          latitude: 13.7466,
+          longitude: 100.5328,
+          last_reported_at: "2026-04-06T08:55:00Z",
+          created_at: "2026-04-06T08:55:00Z",
+          updated_at: "2026-04-06T08:55:00Z"
+        }
+      ],
+      error: null
+    });
+    const select = jest.fn(() => ({
+      order
+    }));
+    const from = jest.fn(() => ({
+      select
+    }));
+
+    jest.doMock("./supabase", () => ({
+      hasSupabaseConfig: true,
+      supabase: {
+        from
+      }
+    }));
+
+    const fetchSpy = jest.fn();
+    globalThis.fetch = fetchSpy as typeof globalThis.fetch;
+
+    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+
+    await configuredBikeService.listNearby({
+      latitude: 13.7563,
+      longitude: 100.5018,
+      radiusMeters: 1500,
+      limit: 10
+    });
+
+    expect(from).toHaveBeenCalledWith("bikes");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("uses the HTTP bike API when explicitly selected", async () => {
+    const env = (
+      globalThis as typeof globalThis & {
+        process?: { env?: Record<string, string | undefined> };
+      }
+    ).process?.env;
+
+    if (env) {
+      env.EXPO_PUBLIC_API_BASE_URL = "http://172.20.10.6:3000/api";
+      env.EXPO_PUBLIC_BIKE_DATA_SOURCE = "api";
+    }
+
+    jest.doMock("./supabase", () => ({
+      hasSupabaseConfig: true,
+      supabase: {
+        from: jest.fn()
+      }
+    }));
+
+    const fetchSpy = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        bikes: [],
+        serverTime: "2026-04-12T00:00:00.000Z",
+        searchCenter: {
+          latitude: 13.7563,
+          longitude: 100.5018
+        }
+      })
+    });
+    globalThis.fetch = fetchSpy as typeof globalThis.fetch;
+
+    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+
+    await configuredBikeService.listNearby({
+      latitude: 13.7563,
+      longitude: 100.5018,
+      radiusMeters: 1500,
+      limit: 10
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://172.20.10.6:3000/api/bikes/nearby?lat=13.7563&lng=100.5018&radius=1500&limit=10"
+    );
+  });
+
+  it("warns and falls back when the API source is selected without a base URL", async () => {
+    const env = (
+      globalThis as typeof globalThis & {
+        process?: { env?: Record<string, string | undefined> };
+      }
+    ).process?.env;
+
+    if (env) {
+      env.EXPO_PUBLIC_BIKE_DATA_SOURCE = "api";
+    }
+
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const order = jest.fn().mockResolvedValue({
+      data: [
+        {
+          id: "G-104",
+          model: "Glide Pro X",
+          ride_class: "Pro",
+          estimated_range_km: 45,
+          top_speed_kmh: 25,
+          pricing_label: "$1.20 / 10 min",
+          status: "available",
+          location: "Siam Square",
+          latitude: 13.7466,
+          longitude: 100.5328,
+          last_reported_at: "2026-04-06T08:55:00Z",
+          created_at: "2026-04-06T08:55:00Z",
+          updated_at: "2026-04-06T08:55:00Z"
+        }
+      ],
+      error: null
+    });
+    const select = jest.fn(() => ({
+      order
+    }));
+    const from = jest.fn(() => ({
+      select
+    }));
+
+    jest.doMock("./supabase", () => ({
+      hasSupabaseConfig: true,
+      supabase: {
+        from
+      }
+    }));
+
+    const fetchSpy = jest.fn();
+    globalThis.fetch = fetchSpy as typeof globalThis.fetch;
+
+    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+
+    await configuredBikeService.listNearby({
+      latitude: 13.7563,
+      longitude: 100.5018,
+      radiusMeters: 1500,
+      limit: 10
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      "EXPO_PUBLIC_BIKE_DATA_SOURCE is set to \"api\" but EXPO_PUBLIC_API_BASE_URL is missing. Falling back to the next available bike data source."
+    );
+    expect(from).toHaveBeenCalledWith("bikes");
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
   });
 });
