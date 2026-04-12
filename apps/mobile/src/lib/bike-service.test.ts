@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 describe("configuredBikeService", () => {
   beforeEach(() => {
     jest.resetModules();

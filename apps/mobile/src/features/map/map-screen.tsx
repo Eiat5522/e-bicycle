@@ -364,7 +364,7 @@ export function MapScreen() {
           style={{
             gap: spacing.lg,
             paddingHorizontal: spacing.lg,
-            paddingTop: loadState === "ready" ? spacing.md : insets.top + spacing.lg
+            paddingTop: insets.top + spacing.lg
           }}
         >
         {loadState === "loading" ? (

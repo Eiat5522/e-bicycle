@@ -29,19 +29,22 @@ export default function TabsLayout() {
         },
         tabBarItemStyle: {
           borderRadius: radii.medium,
-          marginHorizontal: 3,
-          marginVertical: 3
+          marginHorizontal: spacing.xxs,
+          marginTop: spacing.xs,
+          marginBottom: spacing.xxs
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderColor: colors.shadow,
           borderRadius: radii.large,
-          borderWidth: borderWidths.thick + 1,
-          height: 72,
+          borderWidth: borderWidths.thick,
+          borderTopWidth: borderWidths.thick + 2,
+          height: 64,
           marginBottom: spacing.xs,
           marginHorizontal: spacing.xs,
-          paddingBottom: 8,
-          paddingTop: 6
+          paddingBottom: 6,
+          paddingHorizontal: spacing.xxs,
+          paddingTop: 4
         }
       }}>
       <Tabs.Screen

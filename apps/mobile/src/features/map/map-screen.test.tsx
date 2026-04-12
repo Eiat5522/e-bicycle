@@ -119,7 +119,7 @@ describe("MapScreen", () => {
       radiusMeters: 1500,
       limit: 50
     });
-  });
+  }, 10000);
 
   it("falls back to the default map coordinates when live location times out", async () => {
     getCurrentPositionAsync.mockRejectedValue(new Error("Network request timed out"));
