@@ -4,9 +4,11 @@ import { requireAdmin } from "@/lib/auth";
 import { signOutAction } from "./actions";
 
 export default async function AdminLayout({
-  children
+  children,
+  drawer
 }: Readonly<{
   children: React.ReactNode;
+  drawer: React.ReactNode;
 }>) {
   const context = await requireAdmin();
 
@@ -38,6 +40,7 @@ export default async function AdminLayout({
       </header>
 
       {children}
+      {drawer}
     </main>
   );
 }
