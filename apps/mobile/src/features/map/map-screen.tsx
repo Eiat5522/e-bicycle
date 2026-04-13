@@ -34,7 +34,6 @@ export function MapScreen() {
   const router = useRouter();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState<string>();
-  const [refreshError, setRefreshError] = useState<string>();
   const [userCoordinates, setUserCoordinates] = useState<Coordinates>();
   const [nearbyResult, setNearbyResult] = useState<NearbyBikesResult>();
   const [selectedBikeId, setSelectedBikeId] = useState<string>();
@@ -66,7 +65,7 @@ export function MapScreen() {
 
     return {
       result: expandedResult,
-      notice: "No bikes within 1.5 km. Showing the closest bikes from a wider area."
+      notice: "No bikes nearby yet. Showing the closest bikes from a wider area."
     };
   }, []);
 
@@ -94,13 +93,11 @@ export function MapScreen() {
     if (!permission.granted) {
       setLoadState("permission_denied");
       setErrorMessage("Location permission is required to show bikes near you.");
-      setRefreshError(undefined);
       return;
     }
 
     try {
       let coordinates: Coordinates;
-      let fallbackMessage: string | undefined;
 
       try {
         const position = await Location.getCurrentPositionAsync({
@@ -119,19 +116,13 @@ export function MapScreen() {
             latitude: lastKnownPosition.coords.latitude,
             longitude: lastKnownPosition.coords.longitude
           };
-          fallbackMessage =
-            "Live location timed out. Showing bikes near your last known position.";
         } else {
           coordinates = DEFAULT_MAP_COORDINATES;
-          fallbackMessage =
-            "Live location timed out. Showing bikes near central Bangkok for now.";
         }
       }
 
       setUserCoordinates(coordinates);
-      const nearbyNotice = await loadNearbyBikes(coordinates);
-
-      setRefreshError([fallbackMessage, nearbyNotice].filter(Boolean).join(" ") || undefined);
+      await loadNearbyBikes(coordinates);
     } catch (error) {
       setLoadState("error");
       setErrorMessage(
@@ -139,7 +130,6 @@ export function MapScreen() {
           ? error.message
           : "We could not determine your current location."
       );
-      setRefreshError(undefined);
     }
   }, [loadNearbyBikes]);
 
@@ -157,9 +147,7 @@ export function MapScreen() {
 
     intervalRef.current = setInterval(() => {
       void loadNearbyBikes(userCoordinates)
-        .then((notice) => {
-          setRefreshError(notice);
-        })
+        .then(() => undefined)
         .catch((error: unknown) => {
           const message =
             error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
@@ -170,8 +158,6 @@ export function MapScreen() {
             setLoadState("error");
             return;
           }
-
-          setRefreshError("Unable to refresh right now. Showing the latest available bikes.");
         });
     }, MAP_POLL_INTERVAL_MS);
 
@@ -186,9 +172,7 @@ export function MapScreen() {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active" && userCoordinates) {
         void loadNearbyBikes(userCoordinates)
-          .then((notice) => {
-            setRefreshError(notice);
-          })
+          .then(() => undefined)
           .catch((error: unknown) => {
             const message =
               error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
@@ -199,8 +183,6 @@ export function MapScreen() {
               setLoadState("error");
               return;
             }
-
-            setRefreshError("Unable to refresh right now. Showing the latest available bikes.");
           });
       }
     });
@@ -210,15 +192,27 @@ export function MapScreen() {
     };
   }, [loadNearbyBikes, nearbyResult, userCoordinates]);
 
-  const handlePressMarker = useCallback((bikeId: string) => {
-    setSelectedBikeId(bikeId);
-    setDrawerBikeId(bikeId);
-  }, []);
+  const handlePressMarker = useCallback(
+    (bikeId: string, status: NearbyBikesResult["bikes"][number]["status"]) => {
+      if (status === "in_use") {
+        router.push({
+          pathname: "/ride/active",
+          params: {
+            bikeId
+          }
+        });
+        return;
+      }
+
+      setSelectedBikeId(bikeId);
+      setDrawerBikeId(bikeId);
+    },
+    [router]
+  );
 
   const handleRecenterToCurrentLocation = useCallback(async () => {
     try {
       let coordinates: Coordinates;
-      let fallbackMessage: string | undefined;
 
       try {
         const position = await Location.getCurrentPositionAsync({
@@ -237,24 +231,14 @@ export function MapScreen() {
             latitude: lastKnownPosition.coords.latitude,
             longitude: lastKnownPosition.coords.longitude
           };
-          fallbackMessage =
-            "Live location timed out. Recentered to your last known position instead.";
         } else {
           coordinates = DEFAULT_MAP_COORDINATES;
-          fallbackMessage =
-            "Live location timed out. Recentered to central Bangkok instead.";
         }
       }
 
       setUserCoordinates(coordinates);
-      const nearbyNotice = await loadNearbyBikes(coordinates);
-
-      setRefreshError([fallbackMessage, nearbyNotice].filter(Boolean).join(" ") || undefined);
-    } catch (error) {
-      setRefreshError(
-        error instanceof Error ? error.message : "Unable to recenter to your current location."
-      );
-    }
+      await loadNearbyBikes(coordinates);
+    } catch {}
   }, [loadNearbyBikes]);
 
   const bikesWithSeedImages = useMemo(
@@ -338,31 +322,6 @@ export function MapScreen() {
             onPressMarker={handlePressMarker}
           />
 
-          {refreshError ? (
-            <View
-              style={{
-                left: spacing.lg,
-                position: "absolute",
-                right: spacing.lg,
-                top: insets.top + spacing.md
-              }}
-            >
-              <SurfaceCard tone="accent">
-                <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
-                  Refresh paused
-                </Text>
-                <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-                  {refreshError}
-                </Text>
-                <PrimaryButton
-                  label="Dismiss"
-                  onPress={() => setRefreshError(undefined)}
-                  variant="secondary"
-                />
-              </SurfaceCard>
-            </View>
-          ) : null}
-
           {!sortedBikes.length ? (
             <View
               style={{
@@ -414,7 +373,7 @@ export function MapScreen() {
               Finding your location
             </Text>
             <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-              Glide is requesting location access and loading bikes within 1.5 km.
+              Glide is requesting location access and scanning for nearby bikes.
             </Text>
           </SurfaceCard>
         ) : null}

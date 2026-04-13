@@ -37,8 +37,8 @@ export default function TabsLayout() {
         tabBarItemStyle: {
           borderRadius: radii.medium,
           marginHorizontal: 2,
-          marginTop: spacing.xxs,
-          marginBottom: spacing.xxs
+          marginTop: 2,
+          marginBottom: 0
         },
         tabBarStyle: getTabBarStyle(insets.bottom)
       }}>

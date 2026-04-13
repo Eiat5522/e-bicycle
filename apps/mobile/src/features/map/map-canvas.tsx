@@ -15,7 +15,7 @@ interface MapCanvasProps {
   readonly onRecenter: () => void;
   readonly selectedBikeId: string | undefined;
   readonly userCoordinates: Coordinates | undefined;
-  readonly onPressMarker: (bikeId: string) => void;
+  readonly onPressMarker: (bikeId: string, status: Bike["status"]) => void;
 }
 
 const pressedButtonStyle = {
@@ -74,7 +74,7 @@ export function MapCanvas({
             key={bike.id}
             accessibilityRole="button"
             accessibilityLabel={`Select ${bike.model}`}
-            onPress={() => onPressMarker(bike.id)}
+            onPress={() => onPressMarker(bike.id, bike.status)}
           >
             <Text
               selectable

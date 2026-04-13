@@ -131,9 +131,6 @@ describe("MapScreen", () => {
     await renderScreen();
 
     await waitForMapCanvas();
-    await waitFor(() => {
-      expect(screen.getByText("Refresh paused")).toBeTruthy();
-    });
 
     expect(listNearby).toHaveBeenCalledWith({
       latitude: 13.7563,
@@ -141,9 +138,6 @@ describe("MapScreen", () => {
       radiusMeters: 1500,
       limit: 50
     });
-    expect(
-      screen.getByText("Live location timed out. Showing bikes near central Bangkok for now.")
-    ).toBeTruthy();
     expect(jest.mocked(MapCanvas).mock.calls.at(-1)?.[0].mapCenter).toEqual({
       latitude: 37.7749,
       longitude: -122.4194
@@ -316,7 +310,62 @@ describe("MapScreen", () => {
     expect(orderedIds).toEqual(["G-104", "G-318", "G-620"]);
   });
 
-  it("opens the bottom drawer when a marker is pressed", async () => {
+  it("opens the bottom drawer when an available marker is pressed", async () => {
+    listNearby.mockResolvedValue({
+      bikes: [
+        {
+          id: "G-104",
+          model: "Glide Pro X",
+          rideClass: "Pro",
+          estimatedRangeKm: 45,
+          topSpeedKmh: 25,
+          pricingLabel: "$1.20 / 10 min",
+          status: "available",
+          location: "Siam Square",
+          coordinates: { latitude: 13.7466, longitude: 100.5328 },
+          lastReportedAt: "2026-04-06T08:55:00Z"
+        },
+        {
+          id: "G-205",
+          model: "Glide City",
+          rideClass: "City",
+          estimatedRangeKm: 31,
+          topSpeedKmh: 22,
+          pricingLabel: "$0.90 / 10 min",
+          status: "in_use",
+          location: "อโศก Interchange",
+          coordinates: { latitude: 13.7372, longitude: 100.5606 },
+          lastReportedAt: "2026-04-06T08:56:00Z"
+        }
+      ],
+      serverTime: "2026-04-06T09:00:00Z"
+    });
+
+    await renderScreen();
+
+    await waitForMapCanvas();
+
+    const mapCanvasMock = jest.mocked(MapCanvas);
+    await waitFor(() => {
+      expect(mapCanvasMock.mock.calls.at(-1)?.[0].bikes).toHaveLength(2);
+    });
+    const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
+
+    expect(pressMarker).toBeDefined();
+
+    act(() => {
+      pressMarker?.("G-104", "available");
+    });
+
+    expect(screen.getByText("View Details")).toBeTruthy();
+    expect(screen.getByText("Unlock and Ride")).toBeTruthy();
+    expect(screen.getByText("Need Help?")).toBeTruthy();
+    expect(screen.getByText("G-104 · Siam Square")).toBeTruthy();
+    expect(screen.getByLabelText("Glide Pro X photo")).toBeTruthy();
+    expect(screen.queryByText(/Range\s+\d+(\.\d+)?\s+km/i)).toBeNull();
+  });
+
+  it("routes an in-use marker directly to the active ride screen", async () => {
     listNearby.mockResolvedValue({
       bikes: [
         {
@@ -354,18 +403,17 @@ describe("MapScreen", () => {
     const mapCanvasMock = jest.mocked(MapCanvas);
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
-    expect(pressMarker).toBeDefined();
-
     act(() => {
-      pressMarker?.("G-205");
+      pressMarker?.("G-205", "in_use");
     });
 
-    expect(screen.getByText("View Details")).toBeTruthy();
-    expect(screen.getByText("Unlock and Ride")).toBeTruthy();
-    expect(screen.getByText("Need Help?")).toBeTruthy();
-    expect(screen.getByText("G-205 · อโศก Interchange")).toBeTruthy();
-    expect(screen.getByLabelText("Glide City photo")).toBeTruthy();
-    expect(screen.queryByText(/Range\s+\d+(\.\d+)?\s+km/i)).toBeNull();
+    expect(push).toHaveBeenCalledWith({
+      pathname: "/ride/active",
+      params: {
+        bikeId: "G-205"
+      }
+    });
+    expect(screen.queryByText("Unlock and Ride")).toBeNull();
   });
 
   it("refreshes the user location when recenter is pressed", async () => {
@@ -431,14 +479,14 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-205");
+      pressMarker?.("G-104", "available");
     });
 
-    expect(screen.getByText("G-205 · อโศก Interchange")).toBeTruthy();
+    expect(screen.getByText("G-104 · Siam Square")).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText("Dismiss bike drawer"));
 
-    expect(screen.queryByText("G-205 · อโศก Interchange")).toBeNull();
+    expect(screen.queryByText("G-104 · Siam Square")).toBeNull();
     expect(screen.queryByText("Tap a marker to see bike actions")).toBeNull();
   });
 
@@ -481,25 +529,25 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-205");
+      pressMarker?.("G-104", "available");
     });
 
     fireEvent.press(screen.getByText("Unlock and Ride"));
-    expect(push).toHaveBeenCalledWith("/unlock/G-205");
+    expect(push).toHaveBeenCalledWith("/unlock/G-104");
 
     act(() => {
-      pressMarker?.("G-205");
+      pressMarker?.("G-104", "available");
     });
 
     fireEvent.press(screen.getByText("Need Help?"));
     expect(push).toHaveBeenCalledWith("/help");
 
     act(() => {
-      pressMarker?.("G-205");
+      pressMarker?.("G-104", "available");
     });
 
     fireEvent.press(screen.getByText("View Details"));
-    expect(push).toHaveBeenCalledWith("/bike/G-205");
+    expect(push).toHaveBeenCalledWith("/bike/G-104");
   });
 
   it("renders a permission denied state with retry", async () => {
@@ -561,10 +609,6 @@ describe("MapScreen", () => {
 
     await waitForMapCanvas();
 
-    await waitFor(() => {
-      expect(screen.getByText("Refresh paused")).toBeTruthy();
-    });
-
     expect(listNearby).toHaveBeenNthCalledWith(1, {
       latitude: 37.7749,
       longitude: -122.4194,
@@ -577,9 +621,6 @@ describe("MapScreen", () => {
       radiusMeters: 8000,
       limit: 50
     });
-    expect(
-      screen.getByText("No bikes within 1.5 km. Showing the closest bikes from a wider area.")
-    ).toBeTruthy();
   });
 
   it("polls for nearby bikes while focused", async () => {
@@ -629,10 +670,6 @@ describe("MapScreen", () => {
 
     await act(async () => {
       jest.advanceTimersByTime(MAP_POLL_INTERVAL_MS);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("Refresh paused")).toBeTruthy();
     });
 
     expect(screen.queryByText("Tap a marker to see bike actions")).toBeNull();
