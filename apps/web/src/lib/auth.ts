@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { formatAdminDate } from "@/lib/formatting";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { isMissingAuthSessionError } from "@/lib/supabase/auth-errors";
 import type { ProfileRow } from "@/lib/supabase/database.types";
 
 export interface AdminProfile {
@@ -60,6 +61,10 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     data: { user },
     error
   } = await supabase.auth.getUser();
+
+  if (isMissingAuthSessionError(error)) {
+    return null;
+  }
 
   if (error) {
     throw new Error(error.message);

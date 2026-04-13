@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { isMissingAuthSessionError } from "@/lib/supabase/auth-errors";
 import { createClient } from "@/lib/supabase/server";
 import { validateProfileUpdateForm } from "@/lib/validation";
 
@@ -13,8 +14,12 @@ async function requireAdminForAction() {
     error: userError
   } = await supabase.auth.getUser();
 
-  if (userError || !user) {
+  if (isMissingAuthSessionError(userError) || !user) {
     redirect("/login");
+  }
+
+  if (userError) {
+    throw new Error(userError.message);
   }
 
   const { data: profile, error: profileError } = await supabase

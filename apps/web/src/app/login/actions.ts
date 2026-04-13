@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { isMissingAuthSessionError } from "@/lib/supabase/auth-errors";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { validateLoginForm } from "@/lib/validation";
@@ -51,7 +52,7 @@ export async function signInAction(
     error: userError
   } = await supabase.auth.getUser();
 
-  if (userError || !user) {
+  if (isMissingAuthSessionError(userError) || !user) {
     await supabase.auth.signOut();
 
     return {
@@ -62,6 +63,10 @@ export async function signInAction(
         password: ""
       }
     };
+  }
+
+  if (userError) {
+    throw new Error(userError.message);
   }
 
   const { data: profile, error: profileError } = await supabase

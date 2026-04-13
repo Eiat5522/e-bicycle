@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isMissingAuthSessionError } from "./auth-errors";
 import type { Database } from "./database.types";
 import { getSupabaseConfig, hasSupabaseConfig } from "./config";
 
@@ -38,7 +39,11 @@ export async function updateSession(request: NextRequest) {
     }
   });
 
-  await supabase.auth.getUser();
+  const { error } = await supabase.auth.getUser();
+
+  if (error && !isMissingAuthSessionError(error)) {
+    throw new Error(error.message);
+  }
 
   return response;
 }

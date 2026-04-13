@@ -7,6 +7,7 @@ import type {
 import Link from "next/link";
 
 import { formatAdminDate } from "@/lib/formatting";
+import { DrawerCloseButton } from "@/components/side-drawer";
 
 export interface ManagedBike {
   readonly id: string;
@@ -166,7 +167,8 @@ export function BicycleManagementList({
             <div className="flex items-start justify-start md:justify-end">
               <Link
                 className="inline-flex rounded-full border border-black/10 bg-[var(--surface-muted)] px-4 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-strong)]"
-                href={`/bicycles/${bike.id}`}>
+                href={`/bicycles/${bike.id}`}
+                scroll={false}>
                 Edit Bicycle
               </Link>
             </div>
@@ -213,34 +215,52 @@ function SelectInput(props: SelectHTMLAttributes<HTMLSelectElement>) {
 export function BicycleEditor({
   action,
   bike,
+  deleteAction,
   mode,
-  rideHistory
+  rideHistory,
+  variant = "page"
 }: {
   readonly action: (formData: FormData) => void | Promise<void>;
   readonly bike: ManagedBike;
+  readonly deleteAction?: (formData: FormData) => void | Promise<void>;
   readonly mode: "create" | "edit";
   readonly rideHistory: readonly BikeRideHistoryEntry[];
+  readonly variant?: "page" | "drawer";
 }) {
   const isCreate = mode === "create";
+  const isDrawer = variant === "drawer";
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+    <section
+      className={
+        isDrawer ? "grid gap-6 p-6" : "grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]"
+      }>
       <div className="rounded-[2rem] bg-[var(--surface)] p-8 shadow-[0_20px_60px_rgba(45,47,47,0.08)]">
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
-            {isCreate ? "New Bicycle" : "Edit Bicycle"}
-          </p>
-          <h2 className="text-4xl font-black tracking-[-0.04em] text-[var(--foreground)]">
-            {isCreate ? "Create a fleet record." : `Update ${bike.model}.`}
-          </h2>
-          <p className="max-w-2xl text-base leading-7 text-[var(--foreground-muted)]">
-            {isCreate
-              ? "Add a new bicycle to the fleet inventory and publish it into the admin system."
-              : "Edit the bicycle details, upload a new image, and review the recorded ride history for this unit."}
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
+              {isCreate ? "New Bicycle" : "Edit Bicycle"}
+            </p>
+            <h2 className="text-4xl font-black tracking-[-0.04em] text-[var(--foreground)]">
+              {isCreate ? "Create a fleet record." : `Update ${bike.model}.`}
+            </h2>
+            <p className="max-w-2xl text-base leading-7 text-[var(--foreground-muted)]">
+              {isCreate
+                ? "Add a new bicycle to the fleet inventory and publish it into the admin system."
+                : "Edit the bicycle details, upload a new image, and review the recorded ride history for this unit."}
+            </p>
+          </div>
+
+          {isDrawer ? (
+            <DrawerCloseButton
+              className="rounded-full border border-black/10 bg-[var(--surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+              label={`Close editor for ${bike.model}`}>
+              Close
+            </DrawerCloseButton>
+          ) : null}
         </div>
 
-        <form action={action} className="mt-8 grid gap-5" encType="multipart/form-data">
+        <form action={action} className="mt-8 grid gap-5">
           {isCreate ? (
             <Field label="Bike ID">
               <TextInput
@@ -375,13 +395,32 @@ export function BicycleEditor({
               type="submit">
               {isCreate ? "Create Bicycle" : "Save Changes"}
             </button>
-            <Link
-              className="inline-flex rounded-full border border-black/10 bg-[var(--surface-muted)] px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-              href="/bicycles">
-              Back to Fleet
-            </Link>
+            {isDrawer ? (
+              <DrawerCloseButton
+                className="inline-flex rounded-full border border-black/10 bg-[var(--surface-muted)] px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                label="Close bicycle editor">
+                Cancel
+              </DrawerCloseButton>
+            ) : (
+              <Link
+                className="inline-flex rounded-full border border-black/10 bg-[var(--surface-muted)] px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                href="/bicycles">
+                Back to Fleet
+              </Link>
+            )}
           </div>
         </form>
+
+        {deleteAction && !isCreate ? (
+          <form action={deleteAction} className="mt-6 flex justify-end">
+            <input name="bikeId" type="hidden" value={bike.id} />
+            <button
+              className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700"
+              type="submit">
+              Delete Bicycle
+            </button>
+          </form>
+        ) : null}
       </div>
 
       <aside className="flex flex-col gap-6">

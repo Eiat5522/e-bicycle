@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { RideHistoryItem } from "@glide/shared";
 import { formatAdminDate } from "@/lib/formatting";
@@ -44,19 +44,42 @@ function formatRideDuration(durationSec: number) {
   return `${minutes} min`;
 }
 
+function ClaymorphicInset({ children, className = "" }: { readonly children: React.ReactNode; readonly className?: string }) {
+  return (
+    <div
+      className={`clay-inset px-5 py-4 ${className}`}
+      children={children}
+    />
+  );
+}
+
 export function UserDetailDrawerContent({
   activeTab,
+  isMounted,
   onClose,
   onSelectTab,
   onUpdateUser,
   user
 }: {
   readonly activeTab: "transactions" | "rides";
+  readonly isMounted: boolean;
   readonly onClose: () => void;
   readonly onSelectTab: (tab: "transactions" | "rides") => void;
   readonly onUpdateUser: (formData: FormData) => void | Promise<void>;
   readonly user: ManagedUser;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const isAdminRef = useRef<HTMLInputElement>(null);
+
+  const checkForChanges = () => {
+    const originalFirstName = user.firstName;
+    const originalIsAdmin = user.isAdmin;
+    const currentFirstName = firstNameRef.current?.value ?? user.firstName;
+    const currentIsAdmin = isAdminRef.current?.checked ?? user.isAdmin;
+    setHasChanges(currentFirstName !== originalFirstName || currentIsAdmin !== originalIsAdmin);
+  };
   return (
     <div
       aria-label={`User details for ${user.firstName}`}
@@ -69,64 +92,103 @@ export function UserDetailDrawerContent({
         type="button"
       />
 
-      <aside className="flex h-full w-full max-w-2xl flex-col overflow-y-auto bg-[var(--surface)] shadow-[-20px_0_60px_rgba(45,47,47,0.16)]">
-        <div className="flex items-start justify-between gap-4 border-b border-black/5 px-6 py-6">
+      <aside className="flex h-full w-full max-w-2xl flex-col overflow-y-auto clay-card-raised">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--clay-border-subtle)] px-6 py-6">
           <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--clay-accent)]">
               User Detail
             </p>
-            <h3 className="text-3xl font-black tracking-[-0.04em] text-[var(--foreground)]">
+            <h3 className="text-3xl font-black tracking-[-0.04em] text-[var(--clay-text-primary)]">
               {user.firstName}
             </h3>
-            <p className="text-sm text-[var(--foreground-muted)]">
+            <p className="text-sm text-[var(--clay-text-secondary)]">
               {user.isAdmin ? "Admin account" : "Standard account"} · {user.id}
             </p>
           </div>
 
           <button
-            className="rounded-full border border-black/10 bg-[var(--surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+            className="clay-badge px-4 py-2 text-sm font-semibold text-[var(--clay-text-primary)]"
             onClick={onClose}
             type="button">
             Close
           </button>
         </div>
 
-        <div className="border-b border-black/5 px-6 py-5">
-          <form action={onUpdateUser} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="border-b border-[var(--clay-border-subtle)] px-6 py-5">
+          <form
+            action={onUpdateUser}
+            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]"
+            onSubmit={() => {
+              setTimeout(() => {
+                setIsEditing(false);
+                setHasChanges(false);
+              }, 0);
+            }}>
             <input name="userId" type="hidden" value={user.id} />
-            <label className="flex flex-col gap-2 text-sm font-medium text-[var(--foreground)]">
+            <label className="flex flex-col gap-2 text-sm font-medium text-[var(--clay-text-primary)]">
               <span>Display name</span>
               <input
-                className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
+                className="clay-inset px-4 py-3 text-sm outline-none transition-colors disabled:opacity-50"
                 defaultValue={user.firstName}
+                disabled={!isEditing}
                 name="firstName"
+                onChange={checkForChanges}
+                ref={firstNameRef}
                 required
                 type="text"
               />
             </label>
             <div className="flex items-end gap-3">
-              <label className="inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium text-[var(--foreground)]">
-                <input defaultChecked={user.isAdmin} name="isAdmin" type="checkbox" />
+              <label className="inline-flex items-center gap-2 clay-inset px-4 py-3 text-sm font-medium text-[var(--clay-text-primary)] disabled:opacity-50">
+                <input
+                  defaultChecked={user.isAdmin}
+                  disabled={!isEditing}
+                  name="isAdmin"
+                  onChange={checkForChanges}
+                  ref={isAdminRef}
+                  type="checkbox"
+                />
                 <span>Admin access</span>
               </label>
-              <button
-                className="rounded-full bg-[var(--foreground)] px-4 py-3 text-sm font-semibold text-white"
-                type="submit">
-                Save
-              </button>
+              {!isEditing ? (
+                <button
+                  className="clay-button px-4 py-3 text-sm font-semibold bg-[var(--clay-text-primary)] text-white"
+                  onClick={() => setIsEditing(true)}
+                  type="button">
+                  Edit
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="clay-button px-4 py-3 text-sm font-semibold text-[var(--clay-text-primary)]"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setHasChanges(false);
+                    }}
+                    type="button">
+                    Cancel
+                  </button>
+                  <button
+                    className="clay-button px-4 py-3 text-sm font-semibold bg-[var(--clay-text-primary)] text-white disabled:opacity-50"
+                    disabled={!hasChanges}
+                    type="submit">
+                    Save
+                  </button>
+                </>
+              )}
             </div>
           </form>
         </div>
 
-        <div className="border-b border-black/5 px-6 pt-5">
+        <div className="border-b border-[var(--clay-border-subtle)] px-6 pt-5">
           <div className="flex gap-3">
             <button
               aria-pressed={activeTab === "transactions"}
               className={[
-                "rounded-t-2xl px-4 py-3 text-sm font-semibold",
+                "rounded-t-[var(--clay-radius-md)] px-4 py-3 text-sm font-semibold",
                 activeTab === "transactions"
-                  ? "bg-[var(--foreground)] text-white"
-                  : "bg-[var(--surface-muted)] text-[var(--foreground)]"
+                  ? "bg-[var(--clay-text-primary)] text-white"
+                  : "clay-inset text-[var(--clay-text-secondary)]"
               ].join(" ")}
               onClick={() => onSelectTab("transactions")}
               type="button">
@@ -135,10 +197,10 @@ export function UserDetailDrawerContent({
             <button
               aria-pressed={activeTab === "rides"}
               className={[
-                "rounded-t-2xl px-4 py-3 text-sm font-semibold",
+                "rounded-t-[var(--clay-radius-md)] px-4 py-3 text-sm font-semibold",
                 activeTab === "rides"
-                  ? "bg-[var(--foreground)] text-white"
-                  : "bg-[var(--surface-muted)] text-[var(--foreground)]"
+                  ? "bg-[var(--clay-text-primary)] text-white"
+                  : "clay-inset text-[var(--clay-text-secondary)]"
               ].join(" ")}
               onClick={() => onSelectTab("rides")}
               type="button">
@@ -151,44 +213,42 @@ export function UserDetailDrawerContent({
           {activeTab === "transactions" ? (
             <>
               <div className="flex flex-col gap-2">
-                <h4 className="text-xl font-black tracking-[-0.03em] text-[var(--foreground)]">
+                <h4 className="text-xl font-black tracking-[-0.03em] text-[var(--clay-text-primary)]">
                   Transaction History
                 </h4>
-                <p className="text-sm leading-6 text-[var(--foreground-muted)]">
+                <p className="text-sm leading-6 text-[var(--clay-text-secondary)]">
                   Real wallet transactions from Supabase for this user.
                 </p>
               </div>
 
               {user.transactions.length === 0 ? (
-                <div className="rounded-[1.5rem] bg-[var(--surface-muted)] px-5 py-6 text-sm text-[var(--foreground-muted)]">
+                <ClaymorphicInset className="text-sm text-[var(--clay-text-secondary)]">
                   No transaction history is available for this account yet.
-                </div>
+                </ClaymorphicInset>
               ) : (
                 <div className="grid gap-3">
                   {user.transactions.map((transaction) => (
-                    <article
-                      className="rounded-[1.5rem] bg-[var(--surface-muted)] px-5 py-4"
-                      key={transaction.id}>
+                    <ClaymorphicInset key={transaction.id}>
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex flex-col gap-1">
-                          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--coral-dark)]">
+                          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--clay-accent)]">
                             {transaction.type}
                           </p>
-                          <h5 className="text-base font-semibold text-[var(--foreground)]">
+                          <h5 className="text-base font-semibold text-[var(--clay-text-primary)]">
                             {transaction.title}
                           </h5>
-                          <p className="text-sm text-[var(--foreground-muted)]">{transaction.subtitle}</p>
+                          <p className="text-sm text-[var(--clay-text-secondary)]">{transaction.subtitle}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-base font-semibold text-[var(--foreground)]">
+                          <p className="text-base font-semibold text-[var(--clay-text-primary)]">
                             {formatTransactionAmount(transaction.amount)}
                           </p>
-                          <p className="text-sm text-[var(--foreground-muted)]">
-                            {formatAdminDate(transaction.timestamp)}
+                          <p className="text-sm text-[var(--clay-text-secondary)]">
+                            {isMounted ? formatAdminDate(transaction.timestamp) : transaction.timestamp}
                           </p>
                         </div>
                       </div>
-                    </article>
+                    </ClaymorphicInset>
                   ))}
                 </div>
               )}
@@ -196,50 +256,50 @@ export function UserDetailDrawerContent({
           ) : (
             <>
               <div className="flex flex-col gap-2">
-                <h4 className="text-xl font-black tracking-[-0.03em] text-[var(--foreground)]">
+                <h4 className="text-xl font-black tracking-[-0.03em] text-[var(--clay-text-primary)]">
                   Ride History
                 </h4>
-                <p className="text-sm leading-6 text-[var(--foreground-muted)]">
+                <p className="text-sm leading-6 text-[var(--clay-text-secondary)]">
                   Sample ride history wired from shared mock data until the admin panel has a real
                   rides backend.
                 </p>
               </div>
 
-              <div className="rounded-[1.5rem] border border-dashed border-black/10 bg-[var(--surface-muted)] px-5 py-4 text-sm text-[var(--foreground-muted)]">
+              <ClaymorphicInset className="text-sm text-[var(--clay-text-secondary)]">
                 Sample data
-              </div>
+              </ClaymorphicInset>
 
               {user.rideHistory.length === 0 ? (
-                <div className="rounded-[1.5rem] bg-[var(--surface-muted)] px-5 py-6 text-sm text-[var(--foreground-muted)]">
+                <ClaymorphicInset className="text-sm text-[var(--clay-text-secondary)]">
                   No sample rides are assigned to this account yet.
-                </div>
+                </ClaymorphicInset>
               ) : (
                 <div className="grid gap-3">
                   {user.rideHistory.map((ride) => (
-                    <article className="rounded-[1.5rem] bg-[var(--surface-muted)] px-5 py-4" key={ride.id}>
+                    <ClaymorphicInset key={ride.id}>
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex flex-col gap-1">
-                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--coral-dark)]">
+                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--clay-accent)]">
                               {ride.bikeModel}
                             </p>
-                            <h5 className="text-base font-semibold text-[var(--foreground)]">
+                            <h5 className="text-base font-semibold text-[var(--clay-text-primary)]">
                               {ride.routeLabel}
                             </h5>
-                            <p className="text-sm text-[var(--foreground-muted)]">
+                            <p className="text-sm text-[var(--clay-text-secondary)]">
                               {ride.startLocation} to {ride.endLocation}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-base font-semibold text-[var(--foreground)]">
+                            <p className="text-base font-semibold text-[var(--clay-text-primary)]">
                               {formatTransactionAmount(-ride.totalCost)}
                             </p>
-                            <p className="text-sm text-[var(--foreground-muted)]">
-                              {formatAdminDate(ride.completedAt)}
+                            <p className="text-sm text-[var(--clay-text-secondary)]">
+                              {isMounted ? formatAdminDate(ride.completedAt) : ride.completedAt}
                             </p>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 text-sm text-[var(--foreground-muted)]">
+                        <div className="flex flex-wrap gap-2 text-sm text-[var(--clay-text-secondary)]">
                           <span>{formatRideDuration(ride.durationSec)}</span>
                           <span>•</span>
                           <span>{formatDistance(ride.distanceKm)}</span>
@@ -247,7 +307,7 @@ export function UserDetailDrawerContent({
                           <span>{ride.paymentLabel}</span>
                         </div>
                       </div>
-                    </article>
+                    </ClaymorphicInset>
                   ))}
                 </div>
               )}
@@ -260,10 +320,12 @@ export function UserDetailDrawerContent({
 }
 
 function UserDetailDrawer({
+  isMounted,
   onClose,
   onUpdateUser,
   user
 }: {
+  readonly isMounted: boolean;
   readonly onClose: () => void;
   readonly onUpdateUser: (formData: FormData) => void | Promise<void>;
   readonly user: ManagedUser;
@@ -273,6 +335,7 @@ function UserDetailDrawer({
   return (
     <UserDetailDrawerContent
       activeTab={activeTab}
+      isMounted={isMounted}
       onClose={onClose}
       onSelectTab={setActiveTab}
       onUpdateUser={onUpdateUser}
@@ -288,6 +351,11 @@ export function UserManagementTable({
   readonly onUpdateUser: (formData: FormData) => void | Promise<void>;
   readonly users: ManagedUser[];
 }) {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
@@ -296,15 +364,15 @@ export function UserManagementTable({
 
   return (
     <>
-      <section className="rounded-[2rem] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(45,47,47,0.06)]">
-        <div className="flex flex-col gap-2 border-b border-black/5 pb-5">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
+      <section className="clay-card p-6">
+        <div className="flex flex-col gap-2 border-b border-[var(--clay-border-subtle)] pb-5">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--clay-accent)]">
             User Management
           </p>
-          <h2 className="text-2xl font-black tracking-[-0.04em] text-[var(--foreground)]">
+          <h2 className="text-2xl font-black tracking-[-0.04em] text-[var(--clay-text-primary)]">
             Select a user to inspect wallet and ride history.
           </h2>
-          <p className="max-w-2xl text-sm leading-6 text-[var(--foreground-muted)]">
+          <p className="max-w-2xl text-sm leading-6 text-[var(--clay-text-secondary)]">
             User edits now live in the detail drawer so the main list stays focused on scanning and
             selection.
           </p>
@@ -313,7 +381,7 @@ export function UserManagementTable({
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[720px] border-separate border-spacing-y-3">
             <thead>
-              <tr className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-[var(--foreground-muted)]">
+              <tr className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-[var(--clay-text-tertiary)]">
                 <th className="px-3 pb-2">User</th>
                 <th className="px-3 pb-2">Admin</th>
                 <th className="px-3 pb-2">Transactions</th>
@@ -324,28 +392,28 @@ export function UserManagementTable({
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr className="rounded-3xl bg-[var(--surface-muted)]" key={user.id}>
+                <tr className="rounded-3xl clay-inset" key={user.id}>
                   <td className="rounded-l-3xl px-3 py-4">
                     <div className="flex flex-col gap-1">
-                      <p className="text-sm font-semibold text-[var(--foreground)]">{user.firstName}</p>
-                      <p className="text-xs text-[var(--foreground-muted)]">{user.id}</p>
+                      <p className="text-sm font-semibold text-[var(--clay-text-primary)]">{user.firstName}</p>
+                      <p className="text-xs text-[var(--clay-text-tertiary)]">{user.id}</p>
                     </div>
                   </td>
-                  <td className="px-3 py-4 text-sm font-semibold text-[var(--foreground)]">
+                  <td className="px-3 py-4 text-sm font-semibold text-[var(--clay-text-primary)]">
                     {user.isAdmin ? "Admin" : "Standard"}
                   </td>
-                  <td className="px-3 py-4 text-sm text-[var(--foreground-muted)]">
+                  <td className="px-3 py-4 text-sm text-[var(--clay-text-secondary)]">
                     {user.transactions.length}
                   </td>
-                  <td className="px-3 py-4 text-sm text-[var(--foreground-muted)]">
+                  <td className="px-3 py-4 text-sm text-[var(--clay-text-secondary)]">
                     {user.rideHistory.length}
                   </td>
-                  <td className="px-3 py-4 text-sm text-[var(--foreground-muted)]">
-                    {formatAdminDate(user.updatedAt)}
+                  <td className="px-3 py-4 text-sm text-[var(--clay-text-secondary)]">
+                    {isMounted ? formatAdminDate(user.updatedAt) : user.updatedAt}
                   </td>
                   <td className="rounded-r-3xl px-3 py-4">
                     <button
-                      className="rounded-full bg-[var(--foreground)] px-4 py-3 text-sm font-semibold text-white"
+                      className="clay-button px-4 py-3 text-sm font-semibold bg-[var(--clay-text-primary)] text-white"
                       onClick={() => setSelectedUserId(user.id)}
                       type="button">
                       View details
@@ -360,6 +428,7 @@ export function UserManagementTable({
 
       {selectedUser ? (
         <UserDetailDrawer
+          isMounted={isMounted}
           onClose={() => setSelectedUserId(null)}
           onUpdateUser={onUpdateUser}
           user={selectedUser}
