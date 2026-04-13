@@ -2,9 +2,9 @@ export function formatCurrency(amount: number): string {
   if (!Number.isFinite(amount)) {
     throw new Error("Invalid amount: must be a finite number");
   }
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("th-TH", {
     style: "currency",
-    currency: "USD",
+    currency: "THB",
     minimumFractionDigits: 2
   }).format(amount);
 }

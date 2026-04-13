@@ -5,8 +5,8 @@ import {
 } from "../src/formatters";
 
 describe("formatters", () => {
-  it("formats currency in USD", () => {
-    expect(formatCurrency(4.25)).toBe("$4.25");
+  it("formats currency in THB", () => {
+    expect(formatCurrency(4.25)).toBe("฿4.25");
   });
 
   it("formats distances with one decimal place", () => {
