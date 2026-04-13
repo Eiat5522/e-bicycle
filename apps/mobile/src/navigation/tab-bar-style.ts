@@ -1,8 +1,8 @@
 import { borderWidths, colors, radii, spacing } from "@/theme/tokens";
 
-const TAB_BAR_HEIGHT = 56;
-const TAB_BAR_TOP_PADDING = 2;
-const TAB_BAR_BOTTOM_PADDING = 4;
+const TAB_BAR_HEIGHT = 52;
+const TAB_BAR_TOP_PADDING = 1;
+const TAB_BAR_BOTTOM_PADDING = 0;
 const TAB_BAR_OUTER_MARGIN = spacing.xs;
 
 export function getTabBarStyle(bottomInset: number) {
