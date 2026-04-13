@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  Image,
   Modal,
   Pressable,
   Text,
@@ -25,10 +26,27 @@ import {
   spacing,
   typography
 } from "@/theme/tokens";
+import { getBankLogo, type SupportedBankLogo } from "./bank-logo-map";
 
 const isTestEnvironment = process.env.NODE_ENV === "test";
 
-type PaymentMethod = "card" | "mobile_pay" | "voucher";
+type PaymentMethod = "card" | "mobile_pay" | "voucher" | "mobile_banking";
+
+type BankOption = {
+  id: SupportedBankLogo;
+  name: string;
+  color: string;
+};
+
+const BANK_OPTIONS: BankOption[] = [
+  { id: "KBANK", name: "KBank", color: "#138f2d" },
+  { id: "SCB", name: "SCB", color: "#4e2d83" },
+  { id: "BBL", name: "BBL", color: "#1b4f91" },
+  { id: "KTB", name: "KTB", color: "#00a3e0" },
+  { id: "TMB", name: "TMB", color: "#0081bb" },
+  { id: "TrueMoney", name: "TrueMoney", color: "#ff6700" },
+  { id: "PromptPay", name: "PromptPay", color: "#007bff" }
+];
 
 type TopUpState =
   | { status: "idle"; amount: number | null; method: PaymentMethod | null }
@@ -40,7 +58,8 @@ type ModalState =
   | { visible: false; type: null }
   | { visible: true; type: "topup_confirm"; amount: number; method: PaymentMethod }
   | { visible: true; type: "payment_success"; amount: number; method: PaymentMethod }
-  | { visible: true; type: "voucher_redeem"; code: string };
+  | { visible: true; type: "voucher_redeem"; code: string }
+  | { visible: true; type: "bank_select"; amount: number };
 
 const PAYMENT_STEPS = [
   { label: "Verifying payment method", description: "Checking your selected payment source..." },
@@ -55,10 +74,18 @@ const VOUCHER_STEPS = [
   { label: "Applying credit", description: "Adding voucher value to your balance..." }
 ];
 
+const MOBILE_BANKING_STEPS = [
+  { label: "Connecting to bank", description: "Establishing secure connection to your bank..." },
+  { label: "Verifying account", description: "Confirming your bank account details..." },
+  { label: "Processing transfer", description: "Completing the fund transfer..." },
+  { label: "Updating balance", description: "Adding funds to your wallet..." }
+];
+
 const methodLabels: Record<PaymentMethod, string> = {
   card: "Credit/Debit Card",
   mobile_pay: "Mobile Pay",
-  voucher: "Gift Voucher"
+  voucher: "Gift Voucher",
+  mobile_banking: "Mobile Banking"
 };
 
 const TOP_UP_AMOUNTS = [5, 10, 20, 50] as const;
@@ -111,15 +138,21 @@ function PaymentMethodIcon({ method }: { readonly method: PaymentMethod }) {
     return <MaterialCommunityIcons color={colors.text} name="cellphone-nfc" size={24} />;
   }
 
+  if (method === "mobile_banking") {
+    return <MaterialCommunityIcons color={colors.text} name="bank-outline" size={24} />;
+  }
+
   return <MaterialCommunityIcons color={colors.text} name="ticket-percent-outline" size={24} />;
 }
 
 function CardVisual({
   isAnimating,
-  method
+  method,
+  selectedBankId
 }: {
   readonly isAnimating: boolean;
   readonly method: PaymentMethod;
+  readonly selectedBankId?: SupportedBankLogo | null;
 }) {
   const pulse = useRef(new Animated.Value(0)).current;
 
@@ -285,6 +318,102 @@ function CardVisual({
     );
   }
 
+  if (method === "mobile_banking") {
+    const bank = selectedBankId ? BANK_OPTIONS.find((b) => b.id === selectedBankId) : null;
+    const bankColor = bank?.color ?? colors.teal;
+
+    const ringScale = pulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.85, 1.25]
+    });
+    const ringOpacity = pulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.4, 0]
+    });
+    const arrowOpacity = pulse.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0, 1, 0]
+    });
+    const arrowTranslate = pulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 16]
+    });
+
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: "#f0f7ff",
+          borderRadius: radii.large,
+          justifyContent: "center",
+          minHeight: 160,
+          overflow: "hidden",
+          padding: spacing.lg,
+          position: "relative"
+        }}>
+        {[0, 1, 2].map((ring) => (
+          <Animated.View
+            key={`bank-ring-${ring}`}
+            style={{
+              borderColor: bankColor,
+              borderRadius: radii.pill,
+              borderWidth: 2,
+              height: 64 + ring * 28,
+              opacity: isAnimating ? ringOpacity : 0,
+              position: "absolute",
+              transform: [{ scale: ringScale }],
+              width: 64 + ring * 28
+            }}
+          />
+        ))}
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: bankColor,
+            borderRadius: radii.pill,
+            height: 64,
+            justifyContent: "center",
+            overflow: "hidden",
+            width: 64
+          }}>
+          {bank ? (
+            <Image
+              source={getBankLogo(bank.id)}
+              style={{ height: 48, width: 48 }}
+              resizeMode="contain"
+            />
+          ) : (
+            <MaterialCommunityIcons color={colors.surface} name="bank-outline" size={28} />
+          )}
+        </View>
+        {isAnimating && (
+          <Animated.View
+            style={{
+              marginTop: spacing.sm,
+              opacity: arrowOpacity,
+              transform: [{ translateX: arrowTranslate }]
+            }}>
+            <MaterialCommunityIcons color={bankColor} name="arrow-right-bold" size={22} />
+          </Animated.View>
+        )}
+        <Text
+          selectable
+          style={{
+            color: colors.textMuted,
+            fontSize: 13,
+            marginTop: spacing.md,
+            textAlign: "center"
+          }}>
+          {isAnimating
+            ? `Transferring via ${bank?.name ?? "bank"}...`
+            : bank
+              ? `Pay via ${bank.name} internet banking`
+              : "Select your bank to proceed"}
+        </Text>
+      </View>
+    );
+  }
+
   const glowOpacity = pulse.interpolate({
     inputRange: [0, 1],
     outputRange: [0.2, 0.6]
@@ -382,6 +511,7 @@ export function WalletScreen() {
   const [topUp, setTopUp] = useState<TopUpState>({ status: "idle", amount: null, method: null });
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [selectedBank, setSelectedBank] = useState<SupportedBankLogo | null>(null);
   const [modal, setModal] = useState<ModalState>({ visible: false, type: null });
   const [voucherCode, setVoucherCode] = useState("");
 
@@ -509,7 +639,7 @@ export function WalletScreen() {
     const runId = runIdRef.current + 1;
     runIdRef.current = runId;
 
-    const steps = method === "voucher" ? VOUCHER_STEPS : PAYMENT_STEPS;
+    const steps = method === "voucher" ? VOUCHER_STEPS : method === "mobile_banking" ? MOBILE_BANKING_STEPS : PAYMENT_STEPS;
 
     setTopUp({ status: "processing", amount, method, stepIndex: 0 });
 
@@ -571,6 +701,11 @@ export function WalletScreen() {
       return;
     }
 
+    if (selectedMethod === "mobile_banking") {
+      setModal({ visible: true, type: "bank_select", amount: selectedAmount });
+      return;
+    }
+
     setModal({ visible: true, type: "topup_confirm", amount: selectedAmount, method: selectedMethod });
   }
 
@@ -584,6 +719,11 @@ export function WalletScreen() {
     void processTopUp(amount, method);
   }
 
+  function confirmBankSelection() {
+    if (modal.type !== "bank_select" || selectedBank === null) return;
+    setModal({ visible: true, type: "topup_confirm", amount: modal.amount, method: "mobile_banking" });
+  }
+
   function closeModal() {
     setModal({ visible: false, type: null });
   }
@@ -593,19 +733,29 @@ export function WalletScreen() {
     setTopUp({ status: "idle", amount: null, method: null });
     setSelectedAmount(null);
     setSelectedMethod(null);
+    setSelectedBank(null);
     setVoucherCode("");
   }
 
   const isProcessing = topUp.status === "processing";
   const progressWidth = useMemo(() => {
     if (topUp.status !== "processing") return "0%";
-    const steps = topUp.method === "voucher" ? VOUCHER_STEPS : PAYMENT_STEPS;
+    const steps =
+      topUp.method === "voucher"
+        ? VOUCHER_STEPS
+        : topUp.method === "mobile_banking"
+          ? MOBILE_BANKING_STEPS
+          : PAYMENT_STEPS;
     return `${((topUp.stepIndex + 1) / steps.length) * 100}%`;
   }, [topUp]);
 
   const currentStep =
     topUp.status === "processing"
-      ? (topUp.method === "voucher" ? VOUCHER_STEPS : PAYMENT_STEPS)[topUp.stepIndex]
+      ? (topUp.method === "voucher"
+          ? VOUCHER_STEPS
+          : topUp.method === "mobile_banking"
+            ? MOBILE_BANKING_STEPS
+            : PAYMENT_STEPS)[topUp.stepIndex]
       : null;
   const balance = wallet?.balance ?? 0;
   const points = wallet?.points ?? 0;
@@ -705,7 +855,7 @@ export function WalletScreen() {
               Payment method
             </Text>
             <View style={{ gap: spacing.sm }}>
-              {(["card", "mobile_pay", "voucher"] as PaymentMethod[]).map((method) => (
+              {(["card", "mobile_pay", "mobile_banking", "voucher"] as PaymentMethod[]).map((method) => (
                 <Pressable
                   key={method}
                   accessibilityRole="button"
@@ -734,6 +884,7 @@ export function WalletScreen() {
                       style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
                       {method === "card" && "Pay with your saved card ending in 4242"}
                       {method === "mobile_pay" && "Use Apple Pay or Google Pay"}
+                      {method === "mobile_banking" && "Transfer directly from your bank account"}
                       {method === "voucher" && "Redeem a gift voucher or promo code"}
                     </Text>
                   </View>
@@ -763,7 +914,7 @@ export function WalletScreen() {
           </View>
 
           {selectedAmount !== null && selectedMethod !== null && (
-            <CardVisual isAnimating={isProcessing} method={selectedMethod} />
+            <CardVisual isAnimating={isProcessing} method={selectedMethod} selectedBankId={selectedBank} />
           )}
 
           {topUp.status === "processing" && currentStep && (
@@ -951,6 +1102,27 @@ export function WalletScreen() {
                       }}>
                       {formatCurrency(modal.amount)}
                     </Text>
+                    {modal.method === "mobile_banking" && selectedBank && (
+                      <>
+                        <Text
+                          selectable
+                          style={{ color: colors.textMuted, fontSize: 13, marginTop: spacing.xs }}>
+                          Bank
+                        </Text>
+                        <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.sm }}>
+                          <Image
+                            source={getBankLogo(selectedBank)}
+                            style={{ height: 24, width: 24 }}
+                            resizeMode="contain"
+                          />
+                          <Text
+                            selectable
+                            style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
+                            {BANK_OPTIONS.find((b) => b.id === selectedBank)?.name}
+                          </Text>
+                        </View>
+                      </>
+                    )}
                   </View>
                   <View style={{ gap: spacing.sm }}>
                     <PrimaryButton
@@ -992,6 +1164,92 @@ export function WalletScreen() {
                     <PrimaryButton
                       label="Done"
                       onPress={closeModal}
+                    />
+                  </View>
+                </>
+              )}
+
+              {modal.type === "bank_select" && (
+                <>
+                  <Text
+                    selectable
+                    style={{ color: colors.text, fontSize: 20, fontWeight: "800" }}>
+                    Select your bank
+                  </Text>
+                  <Text
+                    selectable
+                    style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                    Choose the bank you want to transfer from to top up {formatCurrency(modal.amount)}.
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: spacing.sm,
+                      justifyContent: "space-between"
+                    }}>
+                    {BANK_OPTIONS.map((bank) => {
+                      const isSelected = selectedBank === bank.id;
+                      return (
+                        <Pressable
+                          key={bank.id}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Select ${bank.name}`}
+                          onPress={() => setSelectedBank(bank.id)}
+                          style={({ pressed }) => [
+                            {
+                              alignItems: "center",
+                              backgroundColor: isSelected ? bank.color : colors.surfaceMuted,
+                              borderColor: isSelected ? bank.color : colors.shadow,
+                              borderRadius: radii.medium,
+                              borderWidth: borderWidths.thin,
+                              gap: spacing.xs,
+                              paddingHorizontal: spacing.sm,
+                              paddingVertical: spacing.md,
+                              width: "30%"
+                            },
+                            pressed ? { opacity: 0.75 } : undefined
+                          ]}>
+                          <View
+                            style={{
+                              alignItems: "center",
+                              backgroundColor: isSelected ? "rgba(255,255,255,0.2)" : colors.surface,
+                              borderRadius: radii.pill,
+                              height: 44,
+                              justifyContent: "center",
+                              overflow: "hidden",
+                              width: 44
+                            }}>
+                            <Image
+                              source={getBankLogo(bank.id)}
+                              style={{ height: 36, width: 36 }}
+                              resizeMode="contain"
+                            />
+                          </View>
+                          <Text
+                            selectable
+                            style={{
+                              color: isSelected ? colors.surface : colors.text,
+                              fontSize: 12,
+                              fontWeight: "700",
+                              textAlign: "center"
+                            }}>
+                            {bank.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <View style={{ gap: spacing.sm }}>
+                    <PrimaryButton
+                      label="Continue"
+                      onPress={confirmBankSelection}
+                      disabled={selectedBank === null}
+                    />
+                    <PrimaryButton
+                      label="Cancel"
+                      onPress={closeModal}
+                      variant="secondary"
                     />
                   </View>
                 </>
