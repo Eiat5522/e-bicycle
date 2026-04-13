@@ -1,5 +1,9 @@
-import { AdminShell } from "@/components/admin-shell";
+import { redirect } from "next/navigation";
 
-export default function Home() {
-  return <AdminShell />;
+import { getAuthContext } from "@/lib/auth";
+
+export default async function Home() {
+  const context = await getAuthContext();
+
+  redirect(context?.profile?.isAdmin ? "/dashboard" : "/login");
 }

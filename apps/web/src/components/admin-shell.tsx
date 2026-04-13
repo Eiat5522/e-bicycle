@@ -22,18 +22,18 @@ const metrics = [
 
 export function AdminShell() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10">
+    <section className="flex flex-col gap-8">
       <section className="rounded-[2rem] bg-[var(--surface)] p-8 shadow-[0_20px_60px_rgba(45,47,47,0.08)]">
         <div className="flex flex-col gap-3">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
-            Glide Admin
+            Dashboard
           </p>
           <h1 className="max-w-2xl text-4xl font-black tracking-[-0.04em] text-[var(--foreground)]">
-            Future web operations live here. Mobile stays first.
+            Admin operations are wired in. The dashboard is still a placeholder.
           </h1>
           <p className="max-w-2xl text-base leading-7 text-[var(--foreground-muted)]">
-            This Next.js shell is intentionally light, but it already consumes the shared domain and
-            mock API packages that the Expo app uses.
+            Login, route protection, and user management now live in the admin panel. This landing
+            screen keeps the existing mock overview until the real dashboard modules are ready.
           </p>
         </div>
       </section>
@@ -50,6 +50,6 @@ export function AdminShell() {
           </article>
         ))}
       </section>
-    </main>
+    </section>
   );
 }
