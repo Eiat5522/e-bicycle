@@ -1,3 +1,96 @@
+insert into auth.users (
+  instance_id,
+  id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  confirmation_token,
+  email_change,
+  email_change_token_new,
+  recovery_token
+)
+values (
+  '00000000-0000-0000-0000-000000000000',
+  '11111111-1111-1111-1111-111111111111',
+  'authenticated',
+  'authenticated',
+  'admin@glide.local',
+  extensions.crypt('glide-admin-123', extensions.gen_salt('bf')),
+  timezone('utc'::text, now()),
+  '{"provider":"email","providers":["email"]}',
+  '{"first_name":"Test Admin"}',
+  timezone('utc'::text, now()),
+  timezone('utc'::text, now()),
+  '',
+  '',
+  '',
+  ''
+)
+on conflict (id) do update
+set
+  email = excluded.email,
+  encrypted_password = excluded.encrypted_password,
+  email_confirmed_at = excluded.email_confirmed_at,
+  raw_app_meta_data = excluded.raw_app_meta_data,
+  raw_user_meta_data = excluded.raw_user_meta_data,
+  updated_at = excluded.updated_at;
+
+insert into auth.identities (
+  id,
+  user_id,
+  identity_data,
+  provider,
+  provider_id,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
+select
+  '22222222-2222-2222-2222-222222222222',
+  '11111111-1111-1111-1111-111111111111',
+  jsonb_build_object(
+    'sub',
+    '11111111-1111-1111-1111-111111111111',
+    'email',
+    'admin@glide.local'
+  ),
+  'email',
+  '11111111-1111-1111-1111-111111111111',
+  timezone('utc'::text, now()),
+  timezone('utc'::text, now()),
+  timezone('utc'::text, now())
+where not exists (
+  select 1
+  from auth.identities
+  where provider = 'email'
+    and provider_id = '11111111-1111-1111-1111-111111111111'
+);
+
+insert into public.profiles (
+  id,
+  first_name,
+  is_admin
+)
+values (
+  '11111111-1111-1111-1111-111111111111',
+  'Test Admin',
+  true
+)
+on conflict (id) do update
+set
+  first_name = excluded.first_name,
+  is_admin = excluded.is_admin;
+
+insert into public.wallets (id)
+values ('11111111-1111-1111-1111-111111111111')
+on conflict (id) do nothing;
+
 insert into public.bikes (
   id,
   model,
