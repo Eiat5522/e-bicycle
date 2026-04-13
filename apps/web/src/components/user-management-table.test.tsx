@@ -44,6 +44,7 @@ describe("UserDetailDrawerContent", () => {
     render(
       <UserDetailDrawerContent
         activeTab="transactions"
+        isMounted
         onClose={jest.fn()}
         onSelectTab={jest.fn()}
         onUpdateUser={jest.fn()}
@@ -64,6 +65,7 @@ describe("UserDetailDrawerContent", () => {
     render(
       <UserDetailDrawerContent
         activeTab="rides"
+        isMounted
         onClose={jest.fn()}
         onSelectTab={jest.fn()}
         onUpdateUser={jest.fn()}
