@@ -495,6 +495,12 @@ function TransactionIcon({ type }: { readonly type: string }) {
   );
 }
 
+function getStepsForMethod(method: PaymentMethod) {
+  if (method === "voucher") return VOUCHER_STEPS;
+  if (method === "mobile_banking") return MOBILE_BANKING_STEPS;
+  return PAYMENT_STEPS;
+}
+
 export function WalletScreen() {
   const router = useRouter();
   const runIdRef = useRef(0);
@@ -639,7 +645,7 @@ export function WalletScreen() {
     const runId = runIdRef.current + 1;
     runIdRef.current = runId;
 
-    const steps = method === "voucher" ? VOUCHER_STEPS : method === "mobile_banking" ? MOBILE_BANKING_STEPS : PAYMENT_STEPS;
+    const steps = getStepsForMethod(method);
 
     setTopUp({ status: "processing", amount, method, stepIndex: 0 });
 
@@ -719,7 +725,7 @@ export function WalletScreen() {
     void processTopUp(amount, method);
   }
 
-  function confirmBankSelection() {
+  function proceedToTopUpConfirmation() {
     if (modal.type !== "bank_select" || selectedBank === null) return;
     setModal({ visible: true, type: "topup_confirm", amount: modal.amount, method: "mobile_banking" });
   }
@@ -740,22 +746,13 @@ export function WalletScreen() {
   const isProcessing = topUp.status === "processing";
   const progressWidth = useMemo(() => {
     if (topUp.status !== "processing") return "0%";
-    const steps =
-      topUp.method === "voucher"
-        ? VOUCHER_STEPS
-        : topUp.method === "mobile_banking"
-          ? MOBILE_BANKING_STEPS
-          : PAYMENT_STEPS;
+    const steps = getStepsForMethod(topUp.method);
     return `${((topUp.stepIndex + 1) / steps.length) * 100}%`;
   }, [topUp]);
 
   const currentStep =
     topUp.status === "processing"
-      ? (topUp.method === "voucher"
-          ? VOUCHER_STEPS
-          : topUp.method === "mobile_banking"
-            ? MOBILE_BANKING_STEPS
-            : PAYMENT_STEPS)[topUp.stepIndex]
+      ? getStepsForMethod(topUp.method)[topUp.stepIndex]
       : null;
   const balance = wallet?.balance ?? 0;
   const points = wallet?.points ?? 0;
@@ -1243,7 +1240,7 @@ export function WalletScreen() {
                   <View style={{ gap: spacing.sm }}>
                     <PrimaryButton
                       label="Continue"
-                      onPress={confirmBankSelection}
+                      onPress={proceedToTopUpConfirmation}
                       disabled={selectedBank === null}
                     />
                     <PrimaryButton
