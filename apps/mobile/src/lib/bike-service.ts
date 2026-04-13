@@ -1,6 +1,11 @@
 import type { Bike, NearbyBikesResult } from "@glide/shared";
 
-import { bikeService, createHttpBikeService, type BikeService } from "@glide/api";
+import {
+  bikeService,
+  createHttpBikeService,
+  getSeedBikeImageUrl,
+  type BikeService
+} from "@glide/api";
 
 import { hasSupabaseConfig, supabase } from "./supabase";
 import type { Database } from "./supabase.types";
@@ -39,6 +44,7 @@ function mapBikeRow(row: BikeRow): Bike {
   return {
     id: row.id,
     model: row.model,
+    ...(getSeedBikeImageUrl(row.id) ? { imageUrl: getSeedBikeImageUrl(row.id) } : {}),
     ...(row.ride_class ? { rideClass: row.ride_class } : {}),
     estimatedRangeKm: row.estimated_range_km,
     topSpeedKmh: row.top_speed_kmh,

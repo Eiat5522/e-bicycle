@@ -3,7 +3,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -17,13 +17,49 @@ export default function RootLayout() {
     SpaceGrotesk_500Medium,
     SpaceGrotesk_700Bold
   });
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(colors.background);
   }, []);
 
-  if (!fontsLoaded && !fontError) {
-    return null;
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setFontLoadTimedOut(true);
+    }, 4000);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [fontError, fontsLoaded]);
+
+  if (!fontsLoaded && !fontError && !fontLoadTimedOut) {
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: colors.background,
+          flex: 1,
+          gap: 16,
+          justifyContent: "center",
+          paddingHorizontal: 24
+        }}>
+        <ActivityIndicator color={colors.coralDark} size="large" />
+        <Text
+          style={{
+            color: colors.textMuted,
+            fontFamily: fontFamilies.medium,
+            fontSize: 16,
+            textAlign: "center"
+          }}>
+          Loading rider app...
+        </Text>
+      </View>
+    );
   }
 
   // If fonts failed to load, continue with system fonts as fallback

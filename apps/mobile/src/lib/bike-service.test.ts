@@ -85,6 +85,7 @@ describe("configuredBikeService", () => {
     expect(result.bikes).toEqual([
       expect.objectContaining({
         id: "G-104",
+        imageUrl: expect.stringContaining("Electric_Bicycle"),
         model: "Glide Pro X",
         rideClass: "Pro",
         pricingLabel: "$1.20 / 10 min",
@@ -110,6 +111,7 @@ describe("configuredBikeService", () => {
     expect(result).toEqual(
       expect.objectContaining({
         id: "G-104",
+        imageUrl: expect.stringContaining("Electric_Bicycle"),
         model: "Glide Pro X"
       })
     );

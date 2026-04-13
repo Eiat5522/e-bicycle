@@ -1,9 +1,16 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { borderWidths, colors, fontFamilies, radii, spacing } from "@/theme/tokens";
+import { SCAN_TAB_UNLOCK_HREF } from "@/navigation/scan-tab";
+import { getTabBarStyle } from "@/navigation/tab-bar-style";
+import { colors, fontFamilies, radii, spacing } from "@/theme/tokens";
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+
   return (
     <Tabs
       screenOptions={{
@@ -24,28 +31,16 @@ export default function TabsLayout() {
           marginBottom: 0
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 9,
           fontFamily: fontFamilies.bold
         },
         tabBarItemStyle: {
           borderRadius: radii.medium,
-          marginHorizontal: spacing.xxs,
-          marginTop: spacing.xs,
+          marginHorizontal: 2,
+          marginTop: spacing.xxs,
           marginBottom: spacing.xxs
         },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderColor: colors.shadow,
-          borderRadius: radii.large,
-          borderWidth: borderWidths.thick,
-          borderTopWidth: borderWidths.thick + 2,
-          height: 64,
-          marginBottom: spacing.xs,
-          marginHorizontal: spacing.xs,
-          paddingBottom: 6,
-          paddingHorizontal: spacing.xxs,
-          paddingTop: 4
-        }
+        tabBarStyle: getTabBarStyle(insets.bottom)
       }}>
       <Tabs.Screen
         name="index"
@@ -65,6 +60,46 @@ export default function TabsLayout() {
           tabBarLabel: "Wallet",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons color={color} name="wallet-outline" size={size} />
+          )
+        }}
+      />
+      <Tabs.Screen
+        name="scan"
+        listeners={{
+          tabPress: (event) => {
+            event.preventDefault();
+            router.push(SCAN_TAB_UNLOCK_HREF);
+          }
+        }}
+        options={{
+          headerShown: false,
+          title: "Scan",
+          tabBarLabel: "Scan",
+          tabBarIcon: () => (
+            <View
+              style={{
+                alignItems: "center",
+                backgroundColor: colors.teal,
+                borderColor: colors.shadow,
+                borderRadius: radii.pill,
+                borderWidth: 3,
+                height: 36,
+                justifyContent: "center",
+                marginTop: -4,
+                width: 36
+              }}>
+              <MaterialCommunityIcons color={colors.surface} name="qrcode-scan" size={18} />
+            </View>
+          )
+        }}
+      />
+      <Tabs.Screen
+        name="chat-support"
+        options={{
+          title: "Chat Support",
+          tabBarLabel: "Support",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons color={color} name="message-text-outline" size={size} />
           )
         }}
       />

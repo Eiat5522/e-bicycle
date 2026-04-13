@@ -109,6 +109,24 @@ describe("UnlockScreen", () => {
     expect(screen.queryByText("Simulate Successful Unlock")).toBeNull();
   });
 
+  it("opens directly into the QR simulation when route params request scan mode", async () => {
+    jest.mocked(useLocalSearchParams).mockReturnValue({
+      id: "DEMO-BIKE",
+      method: "qr",
+      autostart: "true"
+    });
+
+    render(<UnlockScreen />);
+
+    expect(screen.getByText("QR scanner simulation")).toBeTruthy();
+    expect(screen.getByText("Preparing QR pass...")).toBeTruthy();
+
+    await flushTimers(900);
+
+    expect(screen.getByText("QR pass ready")).toBeTruthy();
+    expect(screen.getByText("Unlock bike now")).toBeTruthy();
+  });
+
   it("fails the first QR attempt, then retries to a successful ride transition", async () => {
     startUnlock
       .mockResolvedValueOnce(createResult("qr", 1, "failed"))

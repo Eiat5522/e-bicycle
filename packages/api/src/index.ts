@@ -41,6 +41,23 @@ export interface SupportService {
   startSession(mode?: SupportSession["mode"]): Promise<SupportSession>;
 }
 
+export const seedBikeImageUrls = {
+  "G-104":
+    "https://commons.wikimedia.org/wiki/Special:FilePath/Electric_Bicycle.jpg?width=1200",
+  "G-205":
+    "https://commons.wikimedia.org/wiki/Special:FilePath/Brosen_city_bicycle.jpg?width=1200",
+  "G-318":
+    "https://commons.wikimedia.org/wiki/Special:FilePath/Folding_bicycle.jpg?width=1200",
+  "G-412":
+    "https://commons.wikimedia.org/wiki/Special:FilePath/Cargokolo_firmy_DHL_01.jpg?width=1200",
+  "G-509":
+    "https://commons.wikimedia.org/wiki/Special:FilePath/City_bike_1.jpg?width=1200"
+} as const;
+
+export function getSeedBikeImageUrl(bikeId: string) {
+  return seedBikeImageUrls[bikeId as keyof typeof seedBikeImageUrls];
+}
+
 export const mockUser: User = {
   id: "user-alex",
   firstName: "Alex",
@@ -51,6 +68,7 @@ export const mockBikes: readonly Bike[] = [
   {
     id: "G-104",
     model: "Glide Pro X",
+    imageUrl: getSeedBikeImageUrl("G-104"),
     rideClass: "Pro",
     estimatedRangeKm: 45,
     topSpeedKmh: 25,
@@ -63,6 +81,7 @@ export const mockBikes: readonly Bike[] = [
   {
     id: "G-205",
     model: "Glide City",
+    imageUrl: getSeedBikeImageUrl("G-205"),
     rideClass: "City",
     estimatedRangeKm: 31,
     topSpeedKmh: 22,
@@ -75,6 +94,7 @@ export const mockBikes: readonly Bike[] = [
   {
     id: "G-318",
     model: "Glide Lite",
+    imageUrl: getSeedBikeImageUrl("G-318"),
     rideClass: "Urban",
     estimatedRangeKm: 28,
     topSpeedKmh: 20,
@@ -87,6 +107,7 @@ export const mockBikes: readonly Bike[] = [
   {
     id: "G-412",
     model: "Glide Cargo",
+    imageUrl: getSeedBikeImageUrl("G-412"),
     rideClass: "Cargo",
     estimatedRangeKm: 36,
     topSpeedKmh: 20,
@@ -99,6 +120,7 @@ export const mockBikes: readonly Bike[] = [
   {
     id: "G-509",
     model: "Glide Metro",
+    imageUrl: getSeedBikeImageUrl("G-509"),
     rideClass: "City",
     estimatedRangeKm: 33,
     topSpeedKmh: 23,

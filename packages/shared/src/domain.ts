@@ -19,6 +19,7 @@ export interface Coordinates {
 export interface Bike {
   readonly id: string;
   readonly model: string;
+  readonly imageUrl?: string;
   readonly rideClass?: string;
   readonly estimatedRangeKm: number;
   readonly topSpeedKmh: number;

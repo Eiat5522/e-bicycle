@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import {
   Animated,
   Easing,
+  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -11,7 +12,6 @@ import {
 } from "react-native";
 
 import type { Bike } from "@glide/shared";
-import { formatDistanceKm } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
 import {
@@ -35,7 +35,11 @@ interface BikeMarkerDrawerProps {
   readonly onHelp: () => void;
 }
 
-const DRAWER_HEIGHT = 360;
+const DRAWER_HEIGHT = 500;
+
+function getBatteryEstimate(rangeKm: number) {
+  return Math.max(18, Math.min(100, Math.round((rangeKm / 50) * 100)));
+}
 
 export function BikeMarkerDrawer({
   bike,
@@ -91,6 +95,9 @@ export function BikeMarkerDrawer({
     return null;
   }
 
+  const batteryEstimate = getBatteryEstimate(bike.estimatedRangeKm);
+  const statusTone = getBikeMarkerColor(bike.status, false);
+
   return (
     <Modal
       animationType="none"
@@ -143,23 +150,15 @@ export function BikeMarkerDrawer({
 
             <View
               style={{
-                alignItems: "flex-start",
+                alignItems: "center",
                 flexDirection: "row",
                 justifyContent: "space-between",
                 width: "100%"
               }}
             >
-              <View style={{ flex: 1, gap: spacing.xs, paddingRight: spacing.md }}>
-                <Text selectable style={{ ...typography.eyebrow, color: colors.teal }}>
-                  Ready nearby
-                </Text>
-                <Text selectable style={{ ...typography.title, color: colors.text }}>
-                  {bike.model}
-                </Text>
-                <Text selectable style={{ ...typography.body, color: colors.textMuted }}>
-                  {bike.id} · {bike.location}
-                </Text>
-              </View>
+              <Text selectable style={{ ...typography.eyebrow, color: colors.teal }}>
+                Ready to rent
+              </Text>
 
               <Pressable
                 accessibilityLabel="Dismiss bike drawer"
@@ -189,30 +188,94 @@ export function BikeMarkerDrawer({
               borderColor: colors.shadow,
               borderRadius: radii.large,
               borderWidth: borderWidths.thick,
-              gap: spacing.sm,
-              padding: spacing.md
+              flexDirection: "row",
+              gap: spacing.md,
+              overflow: "hidden",
+              padding: spacing.sm
             }}
           >
-            <Text selectable style={{ ...typography.bodyStrong, color: colors.text }}>
-              {bike.pricingLabel}
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.sm }}>
-              <MetricPill
-                icon="near-me"
-                label={distanceLabel ?? "Distance unavailable"}
-                tone={colors.tealBright}
+            {bike.imageUrl ? (
+              <Image
+                accessibilityLabel={`${bike.model} photo`}
+                source={{ uri: bike.imageUrl }}
+                style={{
+                  backgroundColor: colors.surface,
+                  borderRadius: 22,
+                  height: 108,
+                  width: 108
+                }}
               />
-              <MetricPill
-                icon="battery-full"
-                label={`Range ${formatDistanceKm(bike.estimatedRangeKm)}`}
-                tone={colors.white}
-              />
-              <MetricPill
-                icon="pedal-bike"
-                label={getBikeStatusLabel(bike.status)}
-                tone={getBikeMarkerColor(bike.status, false)}
-              />
+            ) : (
+              <View
+                accessibilityLabel={`${bike.model} placeholder`}
+                style={{
+                  alignItems: "center",
+                  backgroundColor: colors.surface,
+                  borderColor: colors.shadow,
+                  borderRadius: 22,
+                  borderWidth: borderWidths.thick,
+                  height: 108,
+                  justifyContent: "center",
+                  width: 108
+                }}
+              >
+                <MaterialIcons color={colors.teal} name="pedal-bike" size={42} />
+              </View>
+            )}
+
+            <View style={{ flex: 1, gap: spacing.xs, justifyContent: "space-between" }}>
+              <View style={{ gap: spacing.xxs }}>
+                <Text selectable style={{ ...typography.title, color: colors.text }}>
+                  {bike.model}
+                </Text>
+                <Text selectable style={{ ...typography.body, color: colors.textMuted }}>
+                  {bike.id} · {bike.location}
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs }}>
+                <MetricPill
+                  icon="pedal-bike"
+                  label={getBikeStatusLabel(bike.status)}
+                  tone={statusTone}
+                />
+                <MetricPill
+                  icon="near-me"
+                  label={distanceLabel ?? "Distance unavailable"}
+                  tone={colors.tealBright}
+                />
+              </View>
             </View>
+          </View>
+
+          <View style={{ flexDirection: "row", gap: spacing.sm }}>
+            <StatCard
+              icon="battery-full"
+              label="Battery"
+              value={`${batteryEstimate}%`}
+              detail={`${bike.estimatedRangeKm} km range`}
+            />
+            <StatCard
+              icon="bolt"
+              label="Top speed"
+              value={`${bike.topSpeedKmh}`}
+              detail="km/h"
+            />
+          </View>
+
+          <View style={{ flexDirection: "row", gap: spacing.sm }}>
+            <PriceCard
+              accent={colors.teal}
+              label="Unlock"
+              value={bike.pricingLabel}
+              detail={`${bike.rideClass ?? "Urban"} class`}
+            />
+            <PriceCard
+              accent={colors.coral}
+              label="Pickup"
+              value="Ready now"
+              detail="No reservation queue"
+            />
           </View>
 
           <View style={{ gap: spacing.sm }}>
@@ -226,10 +289,6 @@ export function BikeMarkerDrawer({
               </View>
             </View>
           </View>
-
-          <Text selectable style={{ ...typography.body, color: colors.textMuted }}>
-            {bike.rideClass ?? "Urban"} class · Top speed {bike.topSpeedKmh} km/h
-          </Text>
         </Animated.View>
       </View>
     </Modal>
@@ -267,10 +326,79 @@ function MetricPill({ icon, label, tone }: MetricPillProps) {
           width: 26
         }}
       >
-        <MaterialIcons color={colors.text} name={icon} size={16} />
+        <MaterialIcons color={colors.text} name={icon} size={14} />
       </View>
       <Text selectable style={{ ...typography.label, color: colors.text }}>
         {label}
+      </Text>
+    </View>
+  );
+}
+
+interface StatCardProps {
+  readonly icon: keyof typeof MaterialIcons.glyphMap;
+  readonly label: string;
+  readonly value: string;
+  readonly detail: string;
+}
+
+function StatCard({ icon, label, value, detail }: StatCardProps) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderColor: colors.shadow,
+        borderRadius: radii.large,
+        borderWidth: borderWidths.thick,
+        flex: 1,
+        gap: spacing.xxs,
+        padding: spacing.md
+      }}
+    >
+      <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.xs }}>
+        <MaterialIcons color={colors.teal} name={icon} size={18} />
+        <Text selectable style={{ ...typography.eyebrow, color: colors.textMuted }}>
+          {label}
+        </Text>
+      </View>
+      <Text selectable style={{ ...typography.title, color: colors.text }}>
+        {value}
+      </Text>
+      <Text selectable style={{ ...typography.body, color: colors.textMuted }}>
+        {detail}
+      </Text>
+    </View>
+  );
+}
+
+interface PriceCardProps {
+  readonly accent: string;
+  readonly label: string;
+  readonly value: string;
+  readonly detail: string;
+}
+
+function PriceCard({ accent, label, value, detail }: PriceCardProps) {
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        borderColor: colors.shadow,
+        borderRadius: radii.large,
+        borderWidth: borderWidths.thick,
+        flex: 1,
+        gap: spacing.xxs,
+        padding: spacing.md
+      }}
+    >
+      <Text selectable style={{ ...typography.eyebrow, color: accent }}>
+        {label}
+      </Text>
+      <Text selectable style={{ ...typography.bodyStrong, color: colors.text }}>
+        {value}
+      </Text>
+      <Text selectable style={{ ...typography.body, color: colors.textMuted }}>
+        {detail}
       </Text>
     </View>
   );

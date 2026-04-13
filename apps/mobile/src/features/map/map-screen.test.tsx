@@ -119,6 +119,10 @@ describe("MapScreen", () => {
       radiusMeters: 1500,
       limit: 50
     });
+    expect(jest.mocked(MapCanvas).mock.calls.at(-1)?.[0].mapCenter).toEqual({
+      latitude: 37.7749,
+      longitude: -122.4194
+    });
   }, 10000);
 
   it("falls back to the default map coordinates when live location times out", async () => {
@@ -140,6 +144,10 @@ describe("MapScreen", () => {
     expect(
       screen.getByText("Live location timed out. Showing bikes near central Bangkok for now.")
     ).toBeTruthy();
+    expect(jest.mocked(MapCanvas).mock.calls.at(-1)?.[0].mapCenter).toEqual({
+      latitude: 37.7749,
+      longitude: -122.4194
+    });
   });
 
   it("passes available and in-use bikes to the map canvas", async () => {
@@ -170,7 +178,8 @@ describe("MapScreen", () => {
           lastReportedAt: "2026-04-06T08:56:00Z"
         }
       ],
-      serverTime: "2026-04-06T09:00:00Z"
+      serverTime: "2026-04-06T09:00:00Z",
+      searchCenter: { latitude: 13.7563, longitude: 100.5018 }
     });
 
     await renderScreen();
@@ -189,6 +198,10 @@ describe("MapScreen", () => {
     expect(latestCall?.[0].bikeDistanceLabels).toMatchObject({
       "G-104": expect.stringMatching(/km away$/),
       "G-205": expect.stringMatching(/km away$/)
+    });
+    expect(latestCall?.[0].mapCenter).toEqual({
+      latitude: 13.7563,
+      longitude: 100.5018
     });
   });
 
@@ -351,6 +364,8 @@ describe("MapScreen", () => {
     expect(screen.getByText("Unlock and Ride")).toBeTruthy();
     expect(screen.getByText("Need Help?")).toBeTruthy();
     expect(screen.getByText("G-205 · อโศก Interchange")).toBeTruthy();
+    expect(screen.getByLabelText("Glide City photo")).toBeTruthy();
+    expect(screen.queryByText(/Range\s+\d+(\.\d+)?\s+km/i)).toBeNull();
   });
 
   it("dismisses the marker drawer without affecting the selected card", async () => {
@@ -490,6 +505,57 @@ describe("MapScreen", () => {
     await waitFor(() => {
       expect(screen.getByText("No bikes nearby right now")).toBeTruthy();
     });
+  });
+
+  it("expands the search radius when no bikes are found nearby", async () => {
+    listNearby
+      .mockResolvedValueOnce({
+        bikes: [],
+        serverTime: "2026-04-06T09:00:00Z",
+        searchCenter: { latitude: 37.7749, longitude: -122.4194 }
+      })
+      .mockResolvedValueOnce({
+        bikes: [
+          {
+            id: "G-104",
+            model: "Glide Pro X",
+            rideClass: "Pro",
+            estimatedRangeKm: 45,
+            topSpeedKmh: 25,
+            pricingLabel: "$1.20 / 10 min",
+            status: "available",
+            location: "Mission District",
+            coordinates: { latitude: 37.7599, longitude: -122.4148 },
+            lastReportedAt: "2026-04-06T08:55:00Z"
+          }
+        ],
+        serverTime: "2026-04-06T09:00:00Z",
+        searchCenter: { latitude: 37.7749, longitude: -122.4194 }
+      });
+
+    await renderScreen();
+
+    await waitForMapCanvas();
+
+    await waitFor(() => {
+      expect(screen.getByText("Refresh paused")).toBeTruthy();
+    });
+
+    expect(listNearby).toHaveBeenNthCalledWith(1, {
+      latitude: 37.7749,
+      longitude: -122.4194,
+      radiusMeters: 1500,
+      limit: 50
+    });
+    expect(listNearby).toHaveBeenNthCalledWith(2, {
+      latitude: 37.7749,
+      longitude: -122.4194,
+      radiusMeters: 8000,
+      limit: 50
+    });
+    expect(
+      screen.getByText("No bikes within 1.5 km. Showing the closest bikes from a wider area.")
+    ).toBeTruthy();
   });
 
   it("polls for nearby bikes while focused", async () => {

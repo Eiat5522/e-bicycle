@@ -5,6 +5,7 @@ import { AppState, ScrollView, Text, View } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { getSeedBikeImageUrl } from "@glide/api";
 import type { Coordinates, NearbyBikesResult } from "@glide/shared";
 import { formatDistanceKm } from "@glide/shared";
 
@@ -18,6 +19,7 @@ import { BikeMarkerDrawer } from "./bike-marker-drawer";
 import { MapCanvas } from "./map-canvas";
 
 export const DEFAULT_NEARBY_RADIUS_METERS = 1500;
+export const EXPANDED_NEARBY_RADIUS_METERS = 8000;
 export const MAP_POLL_INTERVAL_MS = 15000;
 export const DEFAULT_MAP_COORDINATES = {
   latitude: 13.7563,
@@ -39,14 +41,38 @@ export function MapScreen() {
   const [drawerBikeId, setDrawerBikeId] = useState<string>();
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
+  const fetchNearbyBikes = useCallback(async (coordinates: Coordinates) => {
+    const primaryResult = await configuredBikeService.listNearby({
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      radiusMeters: DEFAULT_NEARBY_RADIUS_METERS,
+      limit: 50
+    });
+
+    if (primaryResult.bikes.length > 0) {
+      return { result: primaryResult };
+    }
+
+    const expandedResult = await configuredBikeService.listNearby({
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      radiusMeters: EXPANDED_NEARBY_RADIUS_METERS,
+      limit: 50
+    });
+
+    if (expandedResult.bikes.length === 0) {
+      return { result: primaryResult };
+    }
+
+    return {
+      result: expandedResult,
+      notice: "No bikes within 1.5 km. Showing the closest bikes from a wider area."
+    };
+  }, []);
+
   const loadNearbyBikes = useCallback(
     async (coordinates: Coordinates) => {
-      const result = await configuredBikeService.listNearby({
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        radiusMeters: DEFAULT_NEARBY_RADIUS_METERS,
-        limit: 50
-      });
+      const { result, notice } = await fetchNearbyBikes(coordinates);
 
       setNearbyResult(result);
       setSelectedBikeId((currentId) => currentId ?? result.bikes[0]?.id);
@@ -55,9 +81,9 @@ export function MapScreen() {
       );
       setLoadState("ready");
       setErrorMessage(undefined);
-      setRefreshError(undefined);
+      return notice;
     },
-    []
+    [fetchNearbyBikes]
   );
 
   const requestLocationAndLoad = useCallback(async () => {
@@ -103,11 +129,9 @@ export function MapScreen() {
       }
 
       setUserCoordinates(coordinates);
-      await loadNearbyBikes(coordinates);
+      const nearbyNotice = await loadNearbyBikes(coordinates);
 
-      if (fallbackMessage) {
-        setRefreshError(fallbackMessage);
-      }
+      setRefreshError([fallbackMessage, nearbyNotice].filter(Boolean).join(" ") || undefined);
     } catch (error) {
       setLoadState("error");
       setErrorMessage(
@@ -132,32 +156,11 @@ export function MapScreen() {
     }
 
     intervalRef.current = setInterval(() => {
-      void loadNearbyBikes(userCoordinates).catch((error: unknown) => {
-        const message =
-          error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
-
-        setErrorMessage(message);
-
-        if (!nearbyResult) {
-          setLoadState("error");
-          return;
-        }
-
-        setRefreshError("Unable to refresh right now. Showing the latest available bikes.");
-      });
-    }, MAP_POLL_INTERVAL_MS);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isFocused, loadNearbyBikes, nearbyResult, userCoordinates]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextState) => {
-      if (nextState === "active" && userCoordinates) {
-        void loadNearbyBikes(userCoordinates).catch((error: unknown) => {
+      void loadNearbyBikes(userCoordinates)
+        .then((notice) => {
+          setRefreshError(notice);
+        })
+        .catch((error: unknown) => {
           const message =
             error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
 
@@ -170,6 +173,35 @@ export function MapScreen() {
 
           setRefreshError("Unable to refresh right now. Showing the latest available bikes.");
         });
+    }, MAP_POLL_INTERVAL_MS);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isFocused, loadNearbyBikes, nearbyResult, userCoordinates]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active" && userCoordinates) {
+        void loadNearbyBikes(userCoordinates)
+          .then((notice) => {
+            setRefreshError(notice);
+          })
+          .catch((error: unknown) => {
+            const message =
+              error instanceof Error ? error.message : "Failed to refresh nearby bikes.";
+
+            setErrorMessage(message);
+
+            if (!nearbyResult) {
+              setLoadState("error");
+              return;
+            }
+
+            setRefreshError("Unable to refresh right now. Showing the latest available bikes.");
+          });
       }
     });
 
@@ -215,11 +247,9 @@ export function MapScreen() {
       }
 
       setUserCoordinates(coordinates);
-      await loadNearbyBikes(coordinates);
+      const nearbyNotice = await loadNearbyBikes(coordinates);
 
-      if (fallbackMessage) {
-        setRefreshError(fallbackMessage);
-      }
+      setRefreshError([fallbackMessage, nearbyNotice].filter(Boolean).join(" ") || undefined);
     } catch (error) {
       setRefreshError(
         error instanceof Error ? error.message : "Unable to recenter to your current location."
@@ -227,9 +257,18 @@ export function MapScreen() {
     }
   }, [loadNearbyBikes]);
 
+  const bikesWithSeedImages = useMemo(
+    () =>
+      (nearbyResult?.bikes ?? []).map((bike) => ({
+        ...bike,
+        imageUrl: bike.imageUrl ?? getSeedBikeImageUrl(bike.id)
+      })),
+    [nearbyResult?.bikes]
+  );
+
   const sortedBikes = useMemo(
-    () => sortBikesByDistance(nearbyResult?.bikes ?? [], userCoordinates),
-    [nearbyResult?.bikes, userCoordinates]
+    () => sortBikesByDistance(bikesWithSeedImages, userCoordinates),
+    [bikesWithSeedImages, userCoordinates]
   );
 
   const bikeDistanceLabels = useMemo(() => {
@@ -249,6 +288,7 @@ export function MapScreen() {
     () => sortedBikes.find((bike) => bike.id === drawerBikeId),
     [drawerBikeId, sortedBikes]
   );
+  const mapCenter = nearbyResult?.searchCenter ?? userCoordinates;
 
   const drawer = (
     <BikeMarkerDrawer
@@ -291,6 +331,7 @@ export function MapScreen() {
           <MapCanvas
             bikes={sortedBikes}
             bikeDistanceLabels={bikeDistanceLabels}
+            mapCenter={mapCenter}
             onRecenter={() => void handleRecenterToCurrentLocation()}
             selectedBikeId={selectedBikeId}
             userCoordinates={userCoordinates}

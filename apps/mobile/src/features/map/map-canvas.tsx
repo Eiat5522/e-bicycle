@@ -11,6 +11,7 @@ import { getBikeMarkerColor, getBikeStatusLabel } from "./marker-colors";
 interface MapCanvasProps {
   readonly bikes: readonly Bike[];
   readonly bikeDistanceLabels?: Readonly<Record<string, string>>;
+  readonly mapCenter: Coordinates | undefined;
   readonly onRecenter: () => void;
   readonly selectedBikeId: string | undefined;
   readonly userCoordinates: Coordinates | undefined;
@@ -20,6 +21,7 @@ interface MapCanvasProps {
 export function MapCanvas({
   bikes,
   bikeDistanceLabels,
+  mapCenter,
   onRecenter,
   selectedBikeId,
   userCoordinates,
@@ -50,7 +52,11 @@ export function MapCanvas({
         </Pressable>
       </View>
       <Text selectable style={{ ...typography.body, color: colors.textMuted }}>
-        Web builds keep a lightweight fallback. Current location:{" "}
+        Web builds keep a lightweight fallback. Map center:{" "}
+        {mapCenter
+          ? `${mapCenter.latitude.toFixed(4)}, ${mapCenter.longitude.toFixed(4)}`
+          : "unknown"}
+        . Current location:{" "}
         {userCoordinates
           ? `${userCoordinates.latitude.toFixed(4)}, ${userCoordinates.longitude.toFixed(4)}`
           : "unknown"}

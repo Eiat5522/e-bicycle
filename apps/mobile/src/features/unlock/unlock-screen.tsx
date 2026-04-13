@@ -134,6 +134,18 @@ function createMockQrPayload(bikeId: string, attempt: number) {
   return `GLIDE-${bikeId.replace(/[^A-Z0-9]/gi, "").toUpperCase()}-${String(attempt).padStart(2, "0")}`;
 }
 
+function readSingleParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getRequestedUnlockMethod(value: string | undefined): UnlockMethod | undefined {
+  if (value === "qr" || value === "bluetooth") {
+    return value;
+  }
+
+  return undefined;
+}
+
 function getUnlockErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -348,10 +360,17 @@ function MethodVisual({
 
 export function UnlockScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id?: string }>();
-  const bikeId = params.id ?? "your bike";
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+    method?: string | string[];
+    autostart?: string | string[];
+  }>();
+  const bikeId = readSingleParam(params.id) ?? "your bike";
+  const requestedMethod = getRequestedUnlockMethod(readSingleParam(params.method));
+  const shouldAutostart = readSingleParam(params.autostart) === "true";
   const runIdRef = useRef(0);
   const isMountedRef = useRef(true);
+  const initialMethodAppliedRef = useRef(false);
   const panelOpacity = useRef(new Animated.Value(0)).current;
   const panelTranslateY = useRef(new Animated.Value(12)).current;
   const modalScale = useRef(new Animated.Value(0.92)).current;
@@ -606,6 +625,54 @@ export function UnlockScreen() {
 
     setTransaction({ status: "idle" });
   }
+
+  useEffect(() => {
+    if (!requestedMethod || initialMethodAppliedRef.current) {
+      return;
+    }
+
+    initialMethodAppliedRef.current = true;
+
+    if (!shouldAutostart) {
+      setTransaction({
+        status: "idle",
+        method: requestedMethod
+      });
+      return;
+    }
+
+    const nextAttempt = attemptCounts[requestedMethod] + 1;
+    const runId = runIdRef.current + 1;
+
+    runIdRef.current = runId;
+    setTransaction({
+      status: "idle",
+      method: requestedMethod
+    });
+    setPrepState({
+      status: "previewing",
+      method: requestedMethod,
+      modalVisible: false,
+      mockCode: requestedMethod === "qr" ? createMockQrPayload(bikeId, nextAttempt) : null
+    });
+
+    const timer = setTimeout(() => {
+      if (!isMountedRef.current || runIdRef.current !== runId) {
+        return;
+      }
+
+      setPrepState({
+        status: "ready",
+        method: requestedMethod,
+        modalVisible: true,
+        mockCode: requestedMethod === "qr" ? createMockQrPayload(bikeId, nextAttempt) : null
+      });
+    }, requestedMethod === "qr" ? QR_PREP_DELAY_MS : BLUETOOTH_PREP_DELAY_MS);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [attemptCounts, bikeId, requestedMethod, shouldAutostart]);
 
   const activeMethod = transaction.method;
   const showMethodActions =

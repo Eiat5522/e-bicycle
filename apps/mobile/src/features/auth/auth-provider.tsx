@@ -35,6 +35,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 const nativeEmailRedirectPath = "callback";
+const bootstrapTimeoutMs = 5000;
 
 function normalizeError(error: unknown, fallbackMessage: string) {
   if (error instanceof Error && error.message.length > 0) {
@@ -136,25 +137,41 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       }
 
       try {
-        let {
-          data: { session: currentSession }
-        } = await supabase.auth.getSession();
+        const bootstrapSession = async () => {
+          let {
+            data: { session: currentSession }
+          } = await supabase.auth.getSession();
 
-        if (Platform.OS !== "web" && !currentSession) {
-          const initialUrl = await Linking.getInitialURL();
+          if (Platform.OS !== "web" && !currentSession) {
+            const initialUrl = await Linking.getInitialURL();
 
-          if (initialUrl) {
-            await restoreSessionFromUrl(initialUrl);
+            if (initialUrl) {
+              await restoreSessionFromUrl(initialUrl);
 
-            const {
-              data: { session: restoredSession }
-            } = await supabase.auth.getSession();
+              const {
+                data: { session: restoredSession }
+              } = await supabase.auth.getSession();
 
-            currentSession = restoredSession;
+              currentSession = restoredSession;
+            }
           }
-        }
 
-        const nextProfile = currentSession?.user ? await fetchProfile(currentSession.user.id) : null;
+          const nextProfile = currentSession?.user ? await fetchProfile(currentSession.user.id) : null;
+
+          return {
+            currentSession,
+            nextProfile
+          };
+        };
+
+        const { currentSession, nextProfile } = await Promise.race([
+          bootstrapSession(),
+          new Promise<never>((_, reject) => {
+            setTimeout(() => {
+              reject(new Error("Auth bootstrap timed out."));
+            }, bootstrapTimeoutMs);
+          })
+        ]);
 
         if (!isMounted) {
           return;
