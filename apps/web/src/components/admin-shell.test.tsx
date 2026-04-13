@@ -3,11 +3,13 @@ import { render, screen } from "@testing-library/react";
 import { AdminShell } from "./admin-shell";
 
 describe("AdminShell", () => {
-  it("renders the placeholder dashboard metrics", () => {
+  it("renders the executive dashboard modules", () => {
     render(<AdminShell />);
 
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Active bikes")).toBeInTheDocument();
-    expect(screen.getByText(/1,240.75/)).toBeInTheDocument();
+    expect(screen.getByText("Executive Dashboard")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Live operations snapshot" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Performance against target" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Route revenue by recent rides" })).toBeInTheDocument();
+    expect(screen.getByText("Revenue per completed ride")).toBeInTheDocument();
   });
 });
