@@ -25,6 +25,7 @@ export interface Database {
         Row: {
           id: string;
           model: string;
+          image_url: string | null;
           ride_class: string | null;
           estimated_range_km: number;
           top_speed_kmh: number;
@@ -40,6 +41,7 @@ export interface Database {
         Insert: {
           id: string;
           model: string;
+          image_url?: string | null;
           ride_class?: string | null;
           estimated_range_km: number;
           top_speed_kmh: number;
@@ -53,7 +55,9 @@ export interface Database {
           updated_at?: string;
         };
         Update: {
+          id?: string;
           model?: string;
+          image_url?: string | null;
           ride_class?: string | null;
           estimated_range_km?: number;
           top_speed_kmh?: number;
@@ -71,17 +75,20 @@ export interface Database {
         Row: {
           id: string;
           first_name: string;
+          is_admin: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           first_name: string;
+          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           first_name?: string;
+          is_admin?: boolean;
           updated_at?: string;
         };
         Relationships: [];

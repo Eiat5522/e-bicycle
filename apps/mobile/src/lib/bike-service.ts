@@ -44,7 +44,11 @@ function mapBikeRow(row: BikeRow): Bike {
   return {
     id: row.id,
     model: row.model,
-    ...(getSeedBikeImageUrl(row.id) ? { imageUrl: getSeedBikeImageUrl(row.id) } : {}),
+    ...(row.image_url
+      ? { imageUrl: row.image_url }
+      : getSeedBikeImageUrl(row.id)
+        ? { imageUrl: getSeedBikeImageUrl(row.id) }
+        : {}),
     ...(row.ride_class ? { rideClass: row.ride_class } : {}),
     estimatedRangeKm: row.estimated_range_km,
     topSpeedKmh: row.top_speed_kmh,
@@ -65,7 +69,7 @@ function createSupabaseBikeService(): BikeService {
       const { data, error } = await supabase
         .from("bikes")
         .select(
-          "id, model, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, created_at, updated_at"
+          "id, model, image_url, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, created_at, updated_at"
         )
         .order("last_reported_at", { ascending: false });
 
@@ -99,7 +103,7 @@ function createSupabaseBikeService(): BikeService {
       const { data, error } = await supabase
         .from("bikes")
         .select(
-          "id, model, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, created_at, updated_at"
+          "id, model, image_url, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, created_at, updated_at"
         )
         .eq("id", id)
         .maybeSingle();

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { formatAdminDate } from "@/lib/formatting";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import type { ProfileRow } from "@/lib/supabase/database.types";
@@ -90,9 +91,4 @@ export async function requireAdmin(): Promise<AdminContext> {
   };
 }
 
-export function formatAdminDate(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(value));
-}
+export { formatAdminDate };

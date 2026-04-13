@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { render, screen } from "@testing-library/react";
+import { usePathname } from "next/navigation";
 
 import { AdminNav } from "./admin-nav";
 
@@ -31,5 +32,16 @@ describe("AdminNav", () => {
 
     expect(screen.getByRole("link", { name: "Users" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Dashboard" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("keeps the bicycles tab active on nested bicycle routes", () => {
+    jest.mocked(usePathname).mockReturnValue("/bicycles/G-205");
+
+    render(<AdminNav />);
+
+    expect(screen.getByRole("link", { name: "Bicycles" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
   });
 });

@@ -12,6 +12,9 @@ export interface LoginFormErrors {
   password?: string;
 }
 
+const bikeIdPattern = /^[A-Z0-9-]{2,32}$/;
+const bikeStatuses = new Set(["available", "reserved", "in_use", "maintenance"]);
+
 export function validateLoginForm(formData: FormData) {
   const values: LoginFormValues = {
     email: String(formData.get("email") ?? "")
@@ -59,5 +62,69 @@ export function validateProfileUpdateForm(formData: FormData) {
     firstName,
     isAdmin,
     userId
+  };
+}
+
+export function validateBikeForm(formData: FormData) {
+  const bikeId = String(formData.get("bikeId") ?? "")
+    .trim()
+    .toUpperCase();
+  const model = String(formData.get("model") ?? "").trim();
+  const rideClass = String(formData.get("rideClass") ?? "").trim();
+  const pricingLabel = String(formData.get("pricingLabel") ?? "").trim();
+  const status = String(formData.get("status") ?? "").trim();
+  const location = String(formData.get("location") ?? "").trim();
+  const estimatedRangeKm = Number(formData.get("estimatedRangeKm") ?? "");
+  const topSpeedKmh = Number(formData.get("topSpeedKmh") ?? "");
+  const latitude = Number(formData.get("latitude") ?? "");
+  const longitude = Number(formData.get("longitude") ?? "");
+
+  if (!bikeIdPattern.test(bikeId)) {
+    throw new Error("Bike ID must be 2-32 characters using letters, numbers, or dashes.");
+  }
+
+  if (!model) {
+    throw new Error("Bike model is required.");
+  }
+
+  if (!pricingLabel) {
+    throw new Error("Pricing label is required.");
+  }
+
+  if (!location) {
+    throw new Error("Bike location is required.");
+  }
+
+  if (!bikeStatuses.has(status)) {
+    throw new Error("Bike status is invalid.");
+  }
+
+  if (!Number.isFinite(estimatedRangeKm) || estimatedRangeKm <= 0) {
+    throw new Error("Estimated range must be greater than zero.");
+  }
+
+  if (!Number.isFinite(topSpeedKmh) || topSpeedKmh <= 0) {
+    throw new Error("Top speed must be greater than zero.");
+  }
+
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+    throw new Error("Latitude must be between -90 and 90.");
+  }
+
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    throw new Error("Longitude must be between -180 and 180.");
+  }
+
+  return {
+    bikeId,
+    estimatedRangeKm,
+    latitude,
+    location,
+    longitude,
+    model,
+    pricingLabel,
+    rideClass: rideClass || null,
+    status: status as "available" | "reserved" | "in_use" | "maintenance",
+    topSpeedKmh
   };
 }

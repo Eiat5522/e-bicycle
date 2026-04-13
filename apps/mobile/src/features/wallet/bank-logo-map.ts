@@ -3,6 +3,7 @@ import type { ImageSourcePropType } from "react-native";
 export type SupportedBankLogo =
   | "PromptPay"
   | "TrueMoney"
+  | "BAY"
   | "SCB"
   | "KBANK"
   | "KTB"
@@ -16,6 +17,7 @@ const tmbThanachartLogo = require("../../../assets/images/banks/TMB.png");
 export const bankLogoMap: Record<SupportedBankLogo, ImageSourcePropType> = {
   PromptPay: require("../../../assets/images/banks/PromptPay.png"),
   TrueMoney: require("../../../assets/images/banks/TrueMoney.png"),
+  BAY: require("../../../assets/images/banks/BAY.png"),
   SCB: require("../../../assets/images/banks/SCB.png"),
   KBANK: require("../../../assets/images/banks/KBANK.png"),
   KTB: require("../../../assets/images/banks/KTB.png"),

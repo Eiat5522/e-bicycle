@@ -368,6 +368,30 @@ describe("MapScreen", () => {
     expect(screen.queryByText(/Range\s+\d+(\.\d+)?\s+km/i)).toBeNull();
   });
 
+  it("refreshes the user location when recenter is pressed", async () => {
+    await renderScreen();
+
+    await waitForMapCanvas();
+
+    const mapCanvasMock = jest.mocked(MapCanvas);
+    const recenter = mapCanvasMock.mock.calls.at(-1)?.[0].onRecenter;
+
+    await act(async () => {
+      recenter?.();
+    });
+
+    await waitFor(() => {
+      expect(getCurrentPositionAsync).toHaveBeenCalledTimes(2);
+    });
+    expect(listNearby).toHaveBeenCalledTimes(2);
+    expect(listNearby).toHaveBeenLastCalledWith({
+      latitude: 37.7749,
+      longitude: -122.4194,
+      radiusMeters: 1500,
+      limit: 50
+    });
+  });
+
   it("dismisses the marker drawer without affecting the selected card", async () => {
     listNearby.mockResolvedValue({
       bikes: [

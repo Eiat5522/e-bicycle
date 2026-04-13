@@ -106,7 +106,7 @@ async function restoreSessionFromUrl(url: string) {
 async function fetchProfile(userId: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, first_name, created_at, updated_at")
+    .select("id, first_name, is_admin, created_at, updated_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -330,7 +330,7 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         .from("profiles")
         .update({ first_name: normalizedDisplayName })
         .eq("id", user.id)
-        .select("id, first_name, created_at, updated_at")
+        .select("id, first_name, is_admin, created_at, updated_at")
         .single();
 
       if (error) {

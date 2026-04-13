@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  type ViewStyle,
   View
 } from "react-native";
 
@@ -36,6 +37,9 @@ interface BikeMarkerDrawerProps {
 }
 
 const DRAWER_HEIGHT = 500;
+const pressedIconButtonStyle = {
+  transform: [{ translateX: 2 }, { translateY: 2 }]
+} satisfies ViewStyle;
 
 function getBatteryEstimate(rangeKm: number) {
   return Math.max(18, Math.min(100, Math.round((rangeKm / 50) * 100)));
@@ -164,18 +168,20 @@ export function BikeMarkerDrawer({
                 accessibilityLabel="Dismiss bike drawer"
                 accessibilityRole="button"
                 onPress={onClose}
-                style={({ pressed }) => ({
-                  alignItems: "center",
-                  backgroundColor: colors.tealBright,
-                  borderColor: colors.shadow,
-                  borderRadius: radii.pill,
-                  borderWidth: borderWidths.thick,
-                  height: 44,
-                  justifyContent: "center",
-                  transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
-                  width: 44,
-                  ...(pressed ? shadows.pressed : shadows.floating)
-                })}
+                style={({ pressed }) => [
+                  {
+                    alignItems: "center",
+                    backgroundColor: colors.tealBright,
+                    borderColor: colors.shadow,
+                    borderRadius: radii.pill,
+                    borderWidth: borderWidths.thick,
+                    height: 44,
+                    justifyContent: "center",
+                    width: 44
+                  },
+                  pressed ? pressedIconButtonStyle : null,
+                  pressed ? shadows.pressed : shadows.floating
+                ]}
               >
                 <MaterialIcons color={colors.text} name="close" size={22} />
               </Pressable>

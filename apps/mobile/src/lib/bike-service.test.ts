@@ -21,6 +21,7 @@ describe("configuredBikeService", () => {
         {
           id: "G-104",
           model: "Glide Pro X",
+          image_url: "https://cdn.example.com/bikes/G-104.webp",
           ride_class: "Pro",
           estimated_range_km: 45,
           top_speed_kmh: 25,
@@ -36,6 +37,7 @@ describe("configuredBikeService", () => {
         {
           id: "G-999",
           model: "Far Away",
+          image_url: null,
           ride_class: null,
           estimated_range_km: 20,
           top_speed_kmh: 18,
@@ -85,7 +87,7 @@ describe("configuredBikeService", () => {
     expect(result.bikes).toEqual([
       expect.objectContaining({
         id: "G-104",
-        imageUrl: expect.stringContaining("Electric_Bicycle"),
+        imageUrl: "https://cdn.example.com/bikes/G-104.webp",
         model: "Glide Pro X",
         rideClass: "Pro",
         pricingLabel: "$1.20 / 10 min",
@@ -172,6 +174,7 @@ describe("configuredBikeService", () => {
         {
           id: "G-104",
           model: "Glide Pro X",
+          image_url: null,
           ride_class: "Pro",
           estimated_range_km: 45,
           top_speed_kmh: 25,
@@ -281,6 +284,7 @@ describe("configuredBikeService", () => {
         {
           id: "G-104",
           model: "Glide Pro X",
+          image_url: null,
           ride_class: "Pro",
           estimated_range_km: 45,
           top_speed_kmh: 25,

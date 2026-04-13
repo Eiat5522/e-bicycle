@@ -29,8 +29,10 @@ import {
 import { getBankLogo, type SupportedBankLogo } from "./bank-logo-map";
 
 const isTestEnvironment = process.env.NODE_ENV === "test";
+const PROMPTPAY_COLOR = "#0057b8";
+const TRUE_MONEY_COLOR = "#f15a29";
 
-type PaymentMethod = "card" | "mobile_pay" | "voucher" | "mobile_banking";
+type PaymentMethod = "card" | "mobile_pay" | "promptpay" | "voucher" | "mobile_banking";
 
 type BankOption = {
   id: SupportedBankLogo;
@@ -43,9 +45,8 @@ const BANK_OPTIONS: BankOption[] = [
   { id: "SCB", name: "SCB", color: "#4e2d83" },
   { id: "BBL", name: "BBL", color: "#1b4f91" },
   { id: "KTB", name: "KTB", color: "#00a3e0" },
-  { id: "TMB", name: "TMB", color: "#0081bb" },
-  { id: "TrueMoney", name: "TrueMoney", color: "#ff6700" },
-  { id: "PromptPay", name: "PromptPay", color: "#007bff" }
+  { id: "TTB", name: "TTB", color: "#0081bb" },
+  { id: "BAY", name: "BAY", color: "#fecb00" }
 ];
 
 type TopUpState =
@@ -81,9 +82,17 @@ const MOBILE_BANKING_STEPS = [
   { label: "Updating balance", description: "Adding funds to your wallet..." }
 ];
 
+const PROMPTPAY_STEPS = [
+  { label: "Generating QR code", description: "Preparing your PromptPay payment QR..." },
+  { label: "Waiting for scan", description: "PromptPay is waiting for the QR to be scanned..." },
+  { label: "Confirming payment", description: "Verifying the PromptPay transaction..." },
+  { label: "Updating balance", description: "Adding funds to your wallet..." }
+];
+
 const methodLabels: Record<PaymentMethod, string> = {
   card: "Credit/Debit Card",
-  mobile_pay: "Mobile Pay",
+  mobile_pay: "TrueMoney",
+  promptpay: "PromptPay",
   voucher: "Gift Voucher",
   mobile_banking: "Mobile Banking"
 };
@@ -129,13 +138,70 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function generateRandomTrueMoneyMobileNumber() {
+  const mobilePrefixes = ["06", "08", "09"] as const;
+  const prefix = mobilePrefixes[Math.floor(Math.random() * mobilePrefixes.length)] ?? "08";
+  const randomDigits = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)).join("");
+  return `${prefix}${randomDigits}`;
+}
+
+function generatePromptPayQrPayload(amount: number) {
+  const reference = Array.from({ length: 10 }, () => Math.floor(Math.random() * 10)).join("");
+  return `PROMPTPAY|${amount.toFixed(2)}|${reference}`;
+}
+
+function createMockQrMatrix(payload: string, size = 21) {
+  const finderSize = 7;
+
+  function isFinderCell(row: number, column: number, startRow: number, startColumn: number) {
+    const rowOffset = row - startRow;
+    const columnOffset = column - startColumn;
+
+    if (rowOffset < 0 || rowOffset >= finderSize || columnOffset < 0 || columnOffset >= finderSize) {
+      return false;
+    }
+
+    const isOuter = rowOffset === 0 || rowOffset === finderSize - 1 || columnOffset === 0 || columnOffset === finderSize - 1;
+    const isInner = rowOffset >= 2 && rowOffset <= 4 && columnOffset >= 2 && columnOffset <= 4;
+
+    return isOuter || isInner;
+  }
+
+  return Array.from({ length: size }, (_, row) =>
+    Array.from({ length: size }, (_, column) => {
+      if (
+        isFinderCell(row, column, 0, 0) ||
+        isFinderCell(row, column, 0, size - finderSize) ||
+        isFinderCell(row, column, size - finderSize, 0)
+      ) {
+        return true;
+      }
+
+      if (
+        (row < finderSize + 1 && column < finderSize + 1) ||
+        (row < finderSize + 1 && column >= size - finderSize - 1) ||
+        (row >= size - finderSize - 1 && column < finderSize + 1)
+      ) {
+        return false;
+      }
+
+      const seed = payload.charCodeAt((row * size + column) % payload.length) ?? 0;
+      return ((row * 17 + column * 31 + seed) % 5) < 2;
+    })
+  );
+}
+
 function PaymentMethodIcon({ method }: { readonly method: PaymentMethod }) {
   if (method === "card") {
     return <MaterialCommunityIcons color={colors.text} name="credit-card-outline" size={24} />;
   }
 
   if (method === "mobile_pay") {
-    return <MaterialCommunityIcons color={colors.text} name="cellphone-nfc" size={24} />;
+    return <Image source={getBankLogo("TrueMoney")} style={{ height: 28, width: 28 }} resizeMode="contain" />;
+  }
+
+  if (method === "promptpay") {
+    return <Image source={getBankLogo("PromptPay")} style={{ height: 28, width: 28 }} resizeMode="contain" />;
   }
 
   if (method === "mobile_banking") {
@@ -148,11 +214,13 @@ function PaymentMethodIcon({ method }: { readonly method: PaymentMethod }) {
 function CardVisual({
   isAnimating,
   method,
-  selectedBankId
+  selectedBankId,
+  promptPayPayload
 }: {
   readonly isAnimating: boolean;
   readonly method: PaymentMethod;
   readonly selectedBankId?: SupportedBankLogo | null;
+  readonly promptPayPayload?: string;
 }) {
   const pulse = useRef(new Animated.Value(0)).current;
 
@@ -270,7 +338,7 @@ function CardVisual({
       <View
         style={{
           alignItems: "center",
-          backgroundColor: "#f0f4ff",
+          backgroundColor: "#fff3ee",
           borderRadius: radii.large,
           justifyContent: "center",
           minHeight: 160,
@@ -282,7 +350,7 @@ function CardVisual({
           <Animated.View
             key={`ring-${ring}`}
             style={{
-              borderColor: colors.teal,
+              borderColor: TRUE_MONEY_COLOR,
               borderRadius: radii.pill,
               borderWidth: 2,
               height: 60 + ring * 30,
@@ -296,13 +364,14 @@ function CardVisual({
         <View
           style={{
             alignItems: "center",
-            backgroundColor: colors.teal,
+            backgroundColor: colors.surface,
             borderRadius: radii.pill,
             height: 64,
             justifyContent: "center",
+            overflow: "hidden",
             width: 64
           }}>
-          <MaterialCommunityIcons color={colors.surface} name="cellphone-nfc" size={28} />
+          <Image source={getBankLogo("TrueMoney")} style={{ height: 44, width: 44 }} resizeMode="contain" />
         </View>
         <Text
           selectable
@@ -312,7 +381,101 @@ function CardVisual({
             marginTop: spacing.md,
             textAlign: "center"
           }}>
-          {isAnimating ? "Connecting to mobile wallet..." : "Tap to pay with your mobile wallet"}
+          {isAnimating
+            ? "Connecting to your TrueMoney Wallet..."
+            : "Use your TrueMoney Wallet mobile number"}
+        </Text>
+      </View>
+    );
+  }
+
+  if (method === "promptpay") {
+    const qrPayload = promptPayPayload ?? "PROMPTPAY|10.00|1234567890";
+    const qrMatrix = createMockQrMatrix(qrPayload);
+    const scanTranslateY = pulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-68, 68]
+    });
+    const scanOpacity = pulse.interpolate({
+      inputRange: [0, 0.1, 0.9, 1],
+      outputRange: [0, 0.8, 0.8, 0]
+    });
+
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: "#eef5ff",
+          borderRadius: radii.large,
+          justifyContent: "center",
+          minHeight: 160,
+          overflow: "hidden",
+          padding: spacing.lg,
+          position: "relative"
+        }}>
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.surface,
+            borderColor: PROMPTPAY_COLOR,
+            borderRadius: radii.medium,
+            borderWidth: borderWidths.thin,
+            height: 132,
+            justifyContent: "center",
+            overflow: "hidden",
+            padding: 10,
+            width: 132
+          }}>
+          <View
+            accessibilityLabel="PromptPay QR preview"
+            style={{
+              flexDirection: "column",
+              gap: 1
+            }}>
+            {qrMatrix.map((row, rowIndex) => (
+              <View key={`qr-row-${rowIndex}`} style={{ flexDirection: "row", gap: 1 }}>
+                {row.map((cell, columnIndex) => (
+                  <View
+                    key={`qr-cell-${rowIndex}-${columnIndex}`}
+                    style={{
+                      backgroundColor: cell ? colors.text : colors.surface,
+                      height: 4,
+                      width: 4
+                    }}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+          {isAnimating && (
+            <Animated.View
+              style={{
+                backgroundColor: "rgba(0, 87, 184, 0.18)",
+                height: 18,
+                left: 8,
+                opacity: scanOpacity,
+                position: "absolute",
+                right: 8,
+                transform: [{ translateY: scanTranslateY }]
+              }}
+            />
+          )}
+        </View>
+        <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.xs, marginTop: spacing.md }}>
+          <Image source={getBankLogo("PromptPay")} style={{ height: 20, width: 20 }} resizeMode="contain" />
+          <Text selectable style={{ color: PROMPTPAY_COLOR, fontSize: 13, fontWeight: "700" }}>
+            PromptPay QR
+          </Text>
+        </View>
+        <Text
+          selectable
+          style={{
+            color: colors.textMuted,
+            fontSize: 12,
+            marginTop: spacing.xs,
+            textAlign: "center"
+          }}>
+          {isAnimating ? "Scanning PromptPay QR..." : "Generated QR code ready for scanning"}
         </Text>
       </View>
     );
@@ -497,6 +660,7 @@ function TransactionIcon({ type }: { readonly type: string }) {
 
 function getStepsForMethod(method: PaymentMethod) {
   if (method === "voucher") return VOUCHER_STEPS;
+  if (method === "promptpay") return PROMPTPAY_STEPS;
   if (method === "mobile_banking") return MOBILE_BANKING_STEPS;
   return PAYMENT_STEPS;
 }
@@ -520,6 +684,8 @@ export function WalletScreen() {
   const [selectedBank, setSelectedBank] = useState<SupportedBankLogo | null>(null);
   const [modal, setModal] = useState<ModalState>({ visible: false, type: null });
   const [voucherCode, setVoucherCode] = useState("");
+  const [promptPayPayload, setPromptPayPayload] = useState("");
+  const [trueMoneyMobileNumber, setTrueMoneyMobileNumber] = useState("");
 
   useEffect(() => {
     return () => {
@@ -712,6 +878,14 @@ export function WalletScreen() {
       return;
     }
 
+    if (selectedMethod === "promptpay") {
+      setPromptPayPayload(generatePromptPayQrPayload(selectedAmount));
+    }
+
+    if (selectedMethod === "mobile_pay") {
+      setTrueMoneyMobileNumber("");
+    }
+
     setModal({ visible: true, type: "topup_confirm", amount: selectedAmount, method: selectedMethod });
   }
 
@@ -740,7 +914,9 @@ export function WalletScreen() {
     setSelectedAmount(null);
     setSelectedMethod(null);
     setSelectedBank(null);
+    setPromptPayPayload("");
     setVoucherCode("");
+    setTrueMoneyMobileNumber("");
   }
 
   const isProcessing = topUp.status === "processing";
@@ -852,7 +1028,7 @@ export function WalletScreen() {
               Payment method
             </Text>
             <View style={{ gap: spacing.sm }}>
-              {(["card", "mobile_pay", "mobile_banking", "voucher"] as PaymentMethod[]).map((method) => (
+              {(["promptpay", "mobile_banking", "mobile_pay", "voucher"] as PaymentMethod[]).map((method) => (
                 <Pressable
                   key={method}
                   accessibilityRole="button"
@@ -880,7 +1056,8 @@ export function WalletScreen() {
                       selectable
                       style={{ color: colors.textMuted, fontSize: 13, lineHeight: 18 }}>
                       {method === "card" && "Pay with your saved card ending in 4242"}
-                      {method === "mobile_pay" && "Use Apple Pay or Google Pay"}
+                      {method === "mobile_pay" && "Top up with the mobile number linked to your TrueMoney Wallet"}
+                      {method === "promptpay" && "Pay by scanning a generated PromptPay QR code"}
                       {method === "mobile_banking" && "Transfer directly from your bank account"}
                       {method === "voucher" && "Redeem a gift voucher or promo code"}
                     </Text>
@@ -911,7 +1088,12 @@ export function WalletScreen() {
           </View>
 
           {selectedAmount !== null && selectedMethod !== null && (
-            <CardVisual isAnimating={isProcessing} method={selectedMethod} selectedBankId={selectedBank} />
+            <CardVisual
+              isAnimating={isProcessing}
+              method={selectedMethod}
+              selectedBankId={selectedBank}
+              promptPayPayload={promptPayPayload}
+            />
           )}
 
           {topUp.status === "processing" && currentStep && (
@@ -1099,6 +1281,97 @@ export function WalletScreen() {
                       }}>
                       {formatCurrency(modal.amount)}
                     </Text>
+                    {modal.method === "mobile_pay" && (
+                      <>
+                        <Text
+                          selectable
+                          style={{ color: colors.textMuted, fontSize: 13, marginTop: spacing.xs }}>
+                          TrueMoney mobile number
+                        </Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Generate TrueMoney mobile number"
+                          onPress={() => setTrueMoneyMobileNumber(generateRandomTrueMoneyMobileNumber())}
+                          style={{
+                            alignItems: "center",
+                            backgroundColor: colors.surface,
+                            borderColor: colors.shadow,
+                            borderRadius: radii.medium,
+                            borderWidth: borderWidths.thin,
+                            flexDirection: "row",
+                            gap: spacing.sm,
+                            paddingHorizontal: spacing.md,
+                            paddingVertical: spacing.sm
+                          }}>
+                          <Image
+                            source={getBankLogo("TrueMoney")}
+                            style={{ height: 24, width: 24 }}
+                            resizeMode="contain"
+                          />
+                          <Text
+                            selectable
+                            style={{
+                              color: trueMoneyMobileNumber ? TRUE_MONEY_COLOR : colors.textMuted,
+                              flex: 1,
+                              fontSize: 18,
+                              fontWeight: "700"
+                            }}>
+                            {trueMoneyMobileNumber || "Tap to generate a mobile number"}
+                          </Text>
+                        </Pressable>
+                        <Text selectable style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18 }}>
+                          Demo flow: generate the number normally associated with a TrueMoney Wallet account.
+                        </Text>
+                      </>
+                    )}
+                    {modal.method === "promptpay" && (
+                      <>
+                        <Text
+                          selectable
+                          style={{ color: colors.textMuted, fontSize: 13, marginTop: spacing.xs }}>
+                          PromptPay QR code
+                        </Text>
+                        <View
+                          style={{
+                            alignItems: "center",
+                            backgroundColor: colors.surface,
+                            borderColor: PROMPTPAY_COLOR,
+                            borderRadius: radii.medium,
+                            borderWidth: borderWidths.thin,
+                            padding: spacing.md
+                          }}>
+                          <View accessibilityLabel="Generated PromptPay QR code" style={{ flexDirection: "column", gap: 1 }}>
+                            {createMockQrMatrix(promptPayPayload || "PROMPTPAY|10.00|1234567890").map((row, rowIndex) => (
+                              <View key={`modal-qr-row-${rowIndex}`} style={{ flexDirection: "row", gap: 1 }}>
+                                {row.map((cell, columnIndex) => (
+                                  <View
+                                    key={`modal-qr-cell-${rowIndex}-${columnIndex}`}
+                                    style={{
+                                      backgroundColor: cell ? colors.text : colors.surface,
+                                      height: 5,
+                                      width: 5
+                                    }}
+                                  />
+                                ))}
+                              </View>
+                            ))}
+                          </View>
+                          <View style={{ alignItems: "center", flexDirection: "row", gap: spacing.xs, marginTop: spacing.sm }}>
+                            <Image
+                              source={getBankLogo("PromptPay")}
+                              style={{ height: 20, width: 20 }}
+                              resizeMode="contain"
+                            />
+                            <Text selectable style={{ color: PROMPTPAY_COLOR, fontSize: 14, fontWeight: "700" }}>
+                              PromptPay
+                            </Text>
+                          </View>
+                        </View>
+                        <Text selectable style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18 }}>
+                          Demo QR payload: {promptPayPayload}
+                        </Text>
+                      </>
+                    )}
                     {modal.method === "mobile_banking" && selectedBank && (
                       <>
                         <Text
@@ -1125,6 +1398,7 @@ export function WalletScreen() {
                     <PrimaryButton
                       label="Confirm & pay"
                       onPress={confirmTopUp}
+                      disabled={modal.method === "mobile_pay" && trueMoneyMobileNumber.length !== 10}
                     />
                     <PrimaryButton
                       label="Cancel"

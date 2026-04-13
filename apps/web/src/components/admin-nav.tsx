@@ -11,6 +11,10 @@ const items = [
   {
     href: "/users",
     label: "Users"
+  },
+  {
+    href: "/bicycles",
+    label: "Bicycles"
   }
 ];
 
@@ -20,7 +24,7 @@ export function AdminNav() {
   return (
     <nav aria-label="Admin sections" className="flex flex-wrap gap-3">
       {items.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         return (
           <Link

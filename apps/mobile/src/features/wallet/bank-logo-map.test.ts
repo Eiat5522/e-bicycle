@@ -4,6 +4,7 @@ describe("bank-logo-map", () => {
   it("exposes bundled sources for each supported wallet logo", () => {
     expect(getBankLogo("PromptPay")).toBe(bankLogoMap.PromptPay);
     expect(getBankLogo("TrueMoney")).toBe(bankLogoMap.TrueMoney);
+    expect(getBankLogo("BAY")).toBe(bankLogoMap.BAY);
     expect(getBankLogo("SCB")).toBe(bankLogoMap.SCB);
     expect(getBankLogo("KBANK")).toBe(bankLogoMap.KBANK);
     expect(getBankLogo("KTB")).toBe(bankLogoMap.KTB);

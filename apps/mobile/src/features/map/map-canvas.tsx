@@ -1,5 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, type ViewStyle, View } from "react-native";
 
 import type { Bike, Coordinates } from "@glide/shared";
 
@@ -18,6 +18,10 @@ interface MapCanvasProps {
   readonly onPressMarker: (bikeId: string) => void;
 }
 
+const pressedButtonStyle = {
+  transform: [{ translateX: 2 }, { translateY: 2 }]
+} satisfies ViewStyle;
+
 export function MapCanvas({
   bikes,
   bikeDistanceLabels,
@@ -34,19 +38,21 @@ export function MapCanvas({
           accessibilityLabel="Recenter map"
           accessibilityRole="button"
           onPress={onRecenter}
-          style={({ pressed }) => ({
-            alignItems: "center",
-            backgroundColor: colors.tealBright,
-            borderColor: colors.shadow,
-            borderRadius: 999,
-            borderWidth: borderWidths.thick,
-            height: 48,
-            justifyContent: "center",
-            opacity: 1,
-            transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
-            width: 48,
-            ...(pressed ? shadows.pressed : shadows.floating)
-          })}
+          style={({ pressed }) => [
+            {
+              alignItems: "center",
+              backgroundColor: colors.tealBright,
+              borderColor: colors.shadow,
+              borderRadius: 999,
+              borderWidth: borderWidths.thick,
+              height: 48,
+              justifyContent: "center",
+              opacity: 1,
+              width: 48
+            },
+            pressed ? pressedButtonStyle : null,
+            pressed ? shadows.pressed : shadows.floating
+          ]}
         >
           <MaterialIcons color={colors.text} name="my-location" size={22} />
         </Pressable>

@@ -1,6 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, type ViewStyle, View } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,6 +24,10 @@ const DEFAULT_DELTA = {
   latitudeDelta: 0.03,
   longitudeDelta: 0.03
 } as const;
+
+const pressedButtonStyle = {
+  transform: [{ translateX: 2 }, { translateY: 2 }]
+} satisfies ViewStyle;
 
 interface BikeMarkerPinProps {
   readonly color: string;
@@ -141,21 +145,23 @@ export function MapCanvas({
         accessibilityLabel="Recenter map"
         accessibilityRole="button"
         onPress={onRecenter}
-        style={({ pressed }) => ({
-          alignItems: "center",
-          backgroundColor: colors.tealBright,
-          borderColor: colors.shadow,
-          borderRadius: radii.pill,
-          borderWidth: borderWidths.thick,
-          height: 48,
-          justifyContent: "center",
-          position: "absolute",
-          bottom: insets.bottom + 92,
-          left: spacing.md,
-          transform: pressed ? [{ translateX: 2 }, { translateY: 2 }] : undefined,
-          width: 48,
-          ...(pressed ? shadows.pressed : shadows.floating)
-        })}
+        style={({ pressed }) => [
+          {
+            alignItems: "center",
+            backgroundColor: colors.tealBright,
+            borderColor: colors.shadow,
+            borderRadius: radii.pill,
+            borderWidth: borderWidths.thick,
+            bottom: insets.bottom + 92,
+            height: 48,
+            justifyContent: "center",
+            left: spacing.md,
+            position: "absolute",
+            width: 48
+          },
+          pressed ? pressedButtonStyle : null,
+          pressed ? shadows.pressed : shadows.floating
+        ]}
       >
         <MaterialIcons color={colors.text} name="my-location" size={22} />
       </Pressable>
