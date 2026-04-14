@@ -47,11 +47,21 @@ describe("createClient", () => {
       })
     );
 
-    const options = createServerClientMock.mock.calls[0]?.[2];
+    const options = createServerClientMock.mock.calls[0]?.[2] as
+      | {
+          cookies: {
+            getAll: () => { name: string; value: string }[];
+            setAll: (
+              cookiesToSet: { name: string; options: { path: string }; value: string }[]
+            ) => void;
+          };
+        }
+      | undefined;
+    expect(options).toBeDefined();
 
-    expect(options?.cookies.getAll()).toEqual([{ name: "sb-access-token", value: "token" }]);
+    expect(options!.cookies.getAll()).toEqual([{ name: "sb-access-token", value: "token" }]);
 
-    options?.cookies.setAll([
+    options!.cookies.setAll([
       {
         name: "sb-refresh-token",
         options: { path: "/" },
@@ -74,10 +84,19 @@ describe("createClient", () => {
 
     await createClient();
 
-    const options = createServerClientMock.mock.calls[0]?.[2];
+    const options = createServerClientMock.mock.calls[0]?.[2] as
+      | {
+          cookies: {
+            setAll: (
+              cookiesToSet: { name: string; options: { path: string }; value: string }[]
+            ) => void;
+          };
+        }
+      | undefined;
+    expect(options).toBeDefined();
 
     expect(() =>
-      options?.cookies.setAll([
+      options!.cookies.setAll([
         {
           name: "sb-refresh-token",
           options: { path: "/" },

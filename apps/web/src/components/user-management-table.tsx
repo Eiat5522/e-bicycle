@@ -1,8 +1,12 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState, type RefObject } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import type { RideHistoryItem } from "@glide/shared";
+import {
+  initialUserCreateFormState,
+  type UserCreateFormState
+} from "@/app/(admin)/user-create-form-state";
 import {
   initialUserUpdateFormState,
   type UserUpdateFormState
@@ -401,10 +405,168 @@ function UserDetailDrawer({
   );
 }
 
+function CreateUserDrawer({
+  onClose,
+  onCreateUser
+}: {
+  readonly onClose: () => void;
+  readonly onCreateUser: (
+    previousState: UserCreateFormState,
+    formData: FormData
+  ) => Promise<UserCreateFormState>;
+}) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const isAdminRef = useRef<HTMLInputElement>(null);
+  const [isReadyToCreate, setIsReadyToCreate] = useState(false);
+  const [submitState, submitAction, isPending] = useActionState(onCreateUser, initialUserCreateFormState);
+
+  useEffect(() => {
+    if (submitState.status === "success") {
+      formRef.current?.reset();
+      onClose();
+    }
+  }, [onClose, submitState.status]);
+
+  function checkCreateFormReadiness() {
+    const email = emailRef.current?.value.trim() ?? "";
+    const firstName = firstNameRef.current?.value.trim() ?? "";
+    const password = passwordRef.current?.value ?? "";
+
+    setIsReadyToCreate(Boolean(email && firstName && password));
+  }
+
+  return (
+    <div
+      aria-label="Create user"
+      className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-[2px]"
+      role="dialog">
+      <button
+        aria-label="Close create user drawer"
+        className="flex-1"
+        onClick={onClose}
+        type="button"
+      />
+
+      <aside className="flex h-full w-full max-w-2xl flex-col overflow-y-auto clay-card-raised">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--clay-border-subtle)] px-6 py-6">
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--clay-accent)]">
+              New User
+            </p>
+            <h3 className="text-3xl font-black tracking-[-0.04em] text-[var(--clay-text-primary)]">
+              Create account
+            </h3>
+            <p className="text-sm text-[var(--clay-text-secondary)]">
+              Create a Supabase auth user and matching rider profile from the same panel used for
+              user details.
+            </p>
+          </div>
+
+          <button
+            className="clay-badge px-4 py-2 text-sm font-semibold text-[var(--clay-text-primary)]"
+            onClick={onClose}
+            type="button">
+            Close
+          </button>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-6 px-6 py-6">
+          <div className="flex flex-col gap-2">
+            <h4 className="text-xl font-black tracking-[-0.03em] text-[var(--clay-text-primary)]">
+              Account setup
+            </h4>
+            <p className="text-sm leading-6 text-[var(--clay-text-secondary)]">
+              New accounts receive a profile and wallet automatically through the existing database
+              trigger.
+            </p>
+          </div>
+
+          <form action={submitAction} className="grid gap-4" ref={formRef}>
+            <label className="flex flex-col gap-2 text-sm font-medium text-[var(--clay-text-primary)]">
+              <span>Email address</span>
+              <input
+                className="clay-inset px-4 py-3 text-sm outline-none transition-colors disabled:opacity-50"
+                disabled={isPending}
+                name="email"
+                onChange={checkCreateFormReadiness}
+                placeholder="rider@rideglide.app"
+                ref={emailRef}
+                required
+                type="email"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-[var(--clay-text-primary)]">
+              <span>First name</span>
+              <input
+                className="clay-inset px-4 py-3 text-sm outline-none transition-colors disabled:opacity-50"
+                disabled={isPending}
+                name="firstName"
+                onChange={checkCreateFormReadiness}
+                placeholder="Rider name"
+                ref={firstNameRef}
+                required
+                type="text"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium text-[var(--clay-text-primary)]">
+              <span>Temporary password</span>
+              <input
+                className="clay-inset px-4 py-3 text-sm outline-none transition-colors disabled:opacity-50"
+                disabled={isPending}
+                minLength={8}
+                name="password"
+                onChange={checkCreateFormReadiness}
+                placeholder="At least 8 characters"
+                ref={passwordRef}
+                required
+                type="password"
+              />
+            </label>
+            <label className="inline-flex items-center gap-2 clay-inset px-4 py-3 text-sm font-medium text-[var(--clay-text-primary)]">
+              <input disabled={isPending} name="isAdmin" ref={isAdminRef} type="checkbox" />
+              <span>Admin access</span>
+            </label>
+            {submitState.message ? (
+              <p
+                aria-live="polite"
+                className="clay-inset px-4 py-3 text-sm text-[var(--clay-text-primary)]">
+                {submitState.message}
+              </p>
+            ) : null}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                className="clay-button px-4 py-3 text-sm font-semibold text-[var(--clay-text-primary)]"
+                disabled={isPending}
+                onClick={onClose}
+                type="button">
+                Cancel
+              </button>
+              <button
+                className="clay-button clay-button-primary px-4 py-3 text-sm font-semibold disabled:opacity-50"
+                disabled={!isReadyToCreate || isPending}
+                type="submit">
+                {isPending ? "Creating..." : "Create user"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 export function UserManagementTable({
+  onCreateUser,
   onUpdateUser,
   users
 }: {
+  readonly onCreateUser: (
+    previousState: UserCreateFormState,
+    formData: FormData
+  ) => Promise<UserCreateFormState>;
   readonly onUpdateUser: (
     previousState: UserUpdateFormState,
     formData: FormData
@@ -412,6 +574,7 @@ export function UserManagementTable({
   readonly users: ManagedUser[];
 }) {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
     [selectedUserId, users]
@@ -431,6 +594,14 @@ export function UserManagementTable({
             User edits now live in the detail drawer so the main list stays focused on scanning and
             selection.
           </p>
+          <div className="pt-2">
+            <button
+              className="clay-button clay-button-primary px-4 py-3 text-sm font-semibold"
+              onClick={() => setIsCreatingUser(true)}
+              type="button">
+              Add user
+            </button>
+          </div>
         </div>
 
         <div className="mt-6 overflow-x-auto">
@@ -487,6 +658,10 @@ export function UserManagementTable({
           onUpdateUser={onUpdateUser}
           user={selectedUser}
         />
+      ) : null}
+
+      {isCreatingUser ? (
+        <CreateUserDrawer onClose={() => setIsCreatingUser(false)} onCreateUser={onCreateUser} />
       ) : null}
     </>
   );

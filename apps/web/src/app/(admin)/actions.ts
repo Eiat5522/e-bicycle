@@ -4,9 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { isMissingAuthSessionError } from "@/lib/supabase/auth-errors";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { validateProfileUpdateForm } from "@/lib/validation";
+import { validateProfileUpdateForm, validateUserCreateForm } from "@/lib/validation";
 
+import {
+  initialUserCreateFormState,
+  type UserCreateFormState
+} from "./user-create-form-state";
 import {
   initialUserUpdateFormState,
   type UserUpdateFormState
@@ -45,6 +50,67 @@ export async function signOutAction() {
 
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function createUserAction(
+  _previousState: UserCreateFormState,
+  formData: FormData
+): Promise<UserCreateFormState> {
+  await requireAdminForAction();
+
+  try {
+    const values = validateUserCreateForm(formData);
+    const supabaseAdmin = createAdminClient();
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: values.email,
+      email_confirm: true,
+      password: values.password,
+      user_metadata: {
+        first_name: values.firstName
+      }
+    });
+
+    if (error) {
+      return {
+        message: error.message,
+        status: "error"
+      };
+    }
+
+    if (!data.user) {
+      return {
+        message: "Supabase did not return the created user.",
+        status: "error"
+      };
+    }
+
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        is_admin: values.isAdmin
+      })
+      .eq("id", data.user.id);
+
+    if (profileError) {
+      return {
+        message: profileError.message,
+        status: "error"
+      };
+    }
+  } catch (error) {
+    return {
+      ...initialUserCreateFormState,
+      message: error instanceof Error ? error.message : "Unable to create this user.",
+      status: "error"
+    };
+  }
+
+  revalidatePath("/users");
+
+  return {
+    message: "User created successfully.",
+    status: "success"
+  };
 }
 
 export async function updateUserAction(

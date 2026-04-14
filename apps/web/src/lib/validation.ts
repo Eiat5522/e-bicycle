@@ -12,6 +12,13 @@ export interface LoginFormErrors {
   password?: string;
 }
 
+export interface UserCreateFormValues {
+  readonly email: string;
+  readonly firstName: string;
+  readonly isAdmin: boolean;
+  readonly password: string;
+}
+
 const bikeIdPattern = /^[A-Z0-9-]{2,32}$/;
 const bikeStatuses = new Set(["available", "reserved", "in_use", "maintenance"]);
 
@@ -62,6 +69,46 @@ export function validateProfileUpdateForm(formData: FormData) {
     firstName,
     isAdmin,
     userId
+  };
+}
+
+export function validateUserCreateForm(formData: FormData): UserCreateFormValues {
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  const isAdmin = formData.get("isAdmin") === "on";
+
+  if (!email) {
+    throw new Error("Email is required.");
+  }
+
+  if (!emailPattern.test(email)) {
+    throw new Error("Enter a valid email address.");
+  }
+
+  if (!firstName) {
+    throw new Error("First name is required.");
+  }
+
+  if (firstName.length > 80) {
+    throw new Error("First name must be 80 characters or fewer.");
+  }
+
+  if (!password) {
+    throw new Error("Password is required.");
+  }
+
+  if (password.length < 8) {
+    throw new Error("Password must be at least 8 characters long.");
+  }
+
+  return {
+    email,
+    firstName,
+    isAdmin,
+    password
   };
 }
 

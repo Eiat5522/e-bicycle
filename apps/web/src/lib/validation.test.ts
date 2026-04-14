@@ -1,7 +1,8 @@
 import {
   validateBikeForm,
   validateLoginForm,
-  validateProfileUpdateForm
+  validateProfileUpdateForm,
+  validateUserCreateForm
 } from "./validation";
 
 function createLoginFormData(overrides?: Record<string, string>) {
@@ -44,6 +45,21 @@ function createBikeFormData(overrides?: Record<string, string>) {
   formData.set("topSpeedKmh", "25");
   formData.set("latitude", "13.7466");
   formData.set("longitude", "100.5393");
+
+  Object.entries(overrides ?? {}).forEach(([key, value]) => {
+    formData.set(key, value);
+  });
+
+  return formData;
+}
+
+function createUserCreateFormData(overrides?: Record<string, string>) {
+  const formData = new FormData();
+
+  formData.set("email", "NewRider@RideGlide.App ");
+  formData.set("firstName", "Jordan");
+  formData.set("password", "super-secret");
+  formData.set("isAdmin", "on");
 
   Object.entries(overrides ?? {}).forEach(([key, value]) => {
     formData.set(key, value);
@@ -244,5 +260,64 @@ describe("validateProfileUpdateForm", () => {
         })
       )
     ).toThrow("First name must be 80 characters or fewer.");
+  });
+});
+
+describe("validateUserCreateForm", () => {
+  it("parses a valid create user payload", () => {
+    expect(validateUserCreateForm(createUserCreateFormData())).toEqual({
+      email: "newrider@rideglide.app",
+      firstName: "Jordan",
+      isAdmin: true,
+      password: "super-secret"
+    });
+  });
+
+  it("treats an unchecked admin box as false", () => {
+    const formData = createUserCreateFormData();
+
+    formData.delete("isAdmin");
+
+    expect(validateUserCreateForm(formData).isAdmin).toBe(false);
+  });
+
+  it("rejects missing emails", () => {
+    expect(() =>
+      validateUserCreateForm(
+        createUserCreateFormData({
+          email: " "
+        })
+      )
+    ).toThrow("Email is required.");
+  });
+
+  it("rejects invalid emails", () => {
+    expect(() =>
+      validateUserCreateForm(
+        createUserCreateFormData({
+          email: "not-an-email"
+        })
+      )
+    ).toThrow("Enter a valid email address.");
+  });
+
+  it("rejects missing first names", () => {
+    expect(() =>
+      validateUserCreateForm(
+        createUserCreateFormData({
+          firstName: " "
+        })
+      )
+    ).toThrow("First name is required.");
+  });
+
+  it("rejects short passwords", () => {
+    expect(() =>
+      validateUserCreateForm(
+        createUserCreateFormData({
+          password: "short"
+        })
+      )
+    ).toThrow("Password must be at least 8 characters long.");
   });
 });

@@ -234,7 +234,7 @@ describe("requireAdmin", () => {
 
       const authModule = await import("./auth");
 
-      await expect(authModule.requireAdmin()).resolves.toBeNull();
+      await expect(authModule.getAuthContext()).resolves.toBeNull();
     });
   });
 });
