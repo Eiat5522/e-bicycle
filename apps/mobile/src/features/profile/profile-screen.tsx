@@ -94,7 +94,7 @@ export function ProfileScreen() {
           editable={isEditingDisplayName}
           placeholder="Enter your display name"
           placeholderTextColor={colors.textMuted}
-          selectionColor={colors.coral}
+          selectionColor={colors.teal}
           value={displayName}
           onChangeText={setDisplayName}
           style={{
@@ -113,7 +113,7 @@ export function ProfileScreen() {
           <Text
             selectable
             accessibilityRole="alert"
-            style={{ ...typography.bodyStrong, color: colors.coralDark }}>
+            style={{ ...typography.bodyStrong, color: colors.danger }}>
             {errorMessage}
           </Text>
         ) : null}

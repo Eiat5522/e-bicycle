@@ -258,12 +258,12 @@ function CardVisual({
     });
 
     return (
-      <View
-        style={{
-          alignItems: "center",
-          backgroundColor: "#1a1a2e",
-          borderRadius: radii.large,
-          minHeight: 160,
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.coralDark,
+            borderRadius: radii.large,
+            minHeight: 160,
           overflow: "hidden",
           padding: spacing.lg,
           position: "relative"
@@ -335,12 +335,12 @@ function CardVisual({
     });
 
     return (
-      <View
-        style={{
-          alignItems: "center",
-          backgroundColor: "#fff3ee",
-          borderRadius: radii.large,
-          justifyContent: "center",
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.background,
+            borderRadius: radii.large,
+            justifyContent: "center",
           minHeight: 160,
           overflow: "hidden",
           padding: spacing.lg,
@@ -402,12 +402,12 @@ function CardVisual({
     });
 
     return (
-      <View
-        style={{
-          alignItems: "center",
-          backgroundColor: "#eef5ff",
-          borderRadius: radii.large,
-          justifyContent: "center",
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.surfaceMuted,
+            borderRadius: radii.large,
+            justifyContent: "center",
           minHeight: 160,
           overflow: "hidden",
           padding: spacing.lg,
@@ -503,12 +503,12 @@ function CardVisual({
     });
 
     return (
-      <View
-        style={{
-          alignItems: "center",
-          backgroundColor: "#f0f7ff",
-          borderRadius: radii.large,
-          justifyContent: "center",
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.surfaceMuted,
+            borderRadius: radii.large,
+            justifyContent: "center",
           minHeight: 160,
           overflow: "hidden",
           padding: spacing.lg,
@@ -586,7 +586,7 @@ function CardVisual({
     <View
       style={{
         alignItems: "center",
-        backgroundColor: "#fff8f0",
+        backgroundColor: colors.background,
         borderRadius: radii.large,
         justifyContent: "center",
         minHeight: 160,
@@ -1039,7 +1039,7 @@ export function WalletScreen() {
                     paymentMethodButtonBaseStyle,
                     {
                       backgroundColor:
-                        selectedMethod === method ? colors.yellow : colors.surface,
+                        selectedMethod === method ? colors.surfaceStrong : colors.surface,
                       opacity: isProcessing ? 0.5 : 1
                     },
                     pressed ? pressedStyle : shadows.floating,
@@ -1103,7 +1103,7 @@ export function WalletScreen() {
               </Text>
                 <View
                   style={{
-                    backgroundColor: "rgba(23, 23, 23, 0.12)",
+                    backgroundColor: "rgba(32, 69, 57, 0.12)",
                     borderRadius: radii.pill,
                     height: 10,
                     marginVertical: spacing.sm,
@@ -1198,7 +1198,7 @@ export function WalletScreen() {
                 <Text
                   selectable
                   style={{
-                    color: transaction.amount >= 0 ? colors.teal : colors.coral,
+                    color: transaction.amount >= 0 ? colors.teal : colors.danger,
                     fontSize: 16,
                     fontWeight: "700"
                   }}>
@@ -1235,7 +1235,7 @@ export function WalletScreen() {
         <View
           style={{
             alignItems: "center",
-            backgroundColor: "rgba(45, 47, 47, 0.55)",
+            backgroundColor: "rgba(32, 69, 57, 0.55)",
             flex: 1,
             justifyContent: "center",
             padding: spacing.lg

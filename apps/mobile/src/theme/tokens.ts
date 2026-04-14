@@ -1,21 +1,21 @@
 export const colors = {
-  background: "#f7efe2",
-  surface: "#fffaf1",
-  surfaceMuted: "#f3dfb8",
-  surfaceStrong: "#ffd24d",
-  coral: "#ff6b2c",
-  coralDark: "#b93c00",
-  yellow: "#ffe066",
-  teal: "#12958b",
-  tealBright: "#8df8ee",
-  text: "#171717",
-  textMuted: "#54483d",
-  outline: "#171717",
-  shadow: "#171717",
-  focus: "#171717",
-  success: "#12958b",
-  danger: "#ff6b2c",
-  white: "#fffaf1"
+  background: "#f0efe8",
+  surface: "#f7f7f2",
+  surfaceMuted: "#d8e6dd",
+  surfaceStrong: "#a7d2bf",
+  coral: "#5fbf95",
+  coralDark: "#056b4c",
+  yellow: "#9dbab1",
+  teal: "#0a8761",
+  tealBright: "#cfe6da",
+  text: "#204539",
+  textMuted: "#506b59",
+  outline: "#204539",
+  shadow: "#204539",
+  focus: "#056b4c",
+  success: "#0a8761",
+  danger: "#8f5200",
+  white: "#ffffff"
 } as const;
 
 export const spacing = {

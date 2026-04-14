@@ -229,12 +229,12 @@ function MethodVisual({
     });
 
     return (
-      <View
-        style={{
-          alignItems: "center",
-          backgroundColor: "#f4ede1",
-          borderRadius: radii.large,
-          minHeight: 180,
+        <View
+          style={{
+            alignItems: "center",
+            backgroundColor: colors.background,
+            borderRadius: radii.large,
+            minHeight: 180,
           overflow: "hidden",
           padding: spacing.md,
           position: "relative"
@@ -273,7 +273,7 @@ function MethodVisual({
 
         <Animated.View
           style={{
-            backgroundColor: "rgba(93, 251, 254, 0.35)",
+            backgroundColor: "rgba(93, 179, 153, 0.35)",
             borderRadius: radii.pill,
             height: 8,
             left: spacing.md,
@@ -307,12 +307,12 @@ function MethodVisual({
   });
 
   return (
-    <View
-      style={{
-        alignItems: "center",
-        backgroundColor: "#eaf6f3",
-        borderRadius: radii.large,
-        justifyContent: "center",
+      <View
+        style={{
+          alignItems: "center",
+          backgroundColor: colors.surfaceMuted,
+          borderRadius: radii.large,
+          justifyContent: "center",
         minHeight: 180,
         overflow: "hidden",
         padding: spacing.md,
@@ -719,8 +719,8 @@ export function UnlockScreen() {
               disabled={isBusy}
               onPress={() => resetToMethodChoice("qr")}
               style={({ pressed }) => ({
-                backgroundColor: activeMethod === "qr" ? colors.yellow : colors.surface,
-                borderColor: activeMethod === "qr" ? colors.coral : colors.outline,
+                backgroundColor: activeMethod === "qr" ? colors.surfaceStrong : colors.surface,
+                borderColor: activeMethod === "qr" ? colors.coralDark : colors.outline,
                 borderCurve: "continuous",
                 borderRadius: radii.large,
                 borderWidth: 1,
@@ -741,8 +741,8 @@ export function UnlockScreen() {
               disabled={isBusy}
               onPress={() => resetToMethodChoice("bluetooth")}
               style={({ pressed }) => ({
-                backgroundColor: activeMethod === "bluetooth" ? colors.yellow : colors.surface,
-                borderColor: activeMethod === "bluetooth" ? colors.coral : colors.outline,
+                backgroundColor: activeMethod === "bluetooth" ? colors.surfaceStrong : colors.surface,
+                borderColor: activeMethod === "bluetooth" ? colors.coralDark : colors.outline,
                 borderCurve: "continuous",
                 borderRadius: radii.large,
                 borderWidth: 1,
@@ -807,7 +807,7 @@ export function UnlockScreen() {
             </Text>
             <View
               style={{
-                backgroundColor: "rgba(45, 47, 47, 0.12)",
+                backgroundColor: "rgba(32, 69, 57, 0.12)",
                 borderRadius: radii.pill,
                 height: 10,
                 overflow: "hidden"
@@ -907,7 +907,7 @@ export function UnlockScreen() {
         <View
           style={{
             alignItems: "center",
-            backgroundColor: "rgba(45, 47, 47, 0.55)",
+            backgroundColor: "rgba(32, 69, 57, 0.55)",
             flex: 1,
             justifyContent: "center",
             padding: spacing.lg

@@ -164,7 +164,7 @@ export function ActiveRideScreen() {
             }}>
             <Animated.View
               style={{
-                backgroundColor: "rgba(93, 251, 254, 0.28)",
+                backgroundColor: "rgba(207, 230, 218, 0.28)",
                 borderRadius: 999,
                 height: 220,
                 opacity: pulseOpacity,
@@ -177,7 +177,20 @@ export function ActiveRideScreen() {
             />
             <Animated.View
               style={{
-                backgroundColor: "rgba(255, 215, 9, 0.18)",
+                backgroundColor: "rgba(157, 186, 177, 0.28)",
+                borderRadius: 999,
+                height: 220,
+                opacity: pulseOpacity,
+                position: "absolute",
+                right: -40,
+                top: -10,
+                transform: [{ scale: pulseScale }],
+                width: 220
+              }}
+            />
+            <Animated.View
+              style={{
+                backgroundColor: "rgba(93, 179, 153, 0.18)",
                 borderRadius: 999,
                 height: 150,
                 left: -20,
@@ -314,7 +327,7 @@ export function ActiveRideScreen() {
             disabled={isEndingRide}
           />
           {endRideError ? (
-            <Text selectable style={{ color: colors.coralDark, fontSize: 15, lineHeight: 22 }}>
+            <Text selectable style={{ color: colors.danger, fontSize: 15, lineHeight: 22 }}>
               {endRideError}
             </Text>
           ) : null}
@@ -326,7 +339,7 @@ export function ActiveRideScreen() {
           pointerEvents="none"
           style={{
             alignItems: "center",
-            backgroundColor: "rgba(0, 102, 104, 0.92)",
+            backgroundColor: "rgba(5, 107, 76, 0.92)",
             bottom: 0,
             justifyContent: "center",
             left: 0,
@@ -351,7 +364,7 @@ export function ActiveRideScreen() {
                 justifyContent: "center",
                 width: 120
               }}>
-              <Text selectable style={{ color: colors.yellow, fontSize: 46, fontWeight: "800" }}>
+              <Text selectable style={{ color: colors.surfaceStrong, fontSize: 46, fontWeight: "800" }}>
                 GO
               </Text>
             </View>

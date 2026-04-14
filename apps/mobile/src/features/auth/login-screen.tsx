@@ -59,7 +59,7 @@ export function LoginScreen() {
           autoComplete="email"
           placeholder="Enter your email"
           placeholderTextColor={colors.textMuted}
-          selectionColor={colors.coral}
+          selectionColor={colors.teal}
           value={email}
           onChangeText={setEmail}
           style={authFieldInputStyle}
@@ -72,7 +72,7 @@ export function LoginScreen() {
           autoComplete="password"
           placeholder="Enter your password"
           placeholderTextColor={colors.textMuted}
-          selectionColor={colors.coral}
+          selectionColor={colors.teal}
           value={password}
           onChangeText={setPassword}
           style={authFieldInputStyle}
@@ -82,7 +82,7 @@ export function LoginScreen() {
           <Text
             selectable
             accessibilityRole="alert"
-            style={{ ...typography.bodyStrong, color: colors.coralDark }}>
+            style={{ ...typography.bodyStrong, color: colors.danger }}>
             {errorMessage}
           </Text>
         ) : null}
