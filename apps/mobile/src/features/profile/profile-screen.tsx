@@ -1,13 +1,13 @@
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
-import { mockRideHistory } from "@glide/api";
-import { formatCurrency, formatDistanceKm } from "@glide/shared";
+import { formatCurrency, formatDistanceKm, type RideHistoryItem } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { colors, spacing, typography } from "@/theme/tokens";
 
 import { authFieldInputStyle, authFieldLabelStyle } from "../auth/auth-form-styles";
@@ -23,11 +23,37 @@ export function ProfileScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isEditingDisplayName, setIsEditingDisplayName] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingRideHistory, setIsLoadingRideHistory] = useState(true);
+  const [rideHistory, setRideHistory] = useState<readonly RideHistoryItem[]>([]);
+  const [rideHistoryError, setRideHistoryError] = useState<string | null>(null);
 
   useEffect(() => {
     setDisplayName(profile?.firstName ?? "");
     setIsEditingDisplayName(false);
   }, [profile?.firstName]);
+
+  const loadRideHistory = useCallback(async () => {
+    setIsLoadingRideHistory(true);
+    setRideHistoryError(null);
+
+    try {
+      const nextRideHistory = await configuredRideHistoryService.getRideHistory();
+      setRideHistory(nextRideHistory);
+    } catch (error) {
+      setRideHistory([]);
+      setRideHistoryError(
+        error instanceof Error ? error.message : "Unable to load your ride history."
+      );
+    } finally {
+      setIsLoadingRideHistory(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadRideHistory();
+    }, [loadRideHistory])
+  );
 
   async function handleSaveDisplayName() {
     const trimmedDisplayName = displayName.trim();
@@ -119,8 +145,27 @@ export function ProfileScreen() {
           </Text>
         </View>
 
-        {mockRideHistory.length ? (
-          mockRideHistory.map((ride, index) => (
+        {isLoadingRideHistory ? (
+          <SurfaceCard tone="muted">
+            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+              Loading rides
+            </Text>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+              Pulling your completed rides from Supabase.
+            </Text>
+          </SurfaceCard>
+        ) : rideHistoryError ? (
+          <SurfaceCard tone="accent">
+            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+              Ride history unavailable
+            </Text>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+              {rideHistoryError}
+            </Text>
+            <PrimaryButton label="Retry" onPress={() => void loadRideHistory()} />
+          </SurfaceCard>
+        ) : rideHistory.length ? (
+          rideHistory.map((ride, index) => (
             <Pressable
               key={ride.id}
               accessibilityRole="button"

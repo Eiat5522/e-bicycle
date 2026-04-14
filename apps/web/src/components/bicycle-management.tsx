@@ -5,18 +5,18 @@ import type {
   ReactNode,
   SelectHTMLAttributes
 } from "react";
-import { useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
 
 import { formatAdminDate } from "@/lib/formatting";
 import { DrawerCloseButton } from "@/components/side-drawer";
+import { StatusToast } from "@/components/status-toast";
 
 export interface ManagedBike {
   readonly id: string;
   readonly model: string;
   readonly rideClass: string | null;
-  readonly estimatedRangeKm: number;
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
   readonly status: "available" | "reserved" | "in_use" | "maintenance";
@@ -59,8 +59,8 @@ function formatDuration(durationSec: number) {
 }
 
 function formatMoney(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
+  return new Intl.NumberFormat("th-TH", {
+    currency: "THB",
     style: "currency",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -148,10 +148,6 @@ export function BicycleManagementList({
                   <p>Pricing</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-[var(--foreground)]">{bike.estimatedRangeKm} km</p>
-                  <p>Estimated range</p>
-                </div>
-                <div>
                   <p className="font-semibold text-[var(--foreground)]">{bike.topSpeedKmh} km/h</p>
                   <p>Top speed</p>
                 </div>
@@ -214,6 +210,16 @@ function SelectInput(props: SelectHTMLAttributes<HTMLSelectElement>) {
   );
 }
 
+interface BicycleEditorFormState {
+  readonly message: string | null;
+  readonly status: "idle" | "success" | "error";
+}
+
+const initialBicycleEditorFormState: BicycleEditorFormState = {
+  message: null,
+  status: "idle"
+};
+
 export function BicycleEditor({
   action,
   bike,
@@ -232,11 +238,53 @@ export function BicycleEditor({
   const isCreate = mode === "create";
   const isDrawer = variant === "drawer";
   const [isEditing, setIsEditing] = useState(isCreate);
+  const [showSubmitMessage, setShowSubmitMessage] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [submitState, submitAction, isPending] = useActionState(
+    async (_previousState: BicycleEditorFormState, formData: FormData) => {
+      try {
+        await action(formData);
+
+        return {
+          message: null,
+          status: "success"
+        } satisfies BicycleEditorFormState;
+      } catch (error) {
+        return {
+          message: error instanceof Error ? error.message : "Unable to save bicycle changes.",
+          status: "error"
+        } satisfies BicycleEditorFormState;
+      }
+    },
+    initialBicycleEditorFormState
+  );
+
+  useEffect(() => {
+    if (submitState.status === "success" && !isCreate) {
+      setIsEditing(false);
+      setShowSubmitMessage(false);
+      setToastMessage("Bicycle saved successfully.");
+    }
+
+    if (submitState.status === "error") {
+      setShowSubmitMessage(true);
+    }
+  }, [isCreate, submitState.status]);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setToastMessage(null), 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [toastMessage]);
 
   function handleCancelEditing() {
     formRef.current?.reset();
     setIsEditing(false);
+    setShowSubmitMessage(false);
   }
 
   return (
@@ -244,6 +292,8 @@ export function BicycleEditor({
       className={
         isDrawer ? "grid gap-6 p-6" : "grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]"
       }>
+      {toastMessage ? <StatusToast message={toastMessage} /> : null}
+
       <div className="clay-card-raised p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-3">
@@ -269,7 +319,7 @@ export function BicycleEditor({
           ) : null}
         </div>
 
-        <form action={action} className="mt-8 grid gap-5" ref={formRef}>
+        <form action={submitAction} className="mt-8 grid gap-5" ref={formRef}>
           {isCreate ? (
             <Field label="Bike ID">
               <TextInput
@@ -332,18 +382,6 @@ export function BicycleEditor({
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
-            <Field label="Estimated Range (km)">
-              <TextInput
-                defaultValue={bike.estimatedRangeKm}
-                disabled={!isEditing}
-                min={1}
-                name="estimatedRangeKm"
-                required
-                step="0.1"
-                type="number"
-              />
-            </Field>
-
             <Field label="Top Speed (km/h)">
               <TextInput
                 defaultValue={bike.topSpeedKmh}
@@ -425,18 +463,21 @@ export function BicycleEditor({
             {isCreate ? (
               <button
                 className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
+                disabled={isPending}
                 type="submit">
-                Create Bicycle
+                {isPending ? "Creating..." : "Create Bicycle"}
               </button>
             ) : isEditing ? (
               <>
                 <button
                   className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
+                  disabled={isPending}
                   type="submit">
-                  Save Changes
+                  {isPending ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                  disabled={isPending}
                   onClick={handleCancelEditing}
                   type="button">
                   Cancel
@@ -445,25 +486,28 @@ export function BicycleEditor({
             ) : (
               <button
                 className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  setShowSubmitMessage(false);
+                  setIsEditing(true);
+                }}
                 type="button">
                 Edit Bicycle
               </button>
             )}
-            {isDrawer ? (
-              <DrawerCloseButton
-                className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
-                label="Close bicycle editor">
-                Cancel
-              </DrawerCloseButton>
-            ) : (
+            {!isDrawer && (!isEditing || isCreate) ? (
               <Link
                 className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
                 href="/bicycles">
                 Back to Fleet
               </Link>
-            )}
+            ) : null}
           </div>
+
+          {showSubmitMessage && submitState.message ? (
+            <p className="text-sm font-medium text-[var(--clay-danger)]" role="status">
+              {submitState.message}
+            </p>
+          ) : null}
         </form>
 
         {deleteAction && !isCreate && isEditing ? (
@@ -471,6 +515,7 @@ export function BicycleEditor({
             <input name="bikeId" type="hidden" value={bike.id} />
             <button
               className="clay-button inline-flex border-[var(--clay-danger-soft)] bg-[var(--clay-danger-soft)] px-5 py-3 text-sm font-semibold text-[var(--clay-danger)]"
+              disabled={isPending}
               type="submit">
               Delete Bicycle
             </button>

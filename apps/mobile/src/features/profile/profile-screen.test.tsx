@@ -1,15 +1,24 @@
 import { act, fireEvent, render, screen } from "@testing-library/react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useEffect } from "react";
 
 import { ProfileScreen } from "./profile-screen";
+import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { useAuth } from "../auth/auth-provider";
 
 jest.mock("expo-router", () => ({
+  useFocusEffect: jest.fn(),
   useRouter: jest.fn()
 }));
 
 jest.mock("../auth/auth-provider", () => ({
   useAuth: jest.fn()
+}));
+
+jest.mock("@/lib/ride-history-service", () => ({
+  configuredRideHistoryService: {
+    getRideHistory: jest.fn()
+  }
 }));
 
 describe("ProfileScreen", () => {
@@ -19,6 +28,9 @@ describe("ProfileScreen", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(useFocusEffect).mockImplementation((effect) => {
+      useEffect(effect, [effect]);
+    });
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     jest.mocked(useAuth).mockReturnValue({
       profile: { firstName: "Alex" },
@@ -26,9 +38,45 @@ describe("ProfileScreen", () => {
       updateDisplayName,
       user: { email: "alex@rideglide.app" }
     } as never);
+    jest.mocked(configuredRideHistoryService.getRideHistory).mockResolvedValue([
+      {
+        id: "ride-history-1",
+        bikeId: "G-205",
+        bikeModel: "Glide City",
+        startedAt: "2026-04-04T10:15:00Z",
+        completedAt: "2026-04-04T10:41:00Z",
+        durationSec: 1560,
+        distanceKm: 3.4,
+        totalCost: 4.8,
+        co2SavedKg: 0.9,
+        startLocation: "อโศก Interchange",
+        endLocation: "Benjakitti Park",
+        routeLabel: "อโศก Interchange to Benjakitti Park",
+        paymentLabel: "Charged to Visa **** 4242",
+        route: [],
+        checkpoints: []
+      },
+      {
+        id: "ride-history-2",
+        bikeId: "G-509",
+        bikeModel: "Glide Metro",
+        startedAt: "2026-04-02T05:30:00Z",
+        completedAt: "2026-04-02T05:50:00Z",
+        durationSec: 1200,
+        distanceKm: 2.6,
+        totalCost: 3.95,
+        co2SavedKg: 0.6,
+        startLocation: "Silom Complex",
+        endLocation: "Lumphini Park West Gate",
+        routeLabel: "Silom lunch loop",
+        paymentLabel: "Charged to Visa **** 0188",
+        route: [],
+        checkpoints: []
+      }
+    ]);
   });
 
-  it("renders Supabase-backed profile details and ride history", () => {
+  it("renders Supabase-backed profile details and ride history", async () => {
     render(<ProfileScreen />);
 
     const displayNameInput = screen.getByPlaceholderText("Enter your display name");
@@ -41,17 +89,39 @@ describe("ProfileScreen", () => {
     expect(screen.queryByText("Save Display Name")).toBeNull();
     expect(screen.getByText("Ride history")).toBeTruthy();
     expect(
-      screen.getByLabelText("Open ride details for อโศก Interchange to Benjakitti Park")
+      await screen.findByLabelText("Open ride details for อโศก Interchange to Benjakitti Park")
     ).toBeTruthy();
     expect(screen.getByText("Silom lunch loop")).toBeTruthy();
   });
 
-  it("navigates to the ride detail screen when a ride card is pressed", () => {
+  it("navigates to the ride detail screen when a ride card is pressed", async () => {
     render(<ProfileScreen />);
 
-    fireEvent.press(screen.getByLabelText("Open ride details for อโศก Interchange to Benjakitti Park"));
+    fireEvent.press(
+      await screen.findByLabelText("Open ride details for อโศก Interchange to Benjakitti Park")
+    );
 
     expect(push).toHaveBeenCalledWith("../ride/history/ride-history-1");
+  });
+
+  it("renders an empty ride history state when no rides exist", async () => {
+    jest.mocked(configuredRideHistoryService.getRideHistory).mockResolvedValueOnce([]);
+
+    render(<ProfileScreen />);
+
+    expect(await screen.findByText("No completed rides yet")).toBeTruthy();
+  });
+
+  it("renders a retryable ride history error", async () => {
+    jest.mocked(configuredRideHistoryService.getRideHistory).mockRejectedValueOnce(
+      new Error("Ride history offline")
+    );
+
+    render(<ProfileScreen />);
+
+    expect(await screen.findByText("Ride history unavailable")).toBeTruthy();
+    expect(screen.getByText("Ride history offline")).toBeTruthy();
+    expect(screen.getByText("Retry")).toBeTruthy();
   });
 
   it("signs out from the profile footer", () => {

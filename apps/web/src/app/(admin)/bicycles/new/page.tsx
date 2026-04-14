@@ -11,7 +11,6 @@ export default async function NewBicyclePage() {
       action={createBikeAction}
       bike={{
         createdAt: new Date().toISOString(),
-        estimatedRangeKm: 35,
         id: "",
         imageUrl: null,
         lastReportedAt: new Date().toISOString(),

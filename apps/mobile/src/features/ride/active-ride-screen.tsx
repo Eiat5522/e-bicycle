@@ -8,6 +8,8 @@ import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared"
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { configuredRideHistoryService } from "@/lib/ride-history-service";
+import { hasSupabaseConfig } from "@/lib/supabase";
 import { colors, radii, spacing } from "@/theme/tokens";
 
 const isTestEnvironment = process.env.NODE_ENV === "test";
@@ -19,6 +21,8 @@ export function ActiveRideScreen() {
   const bikeId = params.bikeId ?? mockActiveRide.bikeId;
   const enteredFromUnlock = params.entry === "unlock";
   const [showArrivalOverlay, setShowArrivalOverlay] = useState(enteredFromUnlock);
+  const [endRideError, setEndRideError] = useState<string | null>(null);
+  const [isEndingRide, setIsEndingRide] = useState(false);
   const heroOpacity = useRef(new Animated.Value(isTestEnvironment ? 1 : 0)).current;
   const heroTranslateY = useRef(new Animated.Value(isTestEnvironment ? 0 : 20)).current;
   const glowPulse = useRef(new Animated.Value(0)).current;
@@ -114,6 +118,28 @@ export function ActiveRideScreen() {
     inputRange: [0, 1],
     outputRange: [0.16, 0.32]
   });
+
+  async function handleEndRide() {
+    if (!hasSupabaseConfig) {
+      router.push("/ride/summary");
+      return;
+    }
+
+    setIsEndingRide(true);
+    setEndRideError(null);
+
+    try {
+      const ride = await configuredRideHistoryService.completeDemoRide({ bikeId });
+      router.push({
+        pathname: "/ride/summary",
+        params: { id: ride.id }
+      });
+    } catch (error) {
+      setEndRideError(error instanceof Error ? error.message : "Unable to complete the ride.");
+    } finally {
+      setIsEndingRide(false);
+    }
+  }
 
   return (
     <>
@@ -282,7 +308,16 @@ export function ActiveRideScreen() {
 
         <View style={{ gap: spacing.sm }}>
           <PrimaryButton label="Pause Ride" variant="secondary" disabled />
-          <PrimaryButton label="End Ride" onPress={() => router.push("/ride/summary")} />
+          <PrimaryButton
+            label={isEndingRide ? "Ending Ride..." : "End Ride"}
+            onPress={() => void handleEndRide()}
+            disabled={isEndingRide}
+          />
+          {endRideError ? (
+            <Text selectable style={{ color: colors.coralDark, fontSize: 15, lineHeight: 22 }}>
+              {endRideError}
+            </Text>
+          ) : null}
         </View>
       </ScreenShell>
 

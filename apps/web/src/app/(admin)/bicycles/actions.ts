@@ -59,7 +59,7 @@ export async function createBikeAction(formData: FormData) {
   }
 
   const { error } = await supabase.from("bikes").insert({
-    estimated_range_km: values.estimatedRangeKm,
+    estimated_range_km: 0,
     id: values.bikeId,
     image_url: imageUrl,
     latitude: values.latitude,
@@ -85,7 +85,6 @@ export async function updateBikeAction(formData: FormData) {
   const values = validateBikeForm(formData);
 
   const updateValues: Database["public"]["Tables"]["bikes"]["Update"] = {
-    estimated_range_km: values.estimatedRangeKm,
     latitude: values.latitude,
     location: values.location,
     longitude: values.longitude,

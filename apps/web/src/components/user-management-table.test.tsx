@@ -63,6 +63,7 @@ describe("UserDetailDrawerContent", () => {
       })
     ).toBeInTheDocument();
     expect(screen.getByText("Wallet Top-Up")).toBeInTheDocument();
+    expect(screen.getByText("+฿20.00")).toBeInTheDocument();
   });
 
   it("renders ride history content when the ride tab is active", () => {
@@ -83,6 +84,7 @@ describe("UserDetailDrawerContent", () => {
         name: "อโศก Interchange to Benjakitti Park"
       })
     ).toBeInTheDocument();
+    expect(screen.getByText("-฿4.20")).toBeInTheDocument();
   });
 
   it("renders empty states for users without rides or transactions", () => {
@@ -220,6 +222,7 @@ describe("UserManagementTable", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
     });
+    expect(screen.getByText("User saved successfully.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Display name" })).toBeDisabled();
   });
 

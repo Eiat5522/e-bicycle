@@ -121,7 +121,6 @@ export function validateBikeForm(formData: FormData) {
   const pricingLabel = String(formData.get("pricingLabel") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
-  const estimatedRangeKm = Number(formData.get("estimatedRangeKm") ?? "");
   const topSpeedKmh = Number(formData.get("topSpeedKmh") ?? "");
   const latitude = Number(formData.get("latitude") ?? "");
   const longitude = Number(formData.get("longitude") ?? "");
@@ -146,10 +145,6 @@ export function validateBikeForm(formData: FormData) {
     throw new Error("Bike status is invalid.");
   }
 
-  if (!Number.isFinite(estimatedRangeKm) || estimatedRangeKm <= 0) {
-    throw new Error("Estimated range must be greater than zero.");
-  }
-
   if (!Number.isFinite(topSpeedKmh) || topSpeedKmh <= 0) {
     throw new Error("Top speed must be greater than zero.");
   }
@@ -164,7 +159,6 @@ export function validateBikeForm(formData: FormData) {
 
   return {
     bikeId,
-    estimatedRangeKm,
     latitude,
     location,
     longitude,

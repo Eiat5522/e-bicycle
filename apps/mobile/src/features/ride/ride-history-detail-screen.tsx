@@ -1,12 +1,13 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 
-import { getRideHistoryById } from "@glide/api";
-import { formatCurrency, formatDistanceKm } from "@glide/shared";
+import { formatCurrency, formatDistanceKm, type RideHistoryItem } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { colors, spacing } from "@/theme/tokens";
 
 import {
@@ -19,7 +20,91 @@ export function RideHistoryDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const rideId = Array.isArray(id) ? id[0] : id;
-  const ride = rideId ? getRideHistoryById(rideId) : undefined;
+  const [ride, setRide] = useState<RideHistoryItem | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadRide() {
+      if (!rideId) {
+        if (isMounted) {
+          setRide(undefined);
+          setErrorMessage(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      setIsLoading(true);
+      setErrorMessage(null);
+
+      try {
+        const nextRide = await configuredRideHistoryService.getRideHistoryById(rideId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setRide(nextRide);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setRide(undefined);
+        setErrorMessage(
+          error instanceof Error ? error.message : "Unable to load ride details."
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadRide();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rideId]);
+
+  if (isLoading) {
+    return (
+      <ScreenShell
+        title="Ride Details"
+        description="Review route details, trip metrics, and replay the completed ride path.">
+        <SurfaceCard tone="muted">
+          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            Loading ride details
+          </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+            Pulling the selected trip from Supabase.
+          </Text>
+        </SurfaceCard>
+      </ScreenShell>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <ScreenShell
+        title="Ride Details"
+        description="The selected trip could not be loaded right now.">
+        <SurfaceCard tone="accent">
+          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            Ride details unavailable
+          </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+            {errorMessage}
+          </Text>
+          <PrimaryButton label="Back to Profile" onPress={() => router.replace("/(tabs)/profile")} />
+        </SurfaceCard>
+      </ScreenShell>
+    );
+  }
 
   if (!ride) {
     return (

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import { useRouter } from "expo-router";
+import type { Wallet } from "@glide/shared";
 
 import { configuredWalletService } from "@/lib/wallet-service";
 
@@ -19,7 +20,7 @@ jest.mock("@/lib/wallet-service", () => ({
 describe("WalletScreen", () => {
   const push = jest.fn();
 
-  const initialWallet = {
+  const initialWallet: Wallet = {
     balance: 24.5,
     points: 120,
     paymentMethods: ["Visa **** 4242"],
@@ -34,7 +35,7 @@ describe("WalletScreen", () => {
       },
       {
         id: "txn-2",
-        type: "refund",
+        type: "reward",
         title: "Ride refund",
         subtitle: "Oct 23, 2023 • Support credit",
         amount: 2.1,

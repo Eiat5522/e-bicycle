@@ -9,7 +9,6 @@ import { createClient } from "@/lib/supabase/server";
 
 function mapBike(row: {
   readonly created_at: string;
-  readonly estimated_range_km: number;
   readonly id: string;
   readonly image_url: string | null;
   readonly last_reported_at: string;
@@ -25,7 +24,6 @@ function mapBike(row: {
 }): ManagedBike {
   return {
     createdAt: row.created_at,
-    estimatedRangeKm: row.estimated_range_km,
     id: row.id,
     imageUrl: row.image_url,
     lastReportedAt: row.last_reported_at,
@@ -78,7 +76,7 @@ export async function getBikeDetail(bikeId: string) {
       supabase
         .from("bikes")
         .select(
-          "id, model, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
+          "id, model, ride_class, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
         )
         .eq("id", bikeId)
         .maybeSingle(),

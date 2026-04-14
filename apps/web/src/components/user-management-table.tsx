@@ -12,6 +12,7 @@ import {
   type UserUpdateFormState
 } from "@/app/(admin)/user-update-form-state";
 import { formatAdminDate } from "@/lib/formatting";
+import { StatusToast } from "@/components/status-toast";
 
 export interface ManagedUser {
   readonly id: string;
@@ -33,8 +34,8 @@ export interface UserTransaction {
 }
 
 function formatTransactionAmount(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
+  return new Intl.NumberFormat("th-TH", {
+    currency: "THB",
     style: "currency",
     signDisplay: "always",
     minimumFractionDigits: 2,
@@ -352,6 +353,7 @@ function UserDetailDrawer({
   const [activeTab, setActiveTab] = useState<"transactions" | "rides">("transactions");
   const [isEditing, setIsEditing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const firstNameRef = useRef<HTMLInputElement>(null);
   const isAdminRef = useRef<HTMLInputElement>(null);
   const [submitState, submitAction, isPending] = useActionState(
@@ -361,12 +363,22 @@ function UserDetailDrawer({
       if (nextState.status === "success") {
         setIsEditing(false);
         setHasChanges(false);
+        setToastMessage("User saved successfully.");
       }
 
       return nextState;
     },
     initialUserUpdateFormState
   );
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setToastMessage(null), 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [toastMessage]);
 
   function checkForChanges() {
     const currentFirstName = firstNameRef.current?.value ?? user.firstName;
@@ -375,33 +387,36 @@ function UserDetailDrawer({
   }
 
   return (
-    <UserDetailDrawerContent
-      activeTab={activeTab}
-      editorControls={{
-        firstNameRef,
-        hasChanges,
-        isAdminRef,
-        isEditing,
-        isPending,
-        submitMessage: submitState.status === "error" ? submitState.message : null,
-        onCancelEditing: () => {
-          if (firstNameRef.current) {
-            firstNameRef.current.value = user.firstName;
-          }
-          if (isAdminRef.current) {
-            isAdminRef.current.checked = user.isAdmin;
-          }
-          setIsEditing(false);
-          setHasChanges(false);
-        },
-        onCheckForChanges: checkForChanges,
-        onStartEditing: () => setIsEditing(true),
-      }}
-      onClose={onClose}
-      onSelectTab={setActiveTab}
-      onUpdateUser={submitAction}
-      user={user}
-    />
+    <>
+      {toastMessage ? <StatusToast message={toastMessage} /> : null}
+      <UserDetailDrawerContent
+        activeTab={activeTab}
+        editorControls={{
+          firstNameRef,
+          hasChanges,
+          isAdminRef,
+          isEditing,
+          isPending,
+          submitMessage: submitState.status === "error" ? submitState.message : null,
+          onCancelEditing: () => {
+            if (firstNameRef.current) {
+              firstNameRef.current.value = user.firstName;
+            }
+            if (isAdminRef.current) {
+              isAdminRef.current.checked = user.isAdmin;
+            }
+            setIsEditing(false);
+            setHasChanges(false);
+          },
+          onCheckForChanges: checkForChanges,
+          onStartEditing: () => setIsEditing(true),
+        }}
+        onClose={onClose}
+        onSelectTab={setActiveTab}
+        onUpdateUser={submitAction}
+        user={user}
+      />
+    </>
   );
 }
 

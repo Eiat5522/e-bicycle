@@ -21,6 +21,63 @@ export interface Database {
       };
     };
     Tables: {
+      bike_ride_history: {
+        Row: {
+          id: string;
+          bike_id: string;
+          profile_id: string | null;
+          started_at: string;
+          completed_at: string;
+          duration_sec: number;
+          distance_km: number;
+          total_cost: number;
+          co2_saved_kg: number;
+          start_location: string;
+          end_location: string;
+          route_label: string;
+          payment_label: string;
+          route: Json;
+          checkpoints: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          bike_id: string;
+          profile_id?: string | null;
+          started_at: string;
+          completed_at: string;
+          duration_sec: number;
+          distance_km: number;
+          total_cost: number;
+          co2_saved_kg?: number;
+          start_location: string;
+          end_location: string;
+          route_label: string;
+          payment_label: string;
+          route?: Json;
+          checkpoints?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          bike_id?: string;
+          profile_id?: string | null;
+          started_at?: string;
+          completed_at?: string;
+          duration_sec?: number;
+          distance_km?: number;
+          total_cost?: number;
+          co2_saved_kg?: number;
+          start_location?: string;
+          end_location?: string;
+          route_label?: string;
+          payment_label?: string;
+          route?: Json;
+          checkpoints?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       bikes: {
         Row: {
           id: string;
@@ -161,3 +218,11 @@ export interface Profile {
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];

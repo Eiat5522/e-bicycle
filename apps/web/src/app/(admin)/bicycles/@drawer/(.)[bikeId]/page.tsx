@@ -1,8 +1,8 @@
 import { BicycleEditor } from "@/components/bicycle-management";
 import { SideDrawer } from "@/components/side-drawer";
 
-import { deleteBikeAction, updateBikeAction } from "../../../bicycles/actions";
-import { getBikeDetail } from "../../../bicycles/[bikeId]/data";
+import { deleteBikeAction, updateBikeAction } from "../../actions";
+import { getBikeDetail } from "../../[bikeId]/data";
 
 export default async function BicycleDrawerPage({
   params

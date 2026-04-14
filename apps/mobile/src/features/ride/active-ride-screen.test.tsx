@@ -1,11 +1,22 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { ActiveRideScreen } from "./active-ride-screen";
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
   useRouter: jest.fn()
+}));
+
+jest.mock("@/lib/ride-history-service", () => ({
+  configuredRideHistoryService: {
+    completeDemoRide: jest.fn()
+  }
+}));
+
+jest.mock("@/lib/supabase", () => ({
+  hasSupabaseConfig: true
 }));
 
 describe("ActiveRideScreen", () => {
@@ -14,6 +25,23 @@ describe("ActiveRideScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+    jest.mocked(configuredRideHistoryService.completeDemoRide).mockResolvedValue({
+      id: "ride-new",
+      bikeId: "G-205",
+      bikeModel: "Glide City",
+      startedAt: "2026-04-04T10:15:00Z",
+      completedAt: "2026-04-04T10:41:00Z",
+      durationSec: 1560,
+      distanceKm: 3.4,
+      totalCost: 4.8,
+      co2SavedKg: 0.9,
+      startLocation: "อโศก Interchange",
+      endLocation: "Benjakitti Park",
+      routeLabel: "อโศก Interchange to Benjakitti Park",
+      paymentLabel: "Charged to your Glide wallet",
+      route: [],
+      checkpoints: []
+    });
   });
 
   it("renders the unlock arrival overlay when entering from the unlock flow", () => {
@@ -29,7 +57,7 @@ describe("ActiveRideScreen", () => {
     expect(screen.getByText("Ride live now")).toBeTruthy();
   });
 
-  it("navigates to the ride summary when ending the ride", () => {
+  it("creates a completed ride and navigates to the summary when ending the ride", async () => {
     jest.mocked(useLocalSearchParams).mockReturnValue({});
 
     render(<ActiveRideScreen />);
@@ -41,6 +69,25 @@ describe("ActiveRideScreen", () => {
 
     fireEvent.press(screen.getByText("End Ride"));
 
-    expect(push).toHaveBeenCalledWith("/ride/summary");
+    expect(await screen.findByText("End Ride")).toBeTruthy();
+    expect(configuredRideHistoryService.completeDemoRide).toHaveBeenCalledWith({ bikeId: "G-205" });
+    expect(push).toHaveBeenCalledWith({
+      pathname: "/ride/summary",
+      params: { id: "ride-new" }
+    });
+  });
+
+  it("shows an inline error when completing the ride fails", async () => {
+    jest
+      .mocked(configuredRideHistoryService.completeDemoRide)
+      .mockRejectedValueOnce(new Error("Ride completion failed"));
+    jest.mocked(useLocalSearchParams).mockReturnValue({});
+
+    render(<ActiveRideScreen />);
+
+    fireEvent.press(screen.getByText("End Ride"));
+
+    expect(await screen.findByText("Ride completion failed")).toBeTruthy();
+    expect(push).not.toHaveBeenCalled();
   });
 });

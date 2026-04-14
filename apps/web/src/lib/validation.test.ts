@@ -41,7 +41,6 @@ function createBikeFormData(overrides?: Record<string, string>) {
   formData.set("pricingLabel", "$1.10 / 10 min");
   formData.set("status", "available");
   formData.set("location", "Central World");
-  formData.set("estimatedRangeKm", "40");
   formData.set("topSpeedKmh", "25");
   formData.set("latitude", "13.7466");
   formData.set("longitude", "100.5393");
@@ -72,7 +71,6 @@ describe("validateBikeForm", () => {
   it("normalizes and validates valid bicycle input", () => {
     expect(validateBikeForm(createBikeFormData())).toEqual({
       bikeId: "G-701",
-      estimatedRangeKm: 40,
       latitude: 13.7466,
       location: "Central World",
       longitude: 100.5393,
@@ -142,16 +140,6 @@ describe("validateBikeForm", () => {
         })
       )
     ).toThrow("Bike location is required.");
-  });
-
-  it("rejects non-positive estimated ranges", () => {
-    expect(() =>
-      validateBikeForm(
-        createBikeFormData({
-          estimatedRangeKm: "0"
-        })
-      )
-    ).toThrow("Estimated range must be greater than zero.");
   });
 
   it("rejects non-positive top speeds", () => {
