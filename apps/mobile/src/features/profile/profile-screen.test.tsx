@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useEffect } from "react";
 
@@ -25,6 +25,14 @@ describe("ProfileScreen", () => {
   const push = jest.fn();
   const signOut = jest.fn();
   const updateDisplayName = jest.fn();
+
+  async function renderProfileScreen() {
+    render(<ProfileScreen />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Loading rides")).toBeNull();
+    });
+  }
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -77,7 +85,7 @@ describe("ProfileScreen", () => {
   });
 
   it("renders Supabase-backed profile details and ride history", async () => {
-    render(<ProfileScreen />);
+    await renderProfileScreen();
 
     const displayNameInput = screen.getByPlaceholderText("Enter your display name");
 
@@ -95,7 +103,7 @@ describe("ProfileScreen", () => {
   });
 
   it("navigates to the ride detail screen when a ride card is pressed", async () => {
-    render(<ProfileScreen />);
+    await renderProfileScreen();
 
     fireEvent.press(
       await screen.findByLabelText("Open ride details for อโศก Interchange to Benjakitti Park")
@@ -107,7 +115,7 @@ describe("ProfileScreen", () => {
   it("renders an empty ride history state when no rides exist", async () => {
     jest.mocked(configuredRideHistoryService.getRideHistory).mockResolvedValueOnce([]);
 
-    render(<ProfileScreen />);
+    await renderProfileScreen();
 
     expect(await screen.findByText("No completed rides yet")).toBeTruthy();
   });
@@ -117,15 +125,15 @@ describe("ProfileScreen", () => {
       new Error("Ride history offline")
     );
 
-    render(<ProfileScreen />);
+    await renderProfileScreen();
 
     expect(await screen.findByText("Ride history unavailable")).toBeTruthy();
     expect(screen.getByText("Ride history offline")).toBeTruthy();
     expect(screen.getByText("Retry")).toBeTruthy();
   });
 
-  it("signs out from the profile footer", () => {
-    render(<ProfileScreen />);
+  it("signs out from the profile footer", async () => {
+    await renderProfileScreen();
 
     fireEvent.press(screen.getByText("Sign Out"));
 
@@ -133,7 +141,7 @@ describe("ProfileScreen", () => {
   });
 
   it("updates the display name from the profile card", async () => {
-    render(<ProfileScreen />);
+    await renderProfileScreen();
 
     fireEvent.press(screen.getByText("Edit"));
     fireEvent.changeText(screen.getByPlaceholderText("Enter your display name"), "  Taylor  ");
@@ -148,8 +156,8 @@ describe("ProfileScreen", () => {
     expect(screen.queryByText("Save Display Name")).toBeNull();
   });
 
-  it("shows a validation error when the display name is empty", () => {
-    render(<ProfileScreen />);
+  it("shows a validation error when the display name is empty", async () => {
+    await renderProfileScreen();
 
     fireEvent.press(screen.getByText("Edit"));
     fireEvent.changeText(screen.getByPlaceholderText("Enter your display name"), "   ");
@@ -163,7 +171,7 @@ describe("ProfileScreen", () => {
   it("surfaces display-name save errors inline", async () => {
     updateDisplayName.mockRejectedValueOnce(new Error("Profile update failed"));
 
-    render(<ProfileScreen />);
+    await renderProfileScreen();
 
     fireEvent.press(screen.getByText("Edit"));
     fireEvent.changeText(screen.getByPlaceholderText("Enter your display name"), "Taylor");
@@ -176,8 +184,8 @@ describe("ProfileScreen", () => {
     expect(screen.getByPlaceholderText("Enter your display name").props.editable).toBe(true);
   });
 
-  it("routes to support and wallet shortcuts", () => {
-    render(<ProfileScreen />);
+  it("routes to support and wallet shortcuts", async () => {
+    await renderProfileScreen();
 
     fireEvent.press(screen.getByText("Open Support"));
     fireEvent.press(screen.getByText("View Wallet"));
