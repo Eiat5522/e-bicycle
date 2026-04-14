@@ -1,8 +1,11 @@
+"use client";
+
 import type {
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes
 } from "react";
+import { useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -169,7 +172,7 @@ export function BicycleManagementList({
                 className="clay-button inline-flex px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
                 href={`/bicycles/${bike.id}`}
                 scroll={false}>
-                Edit Bicycle
+                View Details
               </Link>
             </div>
           </article>
@@ -228,6 +231,13 @@ export function BicycleEditor({
 }) {
   const isCreate = mode === "create";
   const isDrawer = variant === "drawer";
+  const [isEditing, setIsEditing] = useState(isCreate);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleCancelEditing() {
+    formRef.current?.reset();
+    setIsEditing(false);
+  }
 
   return (
     <section
@@ -259,7 +269,7 @@ export function BicycleEditor({
           ) : null}
         </div>
 
-        <form action={action} className="mt-8 grid gap-5">
+        <form action={action} className="mt-8 grid gap-5" ref={formRef}>
           {isCreate ? (
             <Field label="Bike ID">
               <TextInput
@@ -281,11 +291,22 @@ export function BicycleEditor({
 
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="Model">
-              <TextInput defaultValue={bike.model} name="model" required type="text" />
+              <TextInput
+                defaultValue={bike.model}
+                disabled={!isEditing}
+                name="model"
+                required
+                type="text"
+              />
             </Field>
 
             <Field label="Ride Class">
-              <TextInput defaultValue={bike.rideClass ?? ""} name="rideClass" type="text" />
+              <TextInput
+                defaultValue={bike.rideClass ?? ""}
+                disabled={!isEditing}
+                name="rideClass"
+                type="text"
+              />
             </Field>
           </div>
 
@@ -293,6 +314,7 @@ export function BicycleEditor({
             <Field label="Pricing Label">
               <TextInput
                 defaultValue={bike.pricingLabel}
+                disabled={!isEditing}
                 name="pricingLabel"
                 required
                 type="text"
@@ -300,7 +322,7 @@ export function BicycleEditor({
             </Field>
 
             <Field label="Status">
-              <SelectInput defaultValue={bike.status} name="status">
+              <SelectInput defaultValue={bike.status} disabled={!isEditing} name="status">
                 <option value="available">Available</option>
                 <option value="reserved">Reserved</option>
                 <option value="in_use">In Use</option>
@@ -313,6 +335,7 @@ export function BicycleEditor({
             <Field label="Estimated Range (km)">
               <TextInput
                 defaultValue={bike.estimatedRangeKm}
+                disabled={!isEditing}
                 min={1}
                 name="estimatedRangeKm"
                 required
@@ -324,6 +347,7 @@ export function BicycleEditor({
             <Field label="Top Speed (km/h)">
               <TextInput
                 defaultValue={bike.topSpeedKmh}
+                disabled={!isEditing}
                 min={1}
                 name="topSpeedKmh"
                 required
@@ -334,13 +358,20 @@ export function BicycleEditor({
           </div>
 
           <Field label="Location">
-            <TextInput defaultValue={bike.location} name="location" required type="text" />
+            <TextInput
+              defaultValue={bike.location}
+              disabled={!isEditing}
+              name="location"
+              required
+              type="text"
+            />
           </Field>
 
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="Latitude">
               <TextInput
                 defaultValue={bike.latitude}
+                disabled={!isEditing}
                 max={90}
                 min={-90}
                 name="latitude"
@@ -353,6 +384,7 @@ export function BicycleEditor({
             <Field label="Longitude">
               <TextInput
                 defaultValue={bike.longitude}
+                disabled={!isEditing}
                 max={180}
                 min={-180}
                 name="longitude"
@@ -382,6 +414,7 @@ export function BicycleEditor({
               <input
                 accept="image/png,image/jpeg,image/webp"
                 className="clay-inset border border-dashed border-[var(--clay-border-subtle)] px-4 py-3 text-sm"
+                disabled={!isEditing}
                 name="image"
                 type="file"
               />
@@ -389,11 +422,34 @@ export function BicycleEditor({
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <button
-              className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
-              type="submit">
-              {isCreate ? "Create Bicycle" : "Save Changes"}
-            </button>
+            {isCreate ? (
+              <button
+                className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
+                type="submit">
+                Create Bicycle
+              </button>
+            ) : isEditing ? (
+              <>
+                <button
+                  className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
+                  type="submit">
+                  Save Changes
+                </button>
+                <button
+                  className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                  onClick={handleCancelEditing}
+                  type="button">
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
+                onClick={() => setIsEditing(true)}
+                type="button">
+                Edit Bicycle
+              </button>
+            )}
             {isDrawer ? (
               <DrawerCloseButton
                 className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
@@ -410,7 +466,7 @@ export function BicycleEditor({
           </div>
         </form>
 
-        {deleteAction && !isCreate ? (
+        {deleteAction && !isCreate && isEditing ? (
           <form action={deleteAction} className="mt-6 flex justify-end">
             <input name="bikeId" type="hidden" value={bike.id} />
             <button

@@ -24,6 +24,7 @@ export interface Database {
           end_location: string;
           id: string;
           payment_label: string;
+          profile_id: string | null;
           route: Json;
           route_label: string;
           start_location: string;
@@ -41,6 +42,7 @@ export interface Database {
           end_location: string;
           id?: string;
           payment_label: string;
+          profile_id?: string | null;
           route?: Json;
           route_label: string;
           start_location: string;
@@ -58,6 +60,7 @@ export interface Database {
           end_location?: string;
           id?: string;
           payment_label?: string;
+          profile_id?: string | null;
           route?: Json;
           route_label?: string;
           start_location?: string;
@@ -70,6 +73,13 @@ export interface Database {
             columns: ["bike_id"];
             isOneToOne: false;
             referencedRelation: "bikes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bike_ride_history_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           }
         ];
