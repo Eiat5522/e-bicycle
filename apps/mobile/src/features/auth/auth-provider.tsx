@@ -164,14 +164,20 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
           };
         };
 
+        let bootstrapTimeoutId: ReturnType<typeof setTimeout> | undefined;
+
         const { currentSession, nextProfile } = await Promise.race([
           bootstrapSession(),
           new Promise<never>((_, reject) => {
-            setTimeout(() => {
+            bootstrapTimeoutId = setTimeout(() => {
               reject(new Error("Auth bootstrap timed out."));
             }, bootstrapTimeoutMs);
           })
-        ]);
+        ]).finally(() => {
+          if (bootstrapTimeoutId) {
+            clearTimeout(bootstrapTimeoutId);
+          }
+        });
 
         if (!isMounted) {
           return;

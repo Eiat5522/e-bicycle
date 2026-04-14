@@ -334,4 +334,91 @@ describe("configuredBikeService", () => {
 
     warnSpy.mockRestore();
   });
+
+  it("returns undefined when Supabase cannot find a bike by id", async () => {
+    const maybeSingle = jest.fn().mockResolvedValue({
+      data: null,
+      error: null
+    });
+    const eq = jest.fn().mockReturnValue({ maybeSingle });
+    const select = jest.fn().mockReturnValue({ eq });
+    const from = jest.fn(() => ({
+      select
+    }));
+
+    jest.doMock("./supabase", () => ({
+      hasSupabaseConfig: true,
+      supabase: {
+        from
+      }
+    }));
+
+    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+
+    await expect(configuredBikeService.getById("missing-bike")).resolves.toBeUndefined();
+  });
+
+  it("falls back to the mock bike by id on recoverable Supabase failures", async () => {
+    const maybeSingle = jest.fn().mockResolvedValue({
+      data: null,
+      error: {
+        message: "Network request failed"
+      }
+    });
+    const eq = jest.fn().mockReturnValue({ maybeSingle });
+    const select = jest.fn().mockReturnValue({ eq });
+    const from = jest.fn(() => ({
+      select
+    }));
+
+    jest.doMock("./supabase", () => ({
+      hasSupabaseConfig: true,
+      supabase: {
+        from
+      }
+    }));
+
+    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const bike = await configuredBikeService.getById("G-104");
+
+    expect(bike).toEqual(
+      expect.objectContaining({
+        id: "G-104",
+        model: "Glide Pro X"
+      })
+    );
+  });
+
+  it("uses the mock bike source when explicitly configured", async () => {
+    const env = (
+      globalThis as typeof globalThis & {
+        process?: { env?: Record<string, string | undefined> };
+      }
+    ).process?.env;
+
+    if (env) {
+      env.EXPO_PUBLIC_BIKE_DATA_SOURCE = "mock";
+    }
+
+    jest.doMock("./supabase", () => ({
+      hasSupabaseConfig: true,
+      supabase: {
+        from: jest.fn()
+      }
+    }));
+
+    const fetchSpy = jest.fn();
+    globalThis.fetch = fetchSpy as typeof globalThis.fetch;
+
+    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const result = await configuredBikeService.listNearby({
+      latitude: 13.7563,
+      longitude: 100.5018,
+      radiusMeters: 1500,
+      limit: 10
+    });
+
+    expect(result.bikes.length).toBeGreaterThan(0);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });

@@ -51,4 +51,28 @@ describe("SignupScreen", () => {
 
     expect(await screen.findByText("User already registered")).toBeTruthy();
   });
+
+  it("validates missing fields before submitting", async () => {
+    render(<SignupScreen />);
+
+    fireEvent.press(screen.getByText("Create Account"));
+
+    expect(signUp).not.toHaveBeenCalled();
+    expect(await screen.findByText("Enter your first name, email, and password.")).toBeTruthy();
+  });
+
+  it("shows the config error and routes back to login", () => {
+    jest.mocked(useAuth).mockReturnValue({
+      configError: "Supabase is not configured.",
+      signUp
+    } as never);
+
+    render(<SignupScreen />);
+
+    expect(screen.getByText("Supabase is not configured.")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Back to Login"));
+
+    expect(push).toHaveBeenCalledWith("/(auth)/login");
+  });
 });

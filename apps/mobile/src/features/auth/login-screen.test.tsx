@@ -49,4 +49,28 @@ describe("LoginScreen", () => {
 
     expect(await screen.findByText("Invalid login credentials")).toBeTruthy();
   });
+
+  it("validates missing credentials before submitting", async () => {
+    render(<LoginScreen />);
+
+    fireEvent.press(screen.getByText("Sign In"));
+
+    expect(signIn).not.toHaveBeenCalled();
+    expect(await screen.findByText("Enter both your email and password.")).toBeTruthy();
+  });
+
+  it("shows the config error and routes to sign up", () => {
+    jest.mocked(useAuth).mockReturnValue({
+      configError: "Supabase is not configured.",
+      signIn
+    } as never);
+
+    render(<LoginScreen />);
+
+    expect(screen.getByText("Supabase is not configured.")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Create an Account"));
+
+    expect(push).toHaveBeenCalledWith("/(auth)/signup");
+  });
 });

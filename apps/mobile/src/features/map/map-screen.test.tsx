@@ -566,6 +566,22 @@ describe("MapScreen", () => {
     expect(requestForegroundPermissionsAsync).toHaveBeenCalledTimes(2);
   });
 
+  it("renders a retry state when the initial nearby-bike request fails", async () => {
+    listNearby.mockRejectedValueOnce(new Error("Nearby lookup failed"));
+
+    await renderScreen();
+
+    await waitFor(() => {
+      expect(screen.getByText("We could not load nearby bikes")).toBeTruthy();
+    });
+
+    expect(screen.getByText("Nearby lookup failed")).toBeTruthy();
+
+    fireEvent.press(screen.getByText("Retry"));
+
+    expect(requestForegroundPermissionsAsync).toHaveBeenCalledTimes(2);
+  });
+
   it("renders an empty state when no bikes are returned", async () => {
     listNearby.mockResolvedValue({
       bikes: [],

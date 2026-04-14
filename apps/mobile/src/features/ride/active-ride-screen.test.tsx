@@ -34,6 +34,11 @@ describe("ActiveRideScreen", () => {
 
     render(<ActiveRideScreen />);
 
+    expect(screen.queryByText("Bike unlocked")).toBeNull();
+    expect(screen.getByText("Ride corridor")).toBeTruthy();
+    expect(screen.getByText(/Current cost:/)).toBeTruthy();
+    expect(screen.getByText(/Session ID:/)).toBeTruthy();
+
     fireEvent.press(screen.getByText("End Ride"));
 
     expect(push).toHaveBeenCalledWith("/ride/summary");

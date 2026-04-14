@@ -146,7 +146,7 @@ const activityFeed = [
   },
   {
     title: "Latest wallet event",
-    detail: `${mockWallet.transactions[0]?.title ?? "Wallet updated"} recorded for ${formatCurrency(Math.abs(mockWallet.transactions[0]?.amount ?? 0))}.`,
+    detail: `${mockWallet.transactions[0]?.title ?? "Wallet update"} recorded for ${formatCurrency(Math.abs(mockWallet.transactions[0]?.amount ?? 0))}.`,
     timestamp: mockWallet.transactions[0] ? formatAdminDate(mockWallet.transactions[0].timestamp) : "No recent event"
   },
   {

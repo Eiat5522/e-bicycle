@@ -24,4 +24,32 @@ describe("LoginFormCard", () => {
     expect(screen.getByText("Enter a valid email address.")).toBeInTheDocument();
     expect(screen.getByText("Admin access is required to use this panel.")).toBeInTheDocument();
   });
+
+  it("renders the pending submit state", () => {
+    render(
+      <LoginFormCard formAction={jest.fn()} pending={true} state={initialLoginFormState} />
+    );
+
+    expect(screen.getByRole("button", { name: "Checking access..." })).toBeDisabled();
+  });
+
+  it("renders the password validation message without a global message", () => {
+    render(
+      <LoginFormCard
+        formAction={jest.fn()}
+        pending={false}
+        state={{
+          ...initialLoginFormState,
+          errors: {
+            password: "Enter your password."
+          }
+        }}
+      />
+    );
+
+    expect(screen.getByText("Enter your password.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Admin access is required to use this panel.")
+    ).not.toBeInTheDocument();
+  });
 });

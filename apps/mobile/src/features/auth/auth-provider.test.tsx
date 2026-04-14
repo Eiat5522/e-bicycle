@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor } from "@testing-library/react-native";
-import { Text } from "react-native";
+import * as Linking from "expo-linking";
+import { Platform, Text } from "react-native";
 
 import { AuthProvider, useAuth } from "./auth-provider";
 
@@ -17,12 +18,17 @@ const mockUpdate = jest.fn();
 const mockUpdateEq = jest.fn();
 const mockUpdateSelect = jest.fn();
 const mockUpdateSingle = jest.fn();
+const mockLinkingAddEventListener = jest.fn();
+const mockLinkingGetInitialURL = jest.fn();
+const mockLinkingCreateURL = jest.fn();
+const mockRemoveUrlListener = jest.fn();
 
 let latestAuth: ReturnType<typeof useAuth> | undefined;
 
 let authStateChangeCallback:
   | ((event: string, session: { user: { id: string; email: string } } | null) => void)
   | undefined;
+let urlEventCallback: ((event: { url: string }) => void) | undefined;
 
 jest.mock("@/lib/supabase", () => ({
   hasSupabaseConfig: true,
@@ -40,11 +46,9 @@ jest.mock("@/lib/supabase", () => ({
 }));
 
 jest.mock("expo-linking", () => ({
-  addEventListener: jest.fn(() => ({
-    remove: jest.fn()
-  })),
-  createURL: jest.fn(() => "exp://127.0.0.1:8081/--/callback"),
-  getInitialURL: jest.fn(() => Promise.resolve(null))
+  addEventListener: (...args: unknown[]) => mockLinkingAddEventListener(...args),
+  createURL: (...args: unknown[]) => mockLinkingCreateURL(...args),
+  getInitialURL: (...args: unknown[]) => mockLinkingGetInitialURL(...args)
 }));
 
 function AuthProbe() {
@@ -62,10 +66,23 @@ function AuthProbe() {
 }
 
 describe("AuthProvider", () => {
+  const mockUnsubscribe = jest.fn();
+
   beforeEach(() => {
     jest.clearAllMocks();
 
     authStateChangeCallback = undefined;
+    urlEventCallback = undefined;
+
+    mockLinkingAddEventListener.mockImplementation((_type, callback) => {
+      urlEventCallback = callback as (event: { url: string }) => void;
+
+      return {
+        remove: mockRemoveUrlListener
+      };
+    });
+    mockLinkingCreateURL.mockReturnValue("exp://127.0.0.1:8081/--/callback");
+    mockLinkingGetInitialURL.mockResolvedValue(null);
 
     mockGetSession.mockResolvedValue({
       data: {
@@ -84,7 +101,7 @@ describe("AuthProvider", () => {
       return {
         data: {
           subscription: {
-            unsubscribe: jest.fn()
+            unsubscribe: mockUnsubscribe
           }
         }
       };
@@ -228,5 +245,263 @@ describe("AuthProvider", () => {
         }
       }
     });
+  });
+
+  it("throws when useAuth is called outside the provider", () => {
+    function BrokenConsumer() {
+      useAuth();
+      return <Text>broken</Text>;
+    }
+
+    expect(() => render(<BrokenConsumer />)).toThrow("useAuth must be used within an AuthProvider.");
+  });
+
+  it("signs in with trimmed lowercase email", async () => {
+    mockSignInWithPassword.mockResolvedValueOnce({ error: null });
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ready")).toBeTruthy();
+    });
+
+    await act(async () => {
+      await latestAuth?.signIn(" Alex@RideGlide.App ", "secret-pass");
+    });
+
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({
+      email: "alex@rideglide.app",
+      password: "secret-pass"
+    });
+  });
+
+  it("surfaces normalized auth operation errors", async () => {
+    mockSignInWithPassword.mockResolvedValueOnce({ error: "bad credentials" });
+    mockSignOut.mockResolvedValueOnce({ error: "bad signout" });
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ready")).toBeTruthy();
+    });
+
+    await expect(latestAuth?.signIn("alex@rideglide.app", "wrong-pass")).rejects.toThrow("Unable to sign in.");
+    await expect(latestAuth?.signOut()).rejects.toThrow("Unable to sign out.");
+  });
+
+  it("refreshes the current profile and clears it when auth state changes fail", async () => {
+    mockMaybeSingle
+      .mockResolvedValueOnce({
+        data: {
+          id: "user-1",
+          first_name: "Alex",
+          created_at: "2026-04-11T00:00:00Z",
+          updated_at: "2026-04-11T00:00:00Z"
+        },
+        error: null
+      })
+      .mockResolvedValueOnce({
+        data: {
+          id: "user-1",
+          first_name: "Jordan",
+          created_at: "2026-04-11T00:00:00Z",
+          updated_at: "2026-04-11T02:00:00Z"
+        },
+        error: null
+      })
+      .mockResolvedValueOnce({
+        data: null,
+        error: new Error("profile fetch failed")
+      });
+
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Alex")).toBeTruthy();
+    });
+
+    await act(async () => {
+      await latestAuth?.refreshProfile();
+    });
+
+    expect(screen.getByText("Jordan")).toBeTruthy();
+
+    await act(async () => {
+      authStateChangeCallback?.("SIGNED_IN", {
+        user: {
+          id: "user-1",
+          email: "alex@rideglide.app"
+        }
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("no-profile")).toBeTruthy();
+    });
+
+    expect(consoleWarn).toHaveBeenCalledWith("Failed to refresh Supabase profile", expect.any(Error));
+    consoleWarn.mockRestore();
+  });
+
+  it("validates display-name updates and refresh without a signed-in user", async () => {
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Alex")).toBeTruthy();
+    });
+
+    await act(async () => {
+      authStateChangeCallback?.("SIGNED_OUT", null);
+    });
+
+    await expect(latestAuth?.updateDisplayName("")).rejects.toThrow("You need to sign in before updating your display name.");
+
+    await act(async () => {
+      await latestAuth?.refreshProfile();
+    });
+
+    expect(screen.getByText("no-profile")).toBeTruthy();
+  });
+
+  it("validates blank display names for a signed-in user", async () => {
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Alex")).toBeTruthy();
+    });
+
+    await expect(latestAuth?.updateDisplayName("   ")).rejects.toThrow("Enter a display name.");
+  });
+
+  it("restores a session from the initial deep link and runtime URL events", async () => {
+    const previousPlatform = Platform.OS;
+    jest.replaceProperty(Platform, "OS", "ios");
+    try {
+      mockGetSession
+        .mockResolvedValueOnce({
+          data: {
+            session: null
+          }
+        })
+        .mockResolvedValueOnce({
+          data: {
+            session: {
+              user: {
+                id: "user-1",
+                email: "alex@rideglide.app"
+              }
+            }
+          }
+        });
+      mockLinkingGetInitialURL.mockResolvedValueOnce(
+        "glide://callback#access_token=access-token&refresh_token=refresh-token"
+      );
+      mockSetSession.mockResolvedValue({ data: { session: null }, error: null });
+
+      render(
+        <AuthProvider>
+          <AuthProbe />
+        </AuthProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("ready")).toBeTruthy();
+      });
+
+      expect(mockSetSession).toHaveBeenCalledWith({
+        access_token: "access-token",
+        refresh_token: "refresh-token"
+      });
+
+      await act(async () => {
+        urlEventCallback?.({
+          url: "glide://callback?access_token=live-access&refresh_token=live-refresh"
+        });
+      });
+
+      await waitFor(() => {
+        expect(mockSetSession).toHaveBeenCalledWith({
+          access_token: "live-access",
+          refresh_token: "live-refresh"
+        });
+      });
+    } finally {
+      jest.replaceProperty(Platform, "OS", previousPlatform);
+    }
+  });
+
+  it("warns when a deep link cannot be parsed", async () => {
+    const previousPlatform = Platform.OS;
+    jest.replaceProperty(Platform, "OS", "ios");
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ready")).toBeTruthy();
+    });
+
+    await act(async () => {
+      urlEventCallback?.({
+        url: "not-a-valid-url"
+      });
+    });
+
+    await waitFor(() => {
+      expect(consoleWarn).toHaveBeenCalledWith(
+        "Failed to parse auth redirect URL",
+        expect.anything()
+      );
+    });
+
+    consoleWarn.mockRestore();
+    jest.replaceProperty(Platform, "OS", previousPlatform);
+  });
+
+  it("unsubscribes auth and deep-link listeners on unmount", async () => {
+    const previousPlatform = Platform.OS;
+    jest.replaceProperty(Platform, "OS", "ios");
+
+    const view = render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ready")).toBeTruthy();
+    });
+
+    view.unmount();
+
+    expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+    expect(mockRemoveUrlListener).toHaveBeenCalledTimes(1);
+    jest.replaceProperty(Platform, "OS", previousPlatform);
   });
 });

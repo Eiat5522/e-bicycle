@@ -89,4 +89,30 @@ describe("ProfileScreen", () => {
     expect(screen.getByText("Enter a display name.")).toBeTruthy();
     expect(screen.getByPlaceholderText("Enter your display name").props.editable).toBe(true);
   });
+
+  it("surfaces display-name save errors inline", async () => {
+    updateDisplayName.mockRejectedValueOnce(new Error("Profile update failed"));
+
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText("Edit"));
+    fireEvent.changeText(screen.getByPlaceholderText("Enter your display name"), "Taylor");
+
+    await act(async () => {
+      fireEvent.press(screen.getByText("Save Display Name"));
+    });
+
+    expect(screen.getByText("Profile update failed")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Enter your display name").props.editable).toBe(true);
+  });
+
+  it("routes to support and wallet shortcuts", () => {
+    render(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText("Open Support"));
+    fireEvent.press(screen.getByText("View Wallet"));
+
+    expect(push).toHaveBeenCalledWith("/help");
+    expect(push).toHaveBeenCalledWith("/(tabs)/wallet");
+  });
 });
