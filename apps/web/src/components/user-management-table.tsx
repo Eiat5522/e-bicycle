@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useMemo, useRef, useState, type RefObject } from "react";
 
 import type { RideHistoryItem } from "@glide/shared";
+import {
+  initialUserUpdateFormState,
+  type UserUpdateFormState
+} from "@/app/(admin)/user-update-form-state";
 import { formatAdminDate } from "@/lib/formatting";
 
 export interface ManagedUser {
@@ -44,42 +48,55 @@ function formatRideDuration(durationSec: number) {
   return `${minutes} min`;
 }
 
-function ClaymorphicInset({ children, className = "" }: { readonly children: React.ReactNode; readonly className?: string }) {
+function ClaymorphicInset({
+  children,
+  className = ""
+}: {
+  readonly children: React.ReactNode;
+  readonly className?: string;
+}) {
   return (
-    <div
-      className={`clay-inset px-5 py-4 ${className}`}
-      children={children}
-    />
+    <div className={`clay-inset px-5 py-4 ${className}`}>{children}</div>
   );
+}
+
+interface UserEditorControls {
+  readonly firstNameRef?: RefObject<HTMLInputElement | null>;
+  readonly hasChanges?: boolean;
+  readonly isAdminRef?: RefObject<HTMLInputElement | null>;
+  readonly isEditing?: boolean;
+  readonly isPending?: boolean;
+  readonly submitMessage?: string | null;
+  readonly onCancelEditing?: () => void;
+  readonly onCheckForChanges?: () => void;
+  readonly onStartEditing?: () => void;
 }
 
 export function UserDetailDrawerContent({
   activeTab,
-  isMounted,
+  editorControls,
   onClose,
   onSelectTab,
   onUpdateUser,
   user
 }: {
   readonly activeTab: "transactions" | "rides";
-  readonly isMounted: boolean;
+  readonly editorControls?: UserEditorControls;
   readonly onClose: () => void;
   readonly onSelectTab: (tab: "transactions" | "rides") => void;
-  readonly onUpdateUser: (formData: FormData) => void | Promise<void>;
+  readonly onUpdateUser: (payload: FormData) => void;
   readonly user: ManagedUser;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const firstNameRef = useRef<HTMLInputElement>(null);
-  const isAdminRef = useRef<HTMLInputElement>(null);
+  const isEditing = editorControls?.isEditing ?? false;
+  const hasChanges = editorControls?.hasChanges ?? false;
+  const isPending = editorControls?.isPending ?? false;
+  const submitMessage = editorControls?.submitMessage ?? null;
+  const firstNameRef = editorControls?.firstNameRef;
+  const isAdminRef = editorControls?.isAdminRef;
+  const onCheckForChanges = editorControls?.onCheckForChanges;
+  const onStartEditing = editorControls?.onStartEditing;
+  const onCancelEditing = editorControls?.onCancelEditing;
 
-  const checkForChanges = () => {
-    const originalFirstName = user.firstName;
-    const originalIsAdmin = user.isAdmin;
-    const currentFirstName = firstNameRef.current?.value ?? user.firstName;
-    const currentIsAdmin = isAdminRef.current?.checked ?? user.isAdmin;
-    setHasChanges(currentFirstName !== originalFirstName || currentIsAdmin !== originalIsAdmin);
-  };
   return (
     <div
       aria-label={`User details for ${user.firstName}`}
@@ -115,24 +132,16 @@ export function UserDetailDrawerContent({
         </div>
 
         <div className="border-b border-[var(--clay-border-subtle)] px-6 py-5">
-          <form
-            action={onUpdateUser}
-            className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]"
-            onSubmit={() => {
-              setTimeout(() => {
-                setIsEditing(false);
-                setHasChanges(false);
-              }, 0);
-            }}>
+          <form action={onUpdateUser} className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
             <input name="userId" type="hidden" value={user.id} />
             <label className="flex flex-col gap-2 text-sm font-medium text-[var(--clay-text-primary)]">
               <span>Display name</span>
               <input
                 className="clay-inset px-4 py-3 text-sm outline-none transition-colors disabled:opacity-50"
                 defaultValue={user.firstName}
-                disabled={!isEditing}
+                disabled={!isEditing || isPending}
                 name="firstName"
-                onChange={checkForChanges}
+                onChange={onCheckForChanges}
                 ref={firstNameRef}
                 required
                 type="text"
@@ -142,9 +151,9 @@ export function UserDetailDrawerContent({
               <label className="inline-flex items-center gap-2 clay-inset px-4 py-3 text-sm font-medium text-[var(--clay-text-primary)] disabled:opacity-50">
                 <input
                   defaultChecked={user.isAdmin}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isPending}
                   name="isAdmin"
-                  onChange={checkForChanges}
+                  onChange={onCheckForChanges}
                   ref={isAdminRef}
                   type="checkbox"
                 />
@@ -152,8 +161,8 @@ export function UserDetailDrawerContent({
               </label>
               {!isEditing ? (
                 <button
-                  className="clay-button px-4 py-3 text-sm font-semibold bg-[var(--clay-text-primary)] text-white"
-                  onClick={() => setIsEditing(true)}
+                  className="clay-button clay-button-primary px-4 py-3 text-sm font-semibold"
+                  onClick={onStartEditing}
                   type="button">
                   Edit
                 </button>
@@ -161,22 +170,27 @@ export function UserDetailDrawerContent({
                 <>
                   <button
                     className="clay-button px-4 py-3 text-sm font-semibold text-[var(--clay-text-primary)]"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setHasChanges(false);
-                    }}
+                    disabled={isPending}
+                    onClick={onCancelEditing}
                     type="button">
                     Cancel
                   </button>
                   <button
-                    className="clay-button px-4 py-3 text-sm font-semibold bg-[var(--clay-text-primary)] text-white disabled:opacity-50"
-                    disabled={!hasChanges}
+                    className="clay-button clay-button-primary px-4 py-3 text-sm font-semibold disabled:opacity-50"
+                    disabled={!hasChanges || isPending}
                     type="submit">
-                    Save
+                    {isPending ? "Saving..." : "Save"}
                   </button>
                 </>
               )}
             </div>
+            {submitMessage ? (
+              <p
+                aria-live="polite"
+                className="md:col-span-2 clay-inset px-4 py-3 text-sm text-[var(--clay-text-primary)]">
+                {submitMessage}
+              </p>
+            ) : null}
           </form>
         </div>
 
@@ -187,7 +201,7 @@ export function UserDetailDrawerContent({
               className={[
                 "rounded-t-[var(--clay-radius-md)] px-4 py-3 text-sm font-semibold",
                 activeTab === "transactions"
-                  ? "bg-[var(--clay-text-primary)] text-white"
+                  ? "clay-button clay-button-primary"
                   : "clay-inset text-[var(--clay-text-secondary)]"
               ].join(" ")}
               onClick={() => onSelectTab("transactions")}
@@ -199,7 +213,7 @@ export function UserDetailDrawerContent({
               className={[
                 "rounded-t-[var(--clay-radius-md)] px-4 py-3 text-sm font-semibold",
                 activeTab === "rides"
-                  ? "bg-[var(--clay-text-primary)] text-white"
+                  ? "clay-button clay-button-primary"
                   : "clay-inset text-[var(--clay-text-secondary)]"
               ].join(" ")}
               onClick={() => onSelectTab("rides")}
@@ -244,7 +258,7 @@ export function UserDetailDrawerContent({
                             {formatTransactionAmount(transaction.amount)}
                           </p>
                           <p className="text-sm text-[var(--clay-text-secondary)]">
-                            {isMounted ? formatAdminDate(transaction.timestamp) : transaction.timestamp}
+                            {formatAdminDate(transaction.timestamp)}
                           </p>
                         </div>
                       </div>
@@ -295,7 +309,7 @@ export function UserDetailDrawerContent({
                               {formatTransactionAmount(-ride.totalCost)}
                             </p>
                             <p className="text-sm text-[var(--clay-text-secondary)]">
-                              {isMounted ? formatAdminDate(ride.completedAt) : ride.completedAt}
+                              {formatAdminDate(ride.completedAt)}
                             </p>
                           </div>
                         </div>
@@ -320,25 +334,68 @@ export function UserDetailDrawerContent({
 }
 
 function UserDetailDrawer({
-  isMounted,
   onClose,
   onUpdateUser,
   user
 }: {
-  readonly isMounted: boolean;
   readonly onClose: () => void;
-  readonly onUpdateUser: (formData: FormData) => void | Promise<void>;
+  readonly onUpdateUser: (
+    previousState: UserUpdateFormState,
+    formData: FormData
+  ) => Promise<UserUpdateFormState>;
   readonly user: ManagedUser;
 }) {
   const [activeTab, setActiveTab] = useState<"transactions" | "rides">("transactions");
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const isAdminRef = useRef<HTMLInputElement>(null);
+  const [submitState, submitAction, isPending] = useActionState(
+    async (previousState: UserUpdateFormState, formData: FormData) => {
+      const nextState = await onUpdateUser(previousState, formData);
+
+      if (nextState.status === "success") {
+        setIsEditing(false);
+        setHasChanges(false);
+      }
+
+      return nextState;
+    },
+    initialUserUpdateFormState
+  );
+
+  function checkForChanges() {
+    const currentFirstName = firstNameRef.current?.value ?? user.firstName;
+    const currentIsAdmin = isAdminRef.current?.checked ?? user.isAdmin;
+    setHasChanges(currentFirstName !== user.firstName || currentIsAdmin !== user.isAdmin);
+  }
 
   return (
     <UserDetailDrawerContent
       activeTab={activeTab}
-      isMounted={isMounted}
+      editorControls={{
+        firstNameRef,
+        hasChanges,
+        isAdminRef,
+        isEditing,
+        isPending,
+        submitMessage: submitState.status === "error" ? submitState.message : null,
+        onCancelEditing: () => {
+          if (firstNameRef.current) {
+            firstNameRef.current.value = user.firstName;
+          }
+          if (isAdminRef.current) {
+            isAdminRef.current.checked = user.isAdmin;
+          }
+          setIsEditing(false);
+          setHasChanges(false);
+        },
+        onCheckForChanges: checkForChanges,
+        onStartEditing: () => setIsEditing(true),
+      }}
       onClose={onClose}
       onSelectTab={setActiveTab}
-      onUpdateUser={onUpdateUser}
+      onUpdateUser={submitAction}
       user={user}
     />
   );
@@ -348,14 +405,12 @@ export function UserManagementTable({
   onUpdateUser,
   users
 }: {
-  readonly onUpdateUser: (formData: FormData) => void | Promise<void>;
+  readonly onUpdateUser: (
+    previousState: UserUpdateFormState,
+    formData: FormData
+  ) => Promise<UserUpdateFormState>;
   readonly users: ManagedUser[];
 }) {
-  const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const selectedUser = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
@@ -409,11 +464,11 @@ export function UserManagementTable({
                     {user.rideHistory.length}
                   </td>
                   <td className="px-3 py-4 text-sm text-[var(--clay-text-secondary)]">
-                    {isMounted ? formatAdminDate(user.updatedAt) : user.updatedAt}
+                    {formatAdminDate(user.updatedAt)}
                   </td>
                   <td className="rounded-r-3xl px-3 py-4">
                     <button
-                      className="clay-button px-4 py-3 text-sm font-semibold bg-[var(--clay-text-primary)] text-white"
+                      className="clay-button clay-button-primary px-4 py-3 text-sm font-semibold"
                       onClick={() => setSelectedUserId(user.id)}
                       type="button">
                       View details
@@ -428,7 +483,6 @@ export function UserManagementTable({
 
       {selectedUser ? (
         <UserDetailDrawer
-          isMounted={isMounted}
           onClose={() => setSelectedUserId(null)}
           onUpdateUser={onUpdateUser}
           user={selectedUser}

@@ -30,10 +30,10 @@ export function AdminNav() {
           <Link
             aria-current={isActive ? "page" : undefined}
             className={[
-              "rounded-full px-4 py-2 text-sm font-semibold transition",
+              "px-4 py-2 text-sm font-semibold transition",
               isActive
-                ? "bg-[var(--foreground)] text-white"
-                : "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--surface-strong)]"
+                ? "clay-button clay-button-primary"
+                : "clay-button text-[var(--foreground)]"
             ].join(" ")}
             href={item.href}
             key={item.href}>

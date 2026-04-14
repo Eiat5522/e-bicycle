@@ -15,23 +15,23 @@ import { formatAdminDate } from "@/lib/formatting";
 type DashboardTheme = CSSProperties & Record<`--${string}`, string>;
 
 const dashboardTheme: DashboardTheme = {
-  "--dashboard-bg": "#0f172a",
-  "--dashboard-panel": "#ffffff",
-  "--dashboard-panel-soft": "#f8fafc",
-  "--dashboard-line": "#cbd5e1",
-  "--dashboard-ink": "#0f172a",
-  "--dashboard-ink-muted": "#475569",
-  "--dashboard-accent": "#2563eb",
-  "--dashboard-accent-soft": "rgba(37, 99, 235, 0.12)",
-  "--dashboard-highlight": "#f97316",
-  "--dashboard-highlight-soft": "rgba(249, 115, 22, 0.14)",
-  "--dashboard-success": "#15803d",
-  "--dashboard-success-soft": "rgba(21, 128, 61, 0.12)",
-  "--dashboard-danger": "#b91c1c",
-  "--dashboard-danger-soft": "rgba(185, 28, 28, 0.12)",
-  "--dashboard-dark-panel": "#111827",
-  "--dashboard-dark-border": "rgba(148, 163, 184, 0.2)",
-  "--dashboard-dark-text": "#e2e8f0"
+  "--dashboard-bg": "rgba(248, 241, 255, 0.76)",
+  "--dashboard-panel": "rgba(255, 250, 255, 0.92)",
+  "--dashboard-panel-soft": "rgba(240, 231, 255, 0.72)",
+  "--dashboard-line": "rgba(209, 193, 238, 0.55)",
+  "--dashboard-ink": "var(--clay-text-primary)",
+  "--dashboard-ink-muted": "var(--clay-text-secondary)",
+  "--dashboard-accent": "var(--clay-accent)",
+  "--dashboard-accent-soft": "var(--clay-accent-soft)",
+  "--dashboard-highlight": "#d9738c",
+  "--dashboard-highlight-soft": "rgba(217, 115, 140, 0.16)",
+  "--dashboard-success": "var(--clay-success)",
+  "--dashboard-success-soft": "var(--clay-success-soft)",
+  "--dashboard-danger": "var(--clay-danger)",
+  "--dashboard-danger-soft": "var(--clay-danger-soft)",
+  "--dashboard-dark-panel": "rgba(238, 228, 255, 0.78)",
+  "--dashboard-dark-border": "rgba(209, 193, 238, 0.55)",
+  "--dashboard-dark-text": "var(--clay-text-primary)"
 };
 
 const fleetCounts = mockBikes.reduce<Record<string, number>>((counts, bike) => {
@@ -169,10 +169,10 @@ function StatusBadge({
 }) {
   const toneClassName =
     tone === "accent"
-      ? "bg-[var(--dashboard-accent-soft)] text-[var(--dashboard-accent)]"
+      ? "clay-badge text-[var(--dashboard-accent)]"
       : tone === "success"
-        ? "bg-[var(--dashboard-success-soft)] text-[var(--dashboard-success)]"
-        : "bg-white/10 text-[var(--dashboard-dark-text)]";
+        ? "clay-badge bg-[var(--dashboard-success-soft)] text-[var(--dashboard-success)]"
+        : "clay-badge text-[var(--dashboard-dark-text)]";
 
   return (
     <span
@@ -188,7 +188,7 @@ function StatusBadge({
 export function AdminShell() {
   return (
     <section className="flex flex-col gap-6" style={dashboardTheme}>
-      <section className="overflow-hidden rounded-[2rem] bg-[var(--dashboard-bg)] shadow-[0_32px_80px_rgba(15,23,42,0.28)]">
+      <section className="clay-card-raised overflow-hidden">
         <div className="grid gap-6 border-b border-[var(--dashboard-dark-border)] px-8 py-8 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)]">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center gap-3">
@@ -196,46 +196,48 @@ export function AdminShell() {
               <StatusBadge tone="success">Live telemetry</StatusBadge>
             </div>
             <div className="flex flex-col gap-3">
-              <h1 className="max-w-3xl text-4xl font-black tracking-[-0.05em] text-white md:text-5xl">
+              <h1 className="max-w-3xl text-4xl font-black tracking-[-0.05em] text-[var(--dashboard-ink)] md:text-5xl">
                 Live operations snapshot
               </h1>
-              <p className="max-w-2xl text-base leading-7 text-slate-300">
+              <p className="max-w-2xl text-base leading-7 text-[var(--dashboard-ink-muted)]">
                 Monitor dispatch readiness, revenue capture, rider activity, and support pressure
                 from a single executive view. Every module below is grounded in the current shared
                 mock services, so the dashboard stays honest while the live backend catches up.
               </p>
             </div>
             <dl className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <dt className="text-sm font-medium text-slate-300">Last sync</dt>
-                <dd className="mt-2 text-lg font-semibold text-white">
+              <div className="clay-inset p-4">
+                <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Last sync</dt>
+                <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
                   {formatAdminDate(mockNearbyBikesResult.serverTime)}
                 </dd>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <dt className="text-sm font-medium text-slate-300">Fleet range average</dt>
-                <dd className="mt-2 text-lg font-semibold text-white">{formatDistanceKm(averageRangeKm)}</dd>
+              <div className="clay-inset p-4">
+                <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Fleet range average</dt>
+                <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
+                  {formatDistanceKm(averageRangeKm)}
+                </dd>
               </div>
-              <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                <dt className="text-sm font-medium text-slate-300">Completed ride average</dt>
-                <dd className="mt-2 text-lg font-semibold text-white">
+              <div className="clay-inset p-4">
+                <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Completed ride average</dt>
+                <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
                   {formatDistanceKm(averageRideDistanceKm)}
                 </dd>
               </div>
             </dl>
           </div>
 
-          <aside className="rounded-[1.75rem] border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-300">
+          <aside className="clay-inset p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-ink-muted)]">
               Network health
             </p>
             <div className="mt-4 space-y-5">
               <div>
-                <p className="text-sm text-slate-300">Ride in progress</p>
-                <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-white">
+                <p className="text-sm text-[var(--dashboard-ink-muted)]">Ride in progress</p>
+                <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
                   {mockActiveRide.bikeId}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
+                <p className="mt-2 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
                   {formatDistanceKm(mockActiveRide.distanceKm)} covered with{" "}
                   {mockActiveRide.nextDropoffZoneKm
                     ? `${formatDistanceKm(mockActiveRide.nextDropoffZoneKm)} to next drop-off zone`
@@ -243,19 +245,19 @@ export function AdminShell() {
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[1.25rem] border border-white/10 bg-black/10 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <div className="clay-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
                     Completed revenue
                   </p>
-                  <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">
+                  <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
                     {formatCurrency(completedRevenue)}
                   </p>
                 </div>
-                <div className="rounded-[1.25rem] border border-white/10 bg-black/10 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <div className="clay-card p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
                     Avg. ride duration
                   </p>
-                  <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-white">
+                  <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
                     {formatDuration(averageRideDurationSec)}
                   </p>
                 </div>
@@ -266,21 +268,19 @@ export function AdminShell() {
 
         <section className="grid gap-4 px-8 py-6 md:grid-cols-2 xl:grid-cols-4">
           {summaryMetrics.map((metric) => (
-            <article
-              className="rounded-[1.75rem] border border-white/10 bg-white/5 p-5"
-              key={metric.label}>
-              <p className="text-sm font-medium text-slate-300">{metric.label}</p>
-              <p className="mt-4 font-mono text-3xl font-black tracking-[-0.04em] text-white">
+            <article className="clay-card p-5" key={metric.label}>
+              <p className="text-sm font-medium text-[var(--dashboard-ink-muted)]">{metric.label}</p>
+              <p className="mt-4 font-mono text-3xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
                 {metric.value}
               </p>
-              <p className="mt-3 text-sm leading-6 text-slate-300">{metric.note}</p>
+              <p className="mt-3 text-sm leading-6 text-[var(--dashboard-ink-muted)]">{metric.note}</p>
             </article>
           ))}
         </section>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,1fr)]">
-        <article className="rounded-[2rem] bg-[var(--dashboard-panel)] p-7 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+        <article className="clay-card p-7">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-accent)]">
               Operational thresholds
@@ -329,7 +329,7 @@ export function AdminShell() {
           </div>
         </article>
 
-        <article className="rounded-[2rem] bg-[var(--dashboard-panel)] p-7 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+        <article className="clay-card p-7">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-highlight)]">
               Fleet status
@@ -375,7 +375,7 @@ export function AdminShell() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.9fr)]">
-        <article className="rounded-[2rem] bg-[var(--dashboard-panel)] p-7 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+        <article className="clay-card p-7">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-accent)]">
               Revenue operations
@@ -430,7 +430,7 @@ export function AdminShell() {
           </div>
         </article>
 
-        <article className="rounded-[2rem] bg-[var(--dashboard-panel)] p-7 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+        <article className="clay-card p-7">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-highlight)]">
               Live activity feed
@@ -452,7 +452,7 @@ export function AdminShell() {
                       {item.detail}
                     </p>
                   </div>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
+                  <span className="clay-badge px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
                     {item.timestamp}
                   </span>
                 </div>
@@ -463,7 +463,7 @@ export function AdminShell() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
-        <article className="rounded-[2rem] bg-[var(--dashboard-panel)] p-7 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+        <article className="clay-card p-7">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-accent)]">
               Executive notes
@@ -512,7 +512,7 @@ export function AdminShell() {
           </div>
         </article>
 
-        <article className="rounded-[2rem] bg-[var(--dashboard-panel)] p-7 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
+        <article className="clay-card p-7">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-highlight)]">
               Fleet watchlist
@@ -536,7 +536,7 @@ export function AdminShell() {
                       {bike.location} · last reported {formatAdminDate(bike.lastReportedAt)}
                     </p>
                   </div>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
+                  <span className="clay-badge px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
                     {bike.status.replace("_", " ")}
                   </span>
                 </div>

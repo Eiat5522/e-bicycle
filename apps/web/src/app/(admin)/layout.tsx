@@ -13,10 +13,10 @@ export default async function AdminLayout({
   const context = await requireAdmin();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10">
-      <header className="flex flex-col gap-6 rounded-[2rem] bg-[var(--surface)] p-6 shadow-[0_20px_60px_rgba(45,47,47,0.08)] md:flex-row md:items-center md:justify-between">
+    <main className="clay-shell mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10">
+      <header className="clay-card-raised flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-3">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--clay-accent-strong)]">
             Glide Admin
           </p>
           <div className="flex flex-col gap-2">
@@ -32,7 +32,7 @@ export default async function AdminLayout({
 
         <form action={signOutAction}>
           <button
-            className="rounded-full border border-black/10 bg-[var(--surface-muted)] px-4 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-strong)]"
+            className="clay-button px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
             type="submit">
             Sign out
           </button>

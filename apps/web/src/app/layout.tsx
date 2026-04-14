@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
 import "./globals.css";
+
+const bodyFont = Manrope({
+  subsets: ["latin"],
+  variable: "--font-body"
+});
+
+const displayFont = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display"
+});
 
 export const metadata: Metadata = {
   title: "Glide Admin",
@@ -13,8 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
+    <html
+      className={`${bodyFont.variable} ${displayFont.variable}`}
+      lang="en"
+      suppressHydrationWarning>
+      <body className={bodyFont.className}>{children}</body>
     </html>
   );
 }

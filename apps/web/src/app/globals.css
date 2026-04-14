@@ -1,43 +1,50 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f6f6;
-  --surface: #ffffff;
-  --surface-muted: #f4efe9;
-  --surface-strong: #ebe3d9;
-  --foreground: #2d2f2f;
-  --foreground-muted: #5a5c5c;
-  --coral: #fe7e4f;
-  --coral-dark: #a03a0f;
-  --danger: #b9381f;
-
-  /* Claymorphism Design Tokens */
-  --clay-surface: #ffffff;
-  --clay-surface-raised: rgba(255, 255, 255, 0.85);
-  --clay-background: #e8e4ec;
-  --clay-border: rgba(255, 255, 255, 0.6);
-  --clay-border-subtle: rgba(255, 255, 255, 0.35);
-  --clay-shadow-light: rgba(166, 162, 170, 0.15);
-  --clay-shadow-medium: rgba(166, 162, 170, 0.25);
-  --clay-shadow-heavy: rgba(166, 162, 170, 0.4);
-  --clay-text-primary: #1a1b1e;
-  --clay-text-secondary: #5a5b5e;
-  --clay-text-tertiary: #8a8b8e;
-  --clay-accent: #6366f1;
-  --clay-accent-soft: rgba(99, 102, 241, 0.12);
-  --clay-success: #10b981;
-  --clay-success-soft: rgba(16, 185, 129, 0.12);
-  --clay-warning: #f59e0b;
-  --clay-warning-soft: rgba(245, 158, 11, 0.12);
-  --clay-danger: #ef4444;
-  --clay-danger-soft: rgba(239, 68, 68, 0.12);
-
-  /* Claymorphism Blur & Radius */
-  --clay-blur-radius: 12px;
+  --clay-base: #f3ecff;
+  --clay-base-strong: #e6dbff;
+  --clay-surface: rgba(255, 248, 255, 0.84);
+  --clay-surface-raised: rgba(255, 253, 255, 0.9);
+  --clay-surface-soft: rgba(239, 230, 255, 0.76);
+  --clay-surface-pressed: rgba(230, 219, 252, 0.96);
+  --clay-background: rgba(233, 223, 251, 0.7);
+  --clay-border: rgba(255, 255, 255, 0.68);
+  --clay-border-subtle: rgba(209, 193, 238, 0.5);
+  --clay-shadow-light: rgba(129, 107, 173, 0.14);
+  --clay-shadow-medium: rgba(121, 93, 173, 0.2);
+  --clay-shadow-heavy: rgba(103, 74, 153, 0.28);
+  --clay-highlight: rgba(255, 255, 255, 0.92);
+  --clay-text-primary: #2d1f4f;
+  --clay-text-secondary: #5f5382;
+  --clay-text-tertiary: #8b82a8;
+  --clay-accent: #805ad5;
+  --clay-accent-strong: #5b36b2;
+  --clay-accent-soft: rgba(128, 90, 213, 0.16);
+  --clay-success: #1f9d7a;
+  --clay-success-soft: rgba(31, 157, 122, 0.16);
+  --clay-warning: #d38b2e;
+  --clay-warning-soft: rgba(211, 139, 46, 0.16);
+  --clay-danger: #d55b8a;
+  --clay-danger-soft: rgba(213, 91, 138, 0.16);
+  --clay-glow-coral: rgba(255, 160, 150, 0.32);
+  --clay-glow-lilac: rgba(155, 125, 247, 0.28);
+  --clay-glow-mint: rgba(99, 205, 176, 0.24);
+  --clay-blur-radius: 18px;
   --clay-radius-sm: 12px;
   --clay-radius-md: 16px;
   --clay-radius-lg: 20px;
   --clay-radius-xl: 28px;
+  --clay-radius-2xl: 36px;
+
+  --background: var(--clay-base);
+  --surface: var(--clay-surface);
+  --surface-muted: var(--clay-surface-soft);
+  --surface-strong: var(--clay-surface-pressed);
+  --foreground: var(--clay-text-primary);
+  --foreground-muted: var(--clay-text-secondary);
+  --coral: #d9738c;
+  --coral-dark: var(--clay-accent-strong);
+  --danger: var(--clay-danger);
 }
 
 * {
@@ -47,11 +54,14 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(254, 126, 79, 0.15), transparent 28%),
-    linear-gradient(180deg, #faf7f3 0%, var(--background) 42%);
+    radial-gradient(circle at top left, var(--clay-glow-coral), transparent 28%),
+    radial-gradient(circle at top right, var(--clay-glow-lilac), transparent 34%),
+    radial-gradient(circle at bottom left, var(--clay-glow-mint), transparent 28%),
+    linear-gradient(180deg, #f9f3ff 0%, var(--background) 44%, #eee6ff 100%);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body, "Manrope", sans-serif);
   min-height: 100vh;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -59,55 +69,147 @@ a {
   text-decoration: none;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display, "Space Grotesk", sans-serif);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(128, 90, 213, 0.28);
+  outline-offset: 3px;
+}
+
 /* Claymorphism Utilities */
 .clay-card {
-  background: var(--clay-surface);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(243, 233, 255, 0.72)),
+    var(--clay-surface);
   border: 1px solid var(--clay-border);
   border-radius: var(--clay-radius-lg);
-  box-shadow: 0 4px 24px var(--clay-shadow-light), 0 1px 3px var(--clay-shadow-light);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    18px 18px 38px var(--clay-shadow-light),
+    -14px -14px 28px rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(var(--clay-blur-radius));
   -webkit-backdrop-filter: blur(var(--clay-blur-radius));
 }
 
 .clay-card-raised {
-  background: var(--clay-surface-raised);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 231, 255, 0.82)),
+    var(--clay-surface-raised);
   border: 1px solid var(--clay-border);
   border-radius: var(--clay-radius-lg);
-  box-shadow: 0 8px 32px var(--clay-shadow-medium), 0 2px 6px var(--clay-shadow-light);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    24px 24px 50px var(--clay-shadow-medium),
+    -18px -18px 32px rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(var(--clay-blur-radius));
   -webkit-backdrop-filter: blur(var(--clay-blur-radius));
 }
 
 .clay-inset {
-  background: var(--clay-background);
+  background:
+    linear-gradient(145deg, rgba(228, 215, 252, 0.92), rgba(244, 237, 255, 0.8)),
+    var(--clay-background);
   border: 1px solid var(--clay-border-subtle);
   border-radius: var(--clay-radius-md);
-  box-shadow: inset 0 2px 8px var(--clay-shadow-light);
+  box-shadow:
+    inset 8px 8px 18px rgba(177, 156, 218, 0.18),
+    inset -8px -8px 18px rgba(255, 255, 255, 0.6);
 }
 
 .clay-button {
-  background: var(--clay-surface);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(238, 228, 255, 0.78)),
+    var(--clay-surface);
   border: 1px solid var(--clay-border);
   border-radius: var(--clay-radius-sm);
-  box-shadow: 0 2px 8px var(--clay-shadow-light), 0 1px 2px var(--clay-shadow-light);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    10px 10px 20px rgba(143, 117, 193, 0.15),
+    -8px -8px 18px rgba(255, 255, 255, 0.76);
   transition: all 0.2s ease;
 }
 
 .clay-button:hover {
-  box-shadow: 0 4px 16px var(--clay-shadow-medium), 0 2px 4px var(--clay-shadow-light);
-  transform: translateY(-1px);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    14px 14px 26px rgba(131, 104, 185, 0.2),
+    -10px -10px 20px rgba(255, 255, 255, 0.78);
+  transform: translateY(-1px) scale(1.01);
 }
 
 .clay-button:active {
-  box-shadow: 0 1px 4px var(--clay-shadow-light);
-  transform: translateY(0);
+  background: var(--clay-surface-pressed);
+  box-shadow:
+    inset 6px 6px 14px rgba(165, 141, 208, 0.26),
+    inset -6px -6px 14px rgba(255, 255, 255, 0.52);
+  transform: translateY(0) scale(0.99);
+}
+
+.clay-button-primary {
+  background: linear-gradient(145deg, #8a63e5, #6d45c5);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: white;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.32),
+    12px 12px 24px rgba(101, 74, 150, 0.28),
+    -8px -8px 18px rgba(199, 181, 241, 0.32);
+}
+
+.clay-button-primary:hover {
+  background: linear-gradient(145deg, #9570ed, #7a50d0);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.36),
+    14px 14px 28px rgba(101, 74, 150, 0.32),
+    -10px -10px 20px rgba(199, 181, 241, 0.36);
+}
+
+.clay-button-primary:active {
+  background: linear-gradient(145deg, #7c55d8, #5f38b0);
+  box-shadow:
+    inset 6px 6px 14px rgba(80, 55, 130, 0.3),
+    inset -6px -6px 14px rgba(255, 255, 255, 0.18);
 }
 
 .clay-badge {
-  background: var(--clay-surface-raised);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(241, 233, 255, 0.76)),
+    var(--clay-surface-raised);
   border: 1px solid var(--clay-border);
   border-radius: 999px;
-  box-shadow: 0 2px 8px var(--clay-shadow-light);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    8px 8px 16px rgba(133, 108, 181, 0.12),
+    -6px -6px 14px rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(var(--clay-blur-radius));
   -webkit-backdrop-filter: blur(var(--clay-blur-radius));
+}
+
+.clay-shell {
+  position: relative;
+}
+
+.clay-shell::before {
+  content: "";
+  position: absolute;
+  inset: -12% auto auto -8%;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--clay-glow-coral), transparent 70%);
+  filter: blur(18px);
+  pointer-events: none;
 }

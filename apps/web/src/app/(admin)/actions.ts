@@ -7,6 +7,11 @@ import { isMissingAuthSessionError } from "@/lib/supabase/auth-errors";
 import { createClient } from "@/lib/supabase/server";
 import { validateProfileUpdateForm } from "@/lib/validation";
 
+import {
+  initialUserUpdateFormState,
+  type UserUpdateFormState
+} from "./user-update-form-state";
+
 async function requireAdminForAction() {
   const supabase = await createClient();
   const {
@@ -42,21 +47,41 @@ export async function signOutAction() {
   redirect("/login");
 }
 
-export async function updateUserAction(formData: FormData) {
+export async function updateUserAction(
+  _previousState: UserUpdateFormState,
+  formData: FormData
+): Promise<UserUpdateFormState> {
   const supabase = await requireAdminForAction();
-  const values = validateProfileUpdateForm(formData);
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      first_name: values.firstName,
-      is_admin: values.isAdmin
-    })
-    .eq("id", values.userId);
+  try {
+    const values = validateProfileUpdateForm(formData);
 
-  if (error) {
-    throw new Error(error.message);
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: values.firstName,
+        is_admin: values.isAdmin
+      })
+      .eq("id", values.userId);
+
+    if (error) {
+      return {
+        message: error.message,
+        status: "error"
+      };
+    }
+  } catch (error) {
+    return {
+      ...initialUserUpdateFormState,
+      message: error instanceof Error ? error.message : "Unable to update this user.",
+      status: "error"
+    };
   }
 
   revalidatePath("/users");
+
+  return {
+    ...initialUserUpdateFormState,
+    status: "success"
+  };
 }

@@ -60,7 +60,7 @@ export function SideDrawer({
         type="button"
       />
 
-      <aside className="flex h-full w-full max-w-5xl flex-col overflow-y-auto bg-[var(--surface)] shadow-[-20px_0_60px_rgba(45,47,47,0.16)]">
+      <aside className="clay-card-raised flex h-full w-full max-w-5xl flex-col overflow-y-auto rounded-none border-l border-[var(--clay-border-subtle)] shadow-[-20px_0_60px_rgba(103,74,153,0.18)]">
         {children}
       </aside>
     </div>

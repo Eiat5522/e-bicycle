@@ -41,10 +41,10 @@ export interface BikeRideHistoryEntry {
 }
 
 const statusClasses: Record<ManagedBike["status"], string> = {
-  available: "bg-emerald-100 text-emerald-800",
-  reserved: "bg-amber-100 text-amber-800",
-  in_use: "bg-sky-100 text-sky-800",
-  maintenance: "bg-rose-100 text-rose-800"
+  available: "bg-[var(--clay-success-soft)] text-[var(--clay-success)]",
+  reserved: "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]",
+  in_use: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
+  maintenance: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]"
 };
 
 function formatDistance(distanceKm: number) {
@@ -82,9 +82,9 @@ export function BicycleManagementList({
 }) {
   return (
     <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4 rounded-[2rem] bg-[var(--surface)] p-8 shadow-[0_20px_60px_rgba(45,47,47,0.08)] md:flex-row md:items-end md:justify-between">
+      <div className="clay-card-raised flex flex-col gap-4 p-8 md:flex-row md:items-end md:justify-between">
         <div className="flex max-w-3xl flex-col gap-3">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--clay-accent-strong)]">
             Bicycle Management
           </p>
           <h2 className="text-4xl font-black tracking-[-0.04em] text-[var(--foreground)]">
@@ -97,7 +97,7 @@ export function BicycleManagementList({
         </div>
 
         <Link
-          className="inline-flex rounded-full bg-[var(--foreground)] px-5 py-3 text-sm font-semibold text-white"
+          className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
           href="/bicycles/new">
           Add Bicycle
         </Link>
@@ -106,9 +106,9 @@ export function BicycleManagementList({
       <div className="grid gap-4">
         {bikes.map((bike) => (
           <article
-            className="grid gap-5 rounded-[2rem] bg-[var(--surface)] p-6 shadow-[0_16px_40px_rgba(45,47,47,0.06)] md:grid-cols-[180px_minmax(0,1fr)_auto]"
+            className="clay-card grid gap-5 p-6 md:grid-cols-[180px_minmax(0,1fr)_auto]"
             key={bike.id}>
-            <div className="overflow-hidden rounded-[1.5rem] bg-[var(--surface-muted)]">
+            <div className="clay-inset overflow-hidden rounded-[1.5rem]">
               {bike.imageUrl ? (
                 <img
                   alt={bike.model}
@@ -166,7 +166,7 @@ export function BicycleManagementList({
 
             <div className="flex items-start justify-start md:justify-end">
               <Link
-                className="inline-flex rounded-full border border-black/10 bg-[var(--surface-muted)] px-4 py-3 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--surface-strong)]"
+                className="clay-button inline-flex px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
                 href={`/bicycles/${bike.id}`}
                 scroll={false}>
                 Edit Bicycle
@@ -195,19 +195,18 @@ function Field({
 }
 
 function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
-    />
-  );
+  const { className, ...inputProps } = props;
+
+  return <input {...inputProps} className={`clay-inset px-4 py-3 text-sm outline-none ${className ?? ""}`} />;
 }
 
 function SelectInput(props: SelectHTMLAttributes<HTMLSelectElement>) {
+  const { className, ...selectProps } = props;
+
   return (
     <select
-      {...props}
-      className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
+      {...selectProps}
+      className={`clay-inset px-4 py-3 text-sm outline-none ${className ?? ""}`}
     />
   );
 }
@@ -235,10 +234,10 @@ export function BicycleEditor({
       className={
         isDrawer ? "grid gap-6 p-6" : "grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]"
       }>
-      <div className="rounded-[2rem] bg-[var(--surface)] p-8 shadow-[0_20px_60px_rgba(45,47,47,0.08)]">
+      <div className="clay-card-raised p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-col gap-3">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--coral-dark)]">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--clay-accent-strong)]">
               {isCreate ? "New Bicycle" : "Edit Bicycle"}
             </p>
             <h2 className="text-4xl font-black tracking-[-0.04em] text-[var(--foreground)]">
@@ -253,7 +252,7 @@ export function BicycleEditor({
 
           {isDrawer ? (
             <DrawerCloseButton
-              className="rounded-full border border-black/10 bg-[var(--surface-muted)] px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+              className="clay-button px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
               label={`Close editor for ${bike.model}`}>
               Close
             </DrawerCloseButton>
@@ -365,7 +364,7 @@ export function BicycleEditor({
           </div>
 
           <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="overflow-hidden rounded-[1.75rem] bg-[var(--surface-muted)]">
+            <div className="clay-inset overflow-hidden rounded-[1.75rem]">
               {bike.imageUrl ? (
                 <img
                   alt={bike.model}
@@ -382,7 +381,7 @@ export function BicycleEditor({
             <Field label="Upload Bicycle Image">
               <input
                 accept="image/png,image/jpeg,image/webp"
-                className="rounded-2xl border border-dashed border-black/10 bg-white px-4 py-3 text-sm"
+                className="clay-inset border border-dashed border-[var(--clay-border-subtle)] px-4 py-3 text-sm"
                 name="image"
                 type="file"
               />
@@ -391,19 +390,19 @@ export function BicycleEditor({
 
           <div className="flex flex-wrap gap-3 pt-2">
             <button
-              className="inline-flex rounded-full bg-[var(--foreground)] px-5 py-3 text-sm font-semibold text-white"
+              className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
               type="submit">
               {isCreate ? "Create Bicycle" : "Save Changes"}
             </button>
             {isDrawer ? (
               <DrawerCloseButton
-                className="inline-flex rounded-full border border-black/10 bg-[var(--surface-muted)] px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
                 label="Close bicycle editor">
                 Cancel
               </DrawerCloseButton>
             ) : (
               <Link
-                className="inline-flex rounded-full border border-black/10 bg-[var(--surface-muted)] px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
                 href="/bicycles">
                 Back to Fleet
               </Link>
@@ -415,7 +414,7 @@ export function BicycleEditor({
           <form action={deleteAction} className="mt-6 flex justify-end">
             <input name="bikeId" type="hidden" value={bike.id} />
             <button
-              className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700"
+              className="clay-button inline-flex border-[var(--clay-danger-soft)] bg-[var(--clay-danger-soft)] px-5 py-3 text-sm font-semibold text-[var(--clay-danger)]"
               type="submit">
               Delete Bicycle
             </button>
@@ -424,7 +423,7 @@ export function BicycleEditor({
       </div>
 
       <aside className="flex flex-col gap-6">
-        <section className="rounded-[2rem] bg-[var(--surface)] p-6 shadow-[0_20px_60px_rgba(45,47,47,0.08)]">
+        <section className="clay-card p-6">
           <div className="flex flex-col gap-2">
             <h3 className="text-2xl font-black tracking-[-0.03em] text-[var(--foreground)]">
               Ride History
@@ -436,14 +435,12 @@ export function BicycleEditor({
 
           <div className="mt-5 grid gap-3">
             {rideHistory.length === 0 ? (
-              <div className="rounded-[1.5rem] bg-[var(--surface-muted)] px-5 py-6 text-sm text-[var(--foreground-muted)]">
+              <div className="clay-inset px-5 py-6 text-sm text-[var(--foreground-muted)]">
                 No rides have been recorded for this bicycle yet.
               </div>
             ) : (
               rideHistory.map((ride) => (
-                <article
-                  className="rounded-[1.5rem] bg-[var(--surface-muted)] px-5 py-4"
-                  key={ride.id}>
+                <article className="clay-inset px-5 py-4" key={ride.id}>
                   <div className="flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex flex-col gap-1">
