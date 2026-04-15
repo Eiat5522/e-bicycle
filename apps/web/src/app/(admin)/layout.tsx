@@ -1,4 +1,5 @@
 import { AdminNav } from "@/components/admin-nav";
+import { GlideBrand } from "@/components/glide-brand";
 import { requireAdmin } from "@/lib/auth";
 
 import { signOutAction } from "./actions";
@@ -14,10 +15,8 @@ export default async function AdminLayout({
     <main className="clay-shell mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-10">
       <header className="clay-admin-bar">
         <div className="flex flex-col gap-5 p-5 md:flex-row md:items-center md:justify-between md:gap-6 md:p-6">
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--clay-accent-strong)]">
-              Glide Admin
-            </p>
+          <div className="flex flex-col gap-4">
+            <GlideBrand variant="admin-header" />
             <div className="flex flex-col gap-1">
               <h1 className="text-2xl font-black tracking-[-0.05em] text-[var(--foreground)] md:text-3xl">
                 Welcome back, {context.profile.firstName}.

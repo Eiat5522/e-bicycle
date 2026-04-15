@@ -15,7 +15,14 @@ const displayFont = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: "Glide Admin",
-  description: "Admin shell for the Glide e-bike rental platform"
+  description: "Admin shell for the Glide e-bike rental platform",
+  icons: {
+    icon: [
+      { url: "/glide-logo.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" }
+    ],
+    apple: "/glide-logo.png"
+  }
 };
 
 export default function RootLayout({

@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { GlideBrand } from "@/components/glide-brand";
+
 import { signInAction } from "./actions";
 import { initialLoginFormState, type LoginFormState } from "./login-form-state";
 
@@ -28,9 +30,7 @@ export function LoginFormCard({
   return (
     <section className="clay-card-raised w-full max-w-md p-8">
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--clay-accent-strong)]">
-          Glide Admin
-        </p>
+        <GlideBrand variant="login" />
         <h1 className="text-4xl font-black tracking-[-0.05em] text-[var(--foreground)]">
           Admin sign in
         </h1>
