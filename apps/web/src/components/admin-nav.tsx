@@ -22,7 +22,7 @@ export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Admin sections" className="flex flex-wrap gap-3">
+    <nav aria-label="Admin sections" className="clay-admin-tabs">
       {items.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -30,10 +30,10 @@ export function AdminNav() {
           <Link
             aria-current={isActive ? "page" : undefined}
             className={[
-              "px-4 py-2 text-sm font-semibold transition",
+              "clay-admin-tab",
               isActive
-                ? "clay-button clay-button-primary"
-                : "clay-button text-[var(--foreground)]"
+                ? "clay-admin-tab-active"
+                : "clay-admin-tab-inactive"
             ].join(" ")}
             href={item.href}
             key={item.href}>

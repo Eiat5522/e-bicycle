@@ -213,3 +213,90 @@ textarea {
   filter: blur(18px);
   pointer-events: none;
 }
+
+.clay-admin-bar {
+  position: sticky;
+  top: 1.5rem;
+  z-index: 20;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(239, 230, 255, 0.76)),
+    var(--clay-surface-raised);
+  border: 1px solid var(--clay-border);
+  border-radius: var(--clay-radius-xl);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    18px 22px 42px rgba(121, 93, 173, 0.18),
+    -12px -12px 24px rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(var(--clay-blur-radius));
+  -webkit-backdrop-filter: blur(var(--clay-blur-radius));
+}
+
+.clay-admin-tabs {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scrollbar-width: none;
+}
+
+.clay-admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.clay-admin-tab {
+  position: relative;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.clay-admin-tab:hover {
+  transform: translateY(-1px);
+}
+
+.clay-admin-tab:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.clay-admin-tab-inactive {
+  color: var(--foreground-muted);
+}
+
+.clay-admin-tab-inactive:hover {
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--foreground);
+}
+
+.clay-admin-tab-active {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(236, 226, 255, 0.84)),
+    var(--clay-surface);
+  color: var(--clay-accent-strong);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.78),
+    10px 10px 20px rgba(129, 102, 182, 0.18),
+    -8px -8px 18px rgba(255, 255, 255, 0.72);
+}
+
+.clay-admin-tab-active::after {
+  content: "";
+  position: absolute;
+  right: 0.9rem;
+  bottom: 0.45rem;
+  left: 0.9rem;
+  height: 0.2rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8a63e5, #d9738c);
+}
