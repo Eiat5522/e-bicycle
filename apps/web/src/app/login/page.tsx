@@ -7,7 +7,7 @@ export default async function LoginPage() {
   const context = await getAuthContext();
 
   if (context?.profile?.isAdmin) {
-    redirect("/dashboard");
+    redirect("/");
   }
 
   return (
