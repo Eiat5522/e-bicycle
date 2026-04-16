@@ -216,26 +216,35 @@ textarea {
 
 .clay-admin-bar {
   position: sticky;
-  top: 1.5rem;
-  z-index: 20;
+  top: 1rem;
+  z-index: 30;
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(239, 230, 255, 0.76)),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(239, 230, 255, 0.82)),
     var(--clay-surface-raised);
   border: 1px solid var(--clay-border);
-  border-radius: var(--clay-radius-xl);
+  border-radius: 24px;
   box-shadow:
     inset 1px 1px 0 var(--clay-highlight),
-    18px 22px 42px rgba(121, 93, 173, 0.18),
-    -12px -12px 24px rgba(255, 255, 255, 0.64);
+    14px 18px 34px rgba(121, 93, 173, 0.16),
+    -10px -10px 22px rgba(255, 255, 255, 0.64);
   backdrop-filter: blur(var(--clay-blur-radius));
   -webkit-backdrop-filter: blur(var(--clay-blur-radius));
 }
 
 .clay-admin-tabs {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.35rem;
   overflow-x: auto;
-  padding-bottom: 0.25rem;
+  width: 100%;
+  padding: 0.3rem;
+  border: 1px solid var(--clay-border-subtle);
+  border-radius: 999px;
+  background:
+    linear-gradient(145deg, rgba(232, 220, 255, 0.72), rgba(247, 241, 255, 0.82)),
+    var(--clay-background);
+  box-shadow:
+    inset 6px 6px 14px rgba(177, 156, 218, 0.14),
+    inset -6px -6px 14px rgba(255, 255, 255, 0.48);
   scrollbar-width: none;
 }
 
@@ -246,12 +255,12 @@ textarea {
 .clay-admin-tab {
   position: relative;
   display: inline-flex;
-  min-height: 44px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
+  padding: 0.65rem 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   line-height: 1;
   transition:
@@ -275,28 +284,17 @@ textarea {
 }
 
 .clay-admin-tab-inactive:hover {
-  background: rgba(255, 255, 255, 0.52);
+  background: rgba(255, 255, 255, 0.56);
   color: var(--foreground);
 }
 
 .clay-admin-tab-active {
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(236, 226, 255, 0.84)),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(236, 226, 255, 0.9)),
     var(--clay-surface);
   color: var(--clay-accent-strong);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.78),
-    10px 10px 20px rgba(129, 102, 182, 0.18),
-    -8px -8px 18px rgba(255, 255, 255, 0.72);
-}
-
-.clay-admin-tab-active::after {
-  content: "";
-  position: absolute;
-  right: 0.9rem;
-  bottom: 0.45rem;
-  left: 0.9rem;
-  height: 0.2rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #8a63e5, #d9738c);
+    8px 8px 16px rgba(129, 102, 182, 0.16),
+    -6px -6px 14px rgba(255, 255, 255, 0.7);
 }

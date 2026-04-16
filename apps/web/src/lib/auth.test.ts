@@ -91,6 +91,22 @@ describe("getAuthContext", () => {
     await expect(getAuthContext()).resolves.toBeNull();
   });
 
+  it("returns null for invalid or missing refresh tokens", async () => {
+    createClientMock.mockResolvedValue({
+      auth: {
+        getUser: jest.fn().mockResolvedValue({
+          data: { user: null },
+          error: {
+            message: "Invalid Refresh Token: Refresh Token Not Found",
+            code: "refresh_token_not_found"
+          }
+        })
+      }
+    } as never);
+
+    await expect(getAuthContext()).resolves.toBeNull();
+  });
+
   it("throws unexpected Supabase auth errors", async () => {
     createClientMock.mockResolvedValue({
       auth: {
