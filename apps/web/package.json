@@ -19,6 +19,7 @@
 	"dependencies": {
 		"@glide/api": "workspace:*",
 		"@glide/shared": "workspace:*",
+		"@playwright/cli": "^0.1.8",
 		"@supabase/ssr": "^0.10.2",
 		"@supabase/supabase-js": "^2.103.0",
 		"next": "16.2.3",
@@ -26,10 +27,10 @@
 		"react-dom": "19.2.4"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.59.1",
 		"@tailwindcss/postcss": "^4",
 		"@testing-library/jest-dom": "latest",
 		"@testing-library/react": "latest",
-		"@playwright/test": "^1.59.1",
 		"@types/node": "^20",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
