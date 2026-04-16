@@ -298,3 +298,36 @@ textarea {
     8px 8px 16px rgba(129, 102, 182, 0.16),
     -6px -6px 14px rgba(255, 255, 255, 0.7);
 }
+
+.clay-home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--clay-border);
+  border-radius: var(--clay-radius-lg);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(240, 231, 255, 0.78)),
+    var(--clay-surface-raised);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    14px 16px 30px rgba(121, 93, 173, 0.16),
+    -10px -10px 20px rgba(255, 255, 255, 0.68);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.clay-home-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(128, 90, 213, 0.38);
+  box-shadow:
+    inset 1px 1px 0 var(--clay-highlight),
+    18px 20px 34px rgba(113, 84, 168, 0.2),
+    -12px -12px 24px rgba(255, 255, 255, 0.7);
+}
+
+.clay-home-card:active {
+  transform: translateY(0);
+}

@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation";
 
 const items = [
   {
+    href: "/",
+    label: "Home"
+  },
+  {
     href: "/dashboard",
     label: "Dashboard"
   },
@@ -24,7 +28,10 @@ export function AdminNav() {
   return (
     <nav aria-label="Admin sections" className="clay-admin-tabs">
       {items.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const isActive =
+          item.href === "/"
+            ? pathname === "/"
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         return (
           <Link

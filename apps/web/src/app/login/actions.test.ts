@@ -215,12 +215,12 @@ describe("signInAction", () => {
     expect(client.auth.signOut).toHaveBeenCalled();
   });
 
-  it("redirects admins to the dashboard", async () => {
+  it("redirects admins to the home page", async () => {
     const client = createSignInClient();
     createClientMock.mockResolvedValue(client as never);
 
     await signInAction(initialLoginFormState, new FormData());
 
-    expect(redirectMock).toHaveBeenCalledWith("/dashboard");
+    expect(redirectMock).toHaveBeenCalledWith("/");
   });
 });
