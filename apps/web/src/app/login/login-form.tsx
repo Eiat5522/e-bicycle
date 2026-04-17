@@ -28,8 +28,11 @@ export function LoginFormCard({
   readonly state: LoginFormState;
 }) {
   return (
-    <section className="clay-card-raised w-full max-w-md p-8">
+    <section className="clay-card-raised w-full max-w-md p-8 md:p-9">
       <div className="flex flex-col gap-3">
+        <span className="clay-badge w-fit px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--clay-accent-strong)]">
+          Restricted
+        </span>
         <GlideBrand variant="login" />
         <h1 className="text-4xl font-black tracking-[-0.05em] text-[var(--foreground)]">
           Admin sign in
@@ -44,7 +47,7 @@ export function LoginFormCard({
           <span>Email</span>
           <input
             autoComplete="email"
-            className="clay-inset px-4 py-3 outline-none ring-0"
+            className="clay-inset px-4 py-3 outline-none ring-0 transition-shadow focus-visible:shadow-[0_0_0_3px_rgba(128,90,213,0.18)]"
             defaultValue={state.values.email}
             name="email"
             placeholder="admin@rideglide.app"
@@ -59,7 +62,7 @@ export function LoginFormCard({
           <span>Password</span>
           <input
             autoComplete="current-password"
-            className="clay-inset px-4 py-3 outline-none ring-0"
+            className="clay-inset px-4 py-3 outline-none ring-0 transition-shadow focus-visible:shadow-[0_0_0_3px_rgba(128,90,213,0.18)]"
             defaultValue={state.values.password}
             name="password"
             placeholder="Enter your password"
