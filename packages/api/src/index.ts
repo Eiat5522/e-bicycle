@@ -497,26 +497,14 @@ export const unlockService: UnlockService = {
         ? `${request.bikeId} verified. You're ready to ride.`
         : `${request.bikeId} connected over Bluetooth. You're ready to ride.`;
 
-    const failureMessage =
-      request.method === "qr"
-        ? "The QR code could not be verified. Move closer and scan again."
-        : "The bike did not answer over Bluetooth. Move closer and try again.";
-
     const result: UnlockResult = {
       bikeId: request.bikeId,
       method: request.method,
       attempt: request.attempt,
       phases,
-      finalStatus: request.attempt === 1 ? "failed" : "success",
+      finalStatus: "success",
       successMessage
     };
-
-    if (request.attempt === 1) {
-      return {
-        ...result,
-        failureMessage
-      };
-    }
 
     return result;
   }

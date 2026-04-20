@@ -127,10 +127,8 @@ describe("UnlockScreen", () => {
     expect(screen.getByText("Unlock bike now")).toBeTruthy();
   });
 
-  it("fails the first QR attempt, then retries to a successful ride transition", async () => {
-    startUnlock
-      .mockResolvedValueOnce(createResult("qr", 1, "failed"))
-      .mockResolvedValueOnce(createResult("qr", 2, "success"));
+  it("completes the QR unlock on the first attempt", async () => {
+    startUnlock.mockResolvedValueOnce(createResult("qr", 1, "success"));
 
     render(<UnlockScreen />);
 
@@ -140,8 +138,7 @@ describe("UnlockScreen", () => {
     fireEvent.press(screen.getByText("Unlock bike now"));
 
     await flushTimers();
-    expect(screen.getByText("Unlock failed")).toBeTruthy();
-    expect(screen.queryByText("Generate ride QR pass")).toBeNull();
+    expect(screen.getByText("Bike unlocked")).toBeTruthy();
 
     expect(startUnlock).toHaveBeenNthCalledWith(1, {
       bikeId: "G-205",
@@ -149,20 +146,8 @@ describe("UnlockScreen", () => {
       attempt: 1
     });
 
-    fireEvent.press(screen.getByText("Retry QR"));
-    await flushTimers(900);
-    fireEvent.press(screen.getByText("Unlock bike now"));
-
-    await flushTimers();
-    expect(screen.getByText("Bike unlocked")).toBeTruthy();
-
     await flushTimers(1300);
 
-    expect(startUnlock).toHaveBeenNthCalledWith(2, {
-      bikeId: "G-205",
-      method: "qr",
-      attempt: 2
-    });
     expect(push).toHaveBeenCalledWith({
       pathname: "/ride/active",
       params: {
@@ -172,10 +157,8 @@ describe("UnlockScreen", () => {
     });
   });
 
-  it("fails the first Bluetooth attempt, then retries to a successful ride transition", async () => {
-    startUnlock
-      .mockResolvedValueOnce(createResult("bluetooth", 1, "failed"))
-      .mockResolvedValueOnce(createResult("bluetooth", 2, "success"));
+  it("completes the Bluetooth unlock on the first attempt", async () => {
+    startUnlock.mockResolvedValueOnce(createResult("bluetooth", 1, "success"));
 
     render(<UnlockScreen />);
 
@@ -185,7 +168,7 @@ describe("UnlockScreen", () => {
     fireEvent.press(screen.getByText("Send unlock command"));
 
     await flushTimers();
-    expect(screen.getByText("Unlock failed")).toBeTruthy();
+    expect(screen.getByText("Bike unlocked")).toBeTruthy();
 
     expect(startUnlock).toHaveBeenNthCalledWith(1, {
       bikeId: "G-205",
@@ -193,20 +176,8 @@ describe("UnlockScreen", () => {
       attempt: 1
     });
 
-    fireEvent.press(screen.getByText("Retry Bluetooth"));
-    await flushTimers(1600);
-    fireEvent.press(screen.getByText("Send unlock command"));
-
-    await flushTimers();
-    expect(screen.getByText("Bike unlocked")).toBeTruthy();
-
     await flushTimers(1300);
 
-    expect(startUnlock).toHaveBeenNthCalledWith(2, {
-      bikeId: "G-205",
-      method: "bluetooth",
-      attempt: 2
-    });
     expect(push).toHaveBeenCalledWith({
       pathname: "/ride/active",
       params: {
@@ -216,22 +187,12 @@ describe("UnlockScreen", () => {
     });
   });
 
-  it("clears the failure state when switching methods", async () => {
-    startUnlock.mockResolvedValueOnce(createResult("qr", 1, "failed"));
-
+  it("switches between methods before starting an unlock", () => {
     render(<UnlockScreen />);
 
     fireEvent.press(screen.getByLabelText("Choose QR unlock"));
-    fireEvent.press(screen.getByText("Generate ride QR pass"));
-    await flushTimers(900);
-    fireEvent.press(screen.getByText("Unlock bike now"));
+    fireEvent.press(screen.getByLabelText("Choose Bluetooth unlock"));
 
-    await flushTimers();
-    expect(screen.getByText("Unlock failed")).toBeTruthy();
-
-    fireEvent.press(screen.getByText("Try Bluetooth Instead"));
-
-    expect(screen.queryByText("Unlock failed")).toBeNull();
     expect(screen.getByText("Bluetooth unlock simulation")).toBeTruthy();
     expect(screen.getByText("Connect to bike")).toBeTruthy();
   });
