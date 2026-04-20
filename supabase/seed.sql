@@ -99,18 +99,19 @@ insert into public.bikes (
   top_speed_kmh,
   pricing_label,
   status,
+  active_rider_id,
   location,
   latitude,
   longitude,
   last_reported_at
 )
 values
-  ('G-104', 'Glide Pro X', 'Pro', 45, 25, '$1.20 / 10 min', 'available', 'Siam Square', 13.7466, 100.5328, '2026-04-06T08:55:00Z'),
-  ('G-205', 'Glide City', 'City', 31, 22, '$0.90 / 10 min', 'in_use', 'อโศก Interchange', 13.7372, 100.5606, '2026-04-06T08:56:00Z'),
-  ('G-318', 'Glide Lite', 'Urban', 28, 20, '$0.80 / 10 min', 'available', 'Ari Soi 1', 13.7797, 100.5446, '2026-04-06T08:58:00Z'),
-  ('G-412', 'Glide Cargo', 'Cargo', 36, 20, '$1.40 / 10 min', 'available', 'Lumphini Park West Gate', 13.7305, 100.5418, '2026-04-06T08:57:00Z'),
-  ('G-509', 'Glide Metro', 'City', 33, 23, '$1.00 / 10 min', 'available', 'Silom Complex', 13.7286, 100.5345, '2026-04-06T08:54:00Z'),
-  ('G-620', 'Glide Street+', 'Pro', 47, 25, '$1.20 / 10 min', 'available', 'Phrom Phong BTS', 13.7301, 100.5697, '2026-04-06T08:59:00Z')
+  ('G-104', 'Glide Pro X', 'Pro', 45, 25, '$1.20 / 10 min', 'available', null, 'Siam Square', 13.7466, 100.5328, '2026-04-06T08:55:00Z'),
+  ('G-205', 'Glide City', 'City', 31, 22, '$0.90 / 10 min', 'in_use', null, 'อโศก Interchange', 13.7372, 100.5606, '2026-04-06T08:56:00Z'),
+  ('G-318', 'Glide Lite', 'Urban', 28, 20, '$0.80 / 10 min', 'available', null, 'Ari Soi 1', 13.7797, 100.5446, '2026-04-06T08:58:00Z'),
+  ('G-412', 'Glide Cargo', 'Cargo', 36, 20, '$1.40 / 10 min', 'available', null, 'Lumphini Park West Gate', 13.7305, 100.5418, '2026-04-06T08:57:00Z'),
+  ('G-509', 'Glide Metro', 'City', 33, 23, '$1.00 / 10 min', 'available', null, 'Silom Complex', 13.7286, 100.5345, '2026-04-06T08:54:00Z'),
+  ('G-620', 'Glide Street+', 'Pro', 47, 25, '$1.20 / 10 min', 'available', null, 'Phrom Phong BTS', 13.7301, 100.5697, '2026-04-06T08:59:00Z')
 on conflict (id) do update
 set
   model = excluded.model,
@@ -119,6 +120,7 @@ set
   top_speed_kmh = excluded.top_speed_kmh,
   pricing_label = excluded.pricing_label,
   status = excluded.status,
+  active_rider_id = excluded.active_rider_id,
   location = excluded.location,
   latitude = excluded.latitude,
   longitude = excluded.longitude,
@@ -308,6 +310,10 @@ on conflict (id) do update
 set
   first_name = excluded.first_name,
   is_admin = excluded.is_admin;
+
+update public.bikes
+set active_rider_id = '33333333-3333-3333-3333-333333333333'
+where id = 'G-205';
 
 insert into public.wallets (
   id,
