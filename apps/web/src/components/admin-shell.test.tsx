@@ -11,6 +11,8 @@ describe("AdminShell", () => {
     expect(screen.getByRole("heading", { name: "Performance against target" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Route revenue by recent rides" })).toBeInTheDocument();
     expect(screen.getByText("Revenue per completed ride")).toBeInTheDocument();
+    expect(screen.getByText("Active rider")).toBeInTheDocument();
+    expect(screen.getByText("Currently in use by Alex")).toBeInTheDocument();
   });
 
   it("renders fallback operational copy when optional activity data is missing", async () => {

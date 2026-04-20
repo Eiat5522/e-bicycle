@@ -11,12 +11,14 @@ import { formatDistanceKm } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { SurfaceCard } from "@/components/surface-card";
+import { useAuth } from "@/features/auth/auth-provider";
 import { configuredBikeService } from "@/lib/bike-service";
 import { colors, spacing } from "@/theme/tokens";
 
 import { calculateDistanceKm, sortBikesByDistance } from "./bike-distance";
 import { BikeMarkerDrawer } from "./bike-marker-drawer";
 import { MapCanvas } from "./map-canvas";
+import { useRideSession } from "../ride/ride-session-context";
 
 export const DEFAULT_NEARBY_RADIUS_METERS = 1500;
 export const EXPANDED_NEARBY_RADIUS_METERS = 8000;
@@ -32,6 +34,9 @@ export function MapScreen() {
   const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user } = useAuth();
+  const { bikeRideOverrides } = useRideSession();
+  const currentUserId = user?.id ?? null;
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [errorMessage, setErrorMessage] = useState<string>();
   const [userCoordinates, setUserCoordinates] = useState<Coordinates>();
@@ -193,8 +198,8 @@ export function MapScreen() {
   }, [loadNearbyBikes, nearbyResult, userCoordinates]);
 
   const handlePressMarker = useCallback(
-    (bikeId: string, status: NearbyBikesResult["bikes"][number]["status"]) => {
-      if (status === "in_use") {
+    (bikeId: string, status: NearbyBikesResult["bikes"][number]["status"], activeRiderId: string | null) => {
+      if (status === "in_use" && activeRiderId === currentUserId) {
         router.push({
           pathname: "/ride/active",
           params: {
@@ -207,7 +212,7 @@ export function MapScreen() {
       setSelectedBikeId(bikeId);
       setDrawerBikeId(bikeId);
     },
-    [router]
+    [currentUserId, router]
   );
 
   const handleRecenterToCurrentLocation = useCallback(async () => {
@@ -245,9 +250,11 @@ export function MapScreen() {
     () =>
       (nearbyResult?.bikes ?? []).map((bike) => ({
         ...bike,
-        imageUrl: bike.imageUrl ?? getSeedBikeImageUrl(bike.id)
+        imageUrl: bike.imageUrl ?? getSeedBikeImageUrl(bike.id),
+        status: bikeRideOverrides[bike.id]?.status ?? bike.status,
+        activeRiderId: bikeRideOverrides[bike.id]?.activeRiderId ?? bike.activeRiderId ?? null
       })),
-    [nearbyResult?.bikes]
+    [bikeRideOverrides, nearbyResult?.bikes]
   );
 
   const sortedBikes = useMemo(
@@ -272,12 +279,36 @@ export function MapScreen() {
     () => sortedBikes.find((bike) => bike.id === drawerBikeId),
     [drawerBikeId, sortedBikes]
   );
+  const isDrawerBikeOwnedByCurrentUser =
+    drawerBike?.status === "in_use" && drawerBike.activeRiderId === currentUserId;
+  const isDrawerBikeUnlockable = drawerBike?.status === "available";
+  const drawerStatusMessage = drawerBike
+    ? isDrawerBikeOwnedByCurrentUser
+      ? "Your active ride"
+      : drawerBike.status === "in_use"
+        ? "Currently in use by another rider"
+        : drawerBike.status === "maintenance"
+          ? "Under maintenance"
+          : drawerBike.status === "reserved"
+            ? "Reserved"
+        : "Ready to rent"
+    : undefined;
+  const drawerUnlockDisabledMessage = drawerBike
+    ? drawerBike.status === "maintenance"
+      ? "This bike is under maintenance and cannot be unlocked."
+      : drawerBike.status === "reserved"
+        ? "This bike is reserved and cannot be unlocked right now."
+        : "This bike is currently in use by another rider."
+    : undefined;
   const mapCenter = nearbyResult?.searchCenter ?? userCoordinates;
 
   const drawer = (
     <BikeMarkerDrawer
       bike={drawerBike}
       distanceLabel={drawerBike ? bikeDistanceLabels[drawerBike.id] : undefined}
+      canUnlock={Boolean(isDrawerBikeUnlockable)}
+      statusMessage={drawerStatusMessage}
+      unlockDisabledMessage={drawerUnlockDisabledMessage}
       visible={Boolean(drawerBike)}
       onClose={() => setDrawerBikeId(undefined)}
       onHelp={() => {
@@ -315,6 +346,7 @@ export function MapScreen() {
           <MapCanvas
             bikes={sortedBikes}
             bikeDistanceLabels={bikeDistanceLabels}
+            currentUserId={currentUserId}
             mapCenter={mapCenter}
             onRecenter={() => void handleRecenterToCurrentLocation()}
             selectedBikeId={selectedBikeId}

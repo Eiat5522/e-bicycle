@@ -7,9 +7,21 @@ import {
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
+function mapActiveRiderLabel(
+  activeRiderId: string | null,
+  profileMap: Readonly<Record<string, string>>
+) {
+  if (!activeRiderId) {
+    return null;
+  }
+
+  return profileMap[activeRiderId] ?? null;
+}
+
 function mapBike(row: {
   readonly created_at: string;
   readonly id: string;
+  readonly active_rider_id: string | null;
   readonly image_url: string | null;
   readonly last_reported_at: string;
   readonly latitude: number;
@@ -24,6 +36,8 @@ function mapBike(row: {
 }): ManagedBike {
   return {
     createdAt: row.created_at,
+    activeRiderId: row.active_rider_id,
+    activeRiderLabel: null,
     id: row.id,
     imageUrl: row.image_url,
     lastReportedAt: row.last_reported_at,
@@ -76,7 +90,7 @@ export async function getBikeDetail(bikeId: string) {
       supabase
         .from("bikes")
         .select(
-          "id, model, ride_class, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
+          "id, model, ride_class, top_speed_kmh, pricing_label, status, active_rider_id, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
         )
         .eq("id", bikeId)
         .maybeSingle(),
@@ -101,8 +115,29 @@ export async function getBikeDetail(bikeId: string) {
     notFound();
   }
 
+  const riderResult = bike.active_rider_id
+    ? await supabase
+        .from("profiles")
+        .select("id, first_name")
+        .eq("id", bike.active_rider_id)
+        .maybeSingle()
+    : { data: null as { id: string; first_name: string } | null, error: null };
+
+  if (riderResult.error) {
+    console.error("Failed to load rider profile for bike detail", {
+      bikeId,
+      activeRiderId: bike.active_rider_id,
+      error: riderResult.error
+    });
+  }
+
+  const rider = riderResult.error ? null : riderResult.data;
+
   return {
-    bike: mapBike(bike),
+    bike: {
+      ...mapBike(bike),
+      activeRiderLabel: mapActiveRiderLabel(bike.active_rider_id, rider ? { [rider.id]: rider.first_name } : {})
+    },
     rideHistory: rideHistory.map(mapRideHistory)
   };
 }

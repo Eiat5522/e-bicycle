@@ -5,9 +5,21 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 
+function mapActiveRiderLabel(
+  activeRiderId: string | null,
+  profileMap: Readonly<Record<string, string>>
+) {
+  if (!activeRiderId) {
+    return null;
+  }
+
+  return profileMap[activeRiderId] ?? null;
+}
+
 function mapBike(row: {
   readonly created_at: string;
   readonly id: string;
+  readonly active_rider_id: string | null;
   readonly image_url: string | null;
   readonly last_reported_at: string;
   readonly latitude: number;
@@ -22,6 +34,8 @@ function mapBike(row: {
 }): ManagedBike {
   return {
     createdAt: row.created_at,
+    activeRiderId: row.active_rider_id,
+    activeRiderLabel: null,
     id: row.id,
     imageUrl: row.image_url,
     lastReportedAt: row.last_reported_at,
@@ -41,12 +55,15 @@ export default async function BicyclesPage() {
   await requireAdmin();
 
   const supabase = await createClient();
-  const [{ data: bikes, error: bikesError }, { data: rideHistory, error: rideHistoryError }] =
+  const [
+    { data: bikes, error: bikesError },
+    { data: rideHistory, error: rideHistoryError }
+  ] =
     await Promise.all([
       supabase
         .from("bikes")
         .select(
-          "id, model, ride_class, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
+          "id, model, ride_class, top_speed_kmh, pricing_label, status, active_rider_id, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
         )
         .order("updated_at", { ascending: false }),
       supabase.from("bike_ride_history").select("bike_id")
@@ -65,5 +82,22 @@ export default async function BicyclesPage() {
     return accumulator;
   }, {});
 
-  return <BicycleManagementList bikes={bikes.map(mapBike)} rideCounts={rideCounts} />;
+  const activeRiderIds = bikes
+    .map((bike) => bike.active_rider_id)
+    .filter((activeRiderId): activeRiderId is string => Boolean(activeRiderId));
+
+  const { data: riders } = activeRiderIds.length
+    ? await supabase.from("profiles").select("id, first_name").in("id", activeRiderIds)
+    : { data: [] as { id: string; first_name: string }[] };
+
+  const riderNameById = Object.fromEntries(
+    (riders ?? []).map((rider) => [rider.id, rider.first_name])
+  );
+
+  const bikesWithRiders = bikes.map((bike) => ({
+    ...mapBike(bike),
+    activeRiderLabel: mapActiveRiderLabel(bike.active_rider_id, riderNameById)
+  }));
+
+  return <BicycleManagementList bikes={bikesWithRiders} rideCounts={rideCounts} />;
 }

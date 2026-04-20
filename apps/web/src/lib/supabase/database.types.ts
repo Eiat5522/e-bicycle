@@ -86,6 +86,7 @@ export interface Database {
       };
       bikes: {
         Row: {
+          active_rider_id: string | null;
           created_at: string;
           estimated_range_km: number;
           id: string;
@@ -102,6 +103,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          active_rider_id?: string | null;
           created_at?: string;
           estimated_range_km: number;
           id: string;
@@ -118,6 +120,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: {
+          active_rider_id?: string | null;
           created_at?: string;
           estimated_range_km?: number;
           id?: string;

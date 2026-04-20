@@ -36,6 +36,8 @@ const bike: ManagedBike = {
   topSpeedKmh: 32,
   pricingLabel: "฿15 / 30 min",
   status: "available",
+  activeRiderId: null,
+  activeRiderLabel: null,
   location: "Silom Station",
   latitude: 13.7262,
   longitude: 100.5291,

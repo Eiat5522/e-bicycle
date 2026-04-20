@@ -22,6 +22,8 @@ export interface ManagedBike {
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
   readonly status: "available" | "reserved" | "in_use" | "maintenance";
+  readonly activeRiderId: string | null;
+  readonly activeRiderLabel: string | null;
   readonly location: string;
   readonly latitude: number;
   readonly longitude: number;
@@ -51,6 +53,18 @@ const statusClasses: Record<ManagedBike["status"], string> = {
   in_use: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
   maintenance: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]"
 };
+
+function getActiveRiderText(bike: ManagedBike) {
+  if (!bike.activeRiderId) {
+    return "No active rider";
+  }
+
+  if (bike.activeRiderLabel) {
+    return `Currently in use by ${bike.activeRiderLabel}`;
+  }
+
+  return `Currently in use by ${bike.activeRiderId}`;
+}
 
 function formatDistance(distanceKm: number) {
   return `${distanceKm.toFixed(1)} km`;
@@ -142,6 +156,15 @@ export function BicycleManagementList({
                     {bike.id}
                     {bike.rideClass ? ` · ${bike.rideClass}` : ""}
                     {` · ${bike.location}`}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-[var(--foreground-muted)]">
+                    {bike.status === "in_use"
+                      ? getActiveRiderText(bike)
+                      : bike.status === "maintenance"
+                        ? "Currently offline for maintenance"
+                        : bike.status === "reserved"
+                          ? "Reserved and awaiting unlock"
+                          : "Available for riders"}
                   </p>
                 </div>
               </div>
@@ -427,6 +450,26 @@ export function BicycleEditor({
                 <option value="in_use">In Use</option>
                 <option value="maintenance">Maintenance</option>
               </SelectInput>
+            </Field>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field label="Active Rider">
+              <TextInput
+                defaultValue={getActiveRiderText(bike)}
+                disabled
+                name="activeRiderLabel"
+                type="text"
+              />
+            </Field>
+
+            <Field label="Active Rider ID">
+              <TextInput
+                defaultValue={bike.activeRiderId ?? "None"}
+                disabled
+                name="activeRiderId"
+                type="text"
+              />
             </Field>
           </div>
 

@@ -3,6 +3,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import type { UnlockResult } from "@glide/shared";
 
+import { useAuth } from "@/features/auth/auth-provider";
+import { configuredBikeStatusService } from "@/lib/bike-status-service";
 import { configuredUnlockService } from "@/lib/unlock-service";
 
 import { UnlockScreen } from "./unlock-screen";
@@ -13,15 +15,26 @@ jest.mock("@/lib/unlock-service", () => ({
   }
 }));
 
+jest.mock("@/lib/bike-status-service", () => ({
+  configuredBikeStatusService: {
+    updateBikeStatus: jest.fn()
+  }
+}));
+
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
   useRouter: jest.fn()
+}));
+
+jest.mock("@/features/auth/auth-provider", () => ({
+  useAuth: jest.fn()
 }));
 
 jest.setTimeout(20000);
 
 describe("UnlockScreen", () => {
   const startUnlock = jest.mocked(configuredUnlockService.startUnlock);
+  const updateBikeStatus = jest.mocked(configuredBikeStatusService.updateBikeStatus);
   const push = jest.fn();
 
   function createResult(
@@ -88,6 +101,11 @@ describe("UnlockScreen", () => {
     jest.clearAllMocks();
     jest.mocked(useLocalSearchParams).mockReturnValue({ id: "G-205" });
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+    jest.mocked(useAuth).mockReturnValue({
+      session: { access_token: "session-token" } as never,
+      user: { id: "user-1" } as never
+    } as never);
+    updateBikeStatus.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -145,6 +163,11 @@ describe("UnlockScreen", () => {
       method: "qr",
       attempt: 1
     });
+    expect(updateBikeStatus).toHaveBeenCalledWith({
+      bikeId: "G-205",
+      status: "in_use",
+      accessToken: "session-token"
+    });
 
     await flushTimers(1300);
 
@@ -174,6 +197,11 @@ describe("UnlockScreen", () => {
       bikeId: "G-205",
       method: "bluetooth",
       attempt: 1
+    });
+    expect(updateBikeStatus).toHaveBeenCalledWith({
+      bikeId: "G-205",
+      status: "in_use",
+      accessToken: "session-token"
     });
 
     await flushTimers(1300);

@@ -14,7 +14,7 @@ export default async function AdminLayout({
   return (
     <main className="clay-shell mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
       <header className="clay-admin-bar">
-        <div className="flex flex-wrap items-center gap-3 p-3 sm:gap-4 sm:p-4">
+        <div className="flex flex-wrap items-start gap-3 p-3 sm:items-center sm:gap-4 sm:p-4">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <GlideBrand variant="admin-header" />
 
@@ -32,9 +32,9 @@ export default async function AdminLayout({
             <AdminNav />
           </div>
 
-          <form action={signOutAction} className="order-2 md:order-3 md:ml-auto">
+          <form action={signOutAction} className="order-2 w-full md:order-3 md:ml-auto md:w-auto">
             <button
-              className="clay-button px-4 py-2.5 text-sm font-semibold text-[var(--foreground)]"
+              className="clay-button w-full px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] md:w-auto"
               type="submit">
               Sign out
             </button>

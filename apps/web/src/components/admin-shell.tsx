@@ -6,6 +6,7 @@ import {
   mockBikes,
   mockNearbyBikesResult,
   mockRideHistory,
+  mockUser,
   mockWallet
 } from "@glide/api";
 import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared";
@@ -54,6 +55,11 @@ const completedRevenue = mockRideHistory.reduce((totalRevenue, ride) => totalRev
 const totalTrackedRevenue = completedRevenue + mockActiveRide.currentCost;
 const averageCompletedRideRevenue =
   mockRideHistory.length === 0 ? 0 : completedRevenue / mockRideHistory.length;
+const activeRideBike = mockBikes.find((bike) => bike.id === mockActiveRide.bikeId);
+const activeRideRiderLabel =
+  activeRideBike?.activeRiderId === mockUser?.id
+    ? mockUser?.firstName ?? activeRideBike?.activeRiderId
+    : activeRideBike?.activeRiderId ?? null;
 
 const summaryMetrics = [
   {
@@ -64,7 +70,7 @@ const summaryMetrics = [
   {
     label: "Active rides",
     value: mockAdminOverview.activeRides.toString(),
-    note: `${formatDistanceKm(mockActiveRide.distanceKm)} in motion`
+    note: `${formatDistanceKm(mockActiveRide.distanceKm)} in motion${activeRideRiderLabel ? ` · in use by ${activeRideRiderLabel}` : ""}`
   },
   {
     label: "Support load",
@@ -75,6 +81,11 @@ const summaryMetrics = [
     label: "Wallet float",
     value: formatCurrency(mockAdminOverview.walletBalanceTotal),
     note: `${formatCurrency(totalTrackedRevenue)} captured in tracked rides`
+  },
+  {
+    label: "Active rider",
+    value: activeRideRiderLabel ?? "Unknown",
+    note: `${mockActiveRide.bikeId} currently assigned`
   }
 ];
 
@@ -189,15 +200,17 @@ function StatusBadge({
 export function AdminShell() {
   return (
     <section className="flex flex-col gap-6" style={dashboardTheme}>
-      <section className="clay-card-raised dashboard-entrance-item overflow-hidden" style={{ "--entry-delay": "20ms" } as MotionStyle}>
-        <div className="grid gap-6 border-b border-[var(--dashboard-dark-border)] px-8 py-8 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)]">
+      <section
+        className="clay-card-raised dashboard-entrance-item overflow-hidden"
+        style={{ "--entry-delay": "20ms" } as MotionStyle}>
+        <div className="grid gap-6 border-b border-[var(--dashboard-dark-border)] px-5 py-6 sm:px-6 sm:py-7 lg:grid-cols-[minmax(0,1.8fr)_minmax(280px,1fr)] lg:px-8 lg:py-8">
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap items-center gap-3">
               <StatusBadge tone="accent">Executive Dashboard</StatusBadge>
               <StatusBadge tone="success">Live telemetry</StatusBadge>
             </div>
             <div className="flex flex-col gap-3">
-              <h1 className="max-w-3xl text-4xl font-black tracking-[-0.05em] text-[var(--dashboard-ink)] md:text-5xl">
+              <h1 className="max-w-2xl text-3xl font-black tracking-[-0.05em] text-[var(--dashboard-ink)] sm:text-4xl md:text-5xl">
                 Live operations snapshot
               </h1>
               <p className="max-w-2xl text-base leading-7 text-[var(--dashboard-ink-muted)]">
@@ -206,20 +219,26 @@ export function AdminShell() {
                 mock services, so the dashboard stays honest while the live backend catches up.
               </p>
             </div>
-            <dl className="grid gap-3 sm:grid-cols-3">
-              <div className="clay-inset dashboard-interactive-card p-4 transition-transform" style={{ "--entry-delay": "40ms" } as MotionStyle}>
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                className="clay-inset dashboard-interactive-card min-w-0 p-4 transition-transform"
+                style={{ "--entry-delay": "40ms" } as MotionStyle}>
                 <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Last sync</dt>
                 <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
                   {formatAdminDate(mockNearbyBikesResult.serverTime)}
                 </dd>
               </div>
-              <div className="clay-inset dashboard-interactive-card p-4 transition-transform" style={{ "--entry-delay": "80ms" } as MotionStyle}>
+              <div
+                className="clay-inset dashboard-interactive-card min-w-0 p-4 transition-transform"
+                style={{ "--entry-delay": "80ms" } as MotionStyle}>
                 <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Fleet range average</dt>
                 <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
                   {formatDistanceKm(averageRangeKm)}
                 </dd>
               </div>
-              <div className="clay-inset dashboard-interactive-card p-4 transition-transform" style={{ "--entry-delay": "120ms" } as MotionStyle}>
+              <div
+                className="clay-inset dashboard-interactive-card min-w-0 p-4 transition-transform"
+                style={{ "--entry-delay": "120ms" } as MotionStyle}>
                 <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Completed ride average</dt>
                 <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
                   {formatDistanceKm(averageRideDistanceKm)}
@@ -228,7 +247,7 @@ export function AdminShell() {
             </dl>
           </div>
 
-          <aside className="clay-inset dashboard-interactive-card p-6">
+          <aside className="clay-inset dashboard-interactive-card min-w-0 p-5 sm:p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-ink-muted)]">
               Network health
             </p>
@@ -238,6 +257,11 @@ export function AdminShell() {
                 <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
                   {mockActiveRide.bikeId}
                 </p>
+                {activeRideRiderLabel ? (
+                  <p className="mt-2 text-sm font-semibold text-[var(--dashboard-ink)]">
+                    Currently in use by {activeRideRiderLabel}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
                   {formatDistanceKm(mockActiveRide.distanceKm)} covered with{" "}
                   {mockActiveRide.nextDropoffZoneKm
@@ -246,7 +270,7 @@ export function AdminShell() {
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="clay-card dashboard-interactive-card p-4">
+                <div className="clay-card dashboard-interactive-card min-w-0 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
                     Completed revenue
                   </p>
@@ -254,7 +278,7 @@ export function AdminShell() {
                     {formatCurrency(completedRevenue)}
                   </p>
                 </div>
-                <div className="clay-card dashboard-interactive-card p-4">
+                <div className="clay-card dashboard-interactive-card min-w-0 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
                     Avg. ride duration
                   </p>
@@ -267,10 +291,10 @@ export function AdminShell() {
           </aside>
         </div>
 
-        <section className="grid gap-4 px-8 py-6 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 px-5 py-5 sm:px-6 sm:py-6 md:grid-cols-2 xl:grid-cols-4 lg:px-8">
           {summaryMetrics.map((metric, index) => (
             <article
-              className="clay-card dashboard-entrance-item dashboard-interactive-card p-5"
+              className="clay-card dashboard-entrance-item dashboard-interactive-card min-w-0 p-4 sm:p-5"
               key={metric.label}
               style={{ "--entry-delay": `${index * 50 + 120}ms` } as MotionStyle}>
               <p className="text-sm font-medium text-[var(--dashboard-ink-muted)]">{metric.label}</p>
@@ -284,8 +308,10 @@ export function AdminShell() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,1fr)]">
-        <article className="clay-card dashboard-entrance-item p-7" style={{ "--entry-delay": "180ms" } as MotionStyle}>
-          <div className="flex flex-col gap-2">
+        <article
+          className="clay-card dashboard-entrance-item p-5 sm:p-6 lg:p-7"
+          style={{ "--entry-delay": "180ms" } as MotionStyle}>
+          <div className="flex min-w-0 flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-accent)]">
               Operational thresholds
             </p>
@@ -307,8 +333,8 @@ export function AdminShell() {
                   className="dashboard-interactive-card rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-5"
                   key={metric.label}
                   style={{ "--entry-delay": `${index * 45 + 210}ms` } as MotionStyle}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-[var(--dashboard-ink)]">{metric.label}</h3>
                       <p className="mt-2 font-mono text-lg font-semibold text-[var(--dashboard-ink)]">
                         {metric.currentValue}
@@ -334,8 +360,10 @@ export function AdminShell() {
           </div>
         </article>
 
-        <article className="clay-card dashboard-entrance-item p-7" style={{ "--entry-delay": "220ms" } as MotionStyle}>
-          <div className="flex flex-col gap-2">
+        <article
+          className="clay-card dashboard-entrance-item p-5 sm:p-6 lg:p-7"
+          style={{ "--entry-delay": "220ms" } as MotionStyle}>
+          <div className="flex min-w-0 flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-highlight)]">
               Fleet status
             </p>
@@ -386,8 +414,10 @@ export function AdminShell() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(300px,0.9fr)]">
-        <article className="clay-card dashboard-entrance-item p-7" style={{ "--entry-delay": "280ms" } as MotionStyle}>
-          <div className="flex flex-col gap-2">
+        <article
+          className="clay-card dashboard-entrance-item p-5 sm:p-6 lg:p-7"
+          style={{ "--entry-delay": "280ms" } as MotionStyle}>
+          <div className="flex min-w-0 flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-accent)]">
               Revenue operations
             </p>
@@ -396,8 +426,8 @@ export function AdminShell() {
             </h2>
           </div>
 
-          <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[var(--dashboard-line)]">
-            <table className="min-w-full border-collapse">
+          <div className="mt-6 overflow-x-auto overflow-y-hidden rounded-[1.5rem] border border-[var(--dashboard-line)]">
+            <table className="min-w-[680px] border-collapse md:min-w-full">
               <thead className="bg-[var(--dashboard-panel-soft)]">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
@@ -444,8 +474,10 @@ export function AdminShell() {
           </div>
         </article>
 
-        <article className="clay-card dashboard-entrance-item p-7" style={{ "--entry-delay": "320ms" } as MotionStyle}>
-          <div className="flex flex-col gap-2">
+        <article
+          className="clay-card dashboard-entrance-item p-5 sm:p-6 lg:p-7"
+          style={{ "--entry-delay": "320ms" } as MotionStyle}>
+          <div className="flex min-w-0 flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-highlight)]">
               Live activity feed
             </p>
@@ -460,8 +492,8 @@ export function AdminShell() {
                 className="dashboard-entrance-item dashboard-interactive-card rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-4"
                 key={item.title}
                 style={{ "--entry-delay": `${index * 45 + 360}ms` } as MotionStyle}>
-                <div className="flex items-start justify-between gap-4">
-                  <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-[var(--dashboard-ink)]">{item.title}</h3>
                     <p className="mt-2 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
                       {item.detail}
@@ -478,8 +510,10 @@ export function AdminShell() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
-        <article className="clay-card dashboard-entrance-item p-7" style={{ "--entry-delay": "360ms" } as MotionStyle}>
-          <div className="flex flex-col gap-2">
+        <article
+          className="clay-card dashboard-entrance-item p-5 sm:p-6 lg:p-7"
+          style={{ "--entry-delay": "360ms" } as MotionStyle}>
+          <div className="flex min-w-0 flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-accent)]">
               Executive notes
             </p>
@@ -527,8 +561,10 @@ export function AdminShell() {
           </div>
         </article>
 
-        <article className="clay-card dashboard-entrance-item p-7" style={{ "--entry-delay": "400ms" } as MotionStyle}>
-          <div className="flex flex-col gap-2">
+        <article
+          className="clay-card dashboard-entrance-item p-5 sm:p-6 lg:p-7"
+          style={{ "--entry-delay": "400ms" } as MotionStyle}>
+          <div className="flex min-w-0 flex-col gap-2">
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--dashboard-highlight)]">
               Fleet watchlist
             </p>
@@ -543,8 +579,8 @@ export function AdminShell() {
                 className="dashboard-entrance-item dashboard-interactive-card rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-4"
                 key={bike.id}
                 style={{ "--entry-delay": `${index * 35 + 420}ms` } as MotionStyle}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-[var(--dashboard-ink)]">
                       {bike.model} · {bike.id}
                     </h3>

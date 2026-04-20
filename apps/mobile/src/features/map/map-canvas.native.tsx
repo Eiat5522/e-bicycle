@@ -17,7 +17,8 @@ interface MapCanvasProps {
   readonly onRecenter: () => void;
   readonly selectedBikeId: string | undefined;
   readonly userCoordinates: Coordinates | undefined;
-  readonly onPressMarker: (bikeId: string, status: Bike["status"]) => void;
+  readonly currentUserId: string | null;
+  readonly onPressMarker: (bikeId: string, status: Bike["status"], activeRiderId: string | null) => void;
 }
 
 const DEFAULT_DELTA = {
@@ -120,6 +121,7 @@ export function MapCanvas({
   mapCenter,
   onRecenter,
   selectedBikeId,
+  currentUserId,
   userCoordinates,
   onPressMarker
 }: MapCanvasProps) {
@@ -207,10 +209,14 @@ export function MapCanvas({
             coordinate={bike.coordinates}
             title={bike.model}
             description={`${getBikeStatusLabel(bike.status)} • ${bike.location} • ${bikeDistanceLabels?.[bike.id] ?? "Distance unavailable"} • ${bike.pricingLabel}`}
-            onPress={() => onPressMarker(bike.id, bike.status)}
+            onPress={() => onPressMarker(bike.id, bike.status, bike.activeRiderId ?? null)}
           >
             <BikeMarkerPin
-              color={getBikeMarkerColor(bike.status, bike.id === selectedBikeId)}
+              color={getBikeMarkerColor(
+                bike.status,
+                bike.id === selectedBikeId,
+                bike.activeRiderId !== null && bike.activeRiderId === currentUserId
+              )}
               isSelected={bike.id === selectedBikeId}
             />
           </Marker>

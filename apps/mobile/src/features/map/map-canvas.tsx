@@ -15,7 +15,8 @@ interface MapCanvasProps {
   readonly onRecenter: () => void;
   readonly selectedBikeId: string | undefined;
   readonly userCoordinates: Coordinates | undefined;
-  readonly onPressMarker: (bikeId: string, status: Bike["status"]) => void;
+  readonly currentUserId: string | null;
+  readonly onPressMarker: (bikeId: string, status: Bike["status"], activeRiderId: string | null) => void;
 }
 
 const pressedButtonStyle = {
@@ -28,6 +29,7 @@ export function MapCanvas({
   mapCenter,
   onRecenter,
   selectedBikeId,
+  currentUserId,
   userCoordinates,
   onPressMarker
 }: MapCanvasProps) {
@@ -74,7 +76,7 @@ export function MapCanvas({
             key={bike.id}
             accessibilityRole="button"
             accessibilityLabel={`Select ${bike.model}`}
-            onPress={() => onPressMarker(bike.id, bike.status)}
+            onPress={() => onPressMarker(bike.id, bike.status, bike.activeRiderId ?? null)}
           >
             <Text
               selectable
@@ -83,7 +85,11 @@ export function MapCanvas({
                 color:
                   bike.id === selectedBikeId
                     ? colors.text
-                    : getBikeMarkerColor(bike.status, false),
+                    : getBikeMarkerColor(
+                        bike.status,
+                        false,
+                        bike.activeRiderId !== null && bike.activeRiderId === currentUserId
+                      ),
                 fontFamily: bike.id === selectedBikeId ? typography.label.fontFamily : typography.bodyStrong.fontFamily
               }}
             >

@@ -15,8 +15,11 @@ import type { UnlockMethod, UnlockResult, UnlockStatus } from "@glide/shared";
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { useAuth } from "@/features/auth/auth-provider";
+import { configuredBikeStatusService } from "@/lib/bike-status-service";
 import { configuredUnlockService } from "@/lib/unlock-service";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { useRideSession } from "../ride/ride-session-context";
 
 const PHASE_DELAY_MS = 900;
 const COMPLETION_DELAY_MS = 900;
@@ -360,6 +363,8 @@ function MethodVisual({
 
 export function UnlockScreen() {
   const router = useRouter();
+  const { session, user } = useAuth();
+  const { setBikeRideState } = useRideSession();
   const params = useLocalSearchParams<{
     id?: string | string[];
     method?: string | string[];
@@ -509,6 +514,26 @@ export function UnlockScreen() {
       }
 
       if (result.finalStatus === "success") {
+        if (!session?.access_token || !user?.id) {
+          // Log warning but proceed - bike is already unlocked
+          console.warn("Session missing during status update", { bikeId });
+        } else {
+          try {
+            await configuredBikeStatusService.updateBikeStatus({
+              bikeId,
+              status: "in_use",
+              accessToken: session.access_token
+            });
+            setBikeRideState(bikeId, {
+              status: "in_use",
+              activeRiderId: user.id
+            });
+          } catch (statusError) {
+            // Log but don't block - bike is already unlocked
+            console.error("Failed to sync bike status", { bikeId, statusError });
+          }
+        }
+
         setTransaction({
           status: "success",
           method,

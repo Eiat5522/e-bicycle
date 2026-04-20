@@ -30,6 +30,9 @@ interface BikeMarkerDrawerProps {
   readonly bike: Bike | undefined;
   readonly distanceLabel: string | undefined;
   readonly visible: boolean;
+  readonly canUnlock: boolean;
+  readonly statusMessage: string | undefined;
+  readonly unlockDisabledMessage: string | undefined;
   readonly onClose: () => void;
   readonly onViewDetails: () => void;
   readonly onUnlock: () => void;
@@ -49,6 +52,9 @@ export function BikeMarkerDrawer({
   bike,
   distanceLabel,
   visible,
+  canUnlock,
+  statusMessage,
+  unlockDisabledMessage,
   onClose,
   onViewDetails,
   onUnlock,
@@ -100,7 +106,7 @@ export function BikeMarkerDrawer({
   }
 
   const batteryEstimate = getBatteryEstimate(bike.estimatedRangeKm);
-  const statusTone = getBikeMarkerColor(bike.status, false);
+  const statusTone = getBikeMarkerColor(bike.status, false, false);
 
   return (
     <Modal
@@ -160,8 +166,8 @@ export function BikeMarkerDrawer({
                 width: "100%"
               }}
             >
-              <Text selectable style={{ ...typography.eyebrow, color: colors.teal }}>
-                Ready to rent
+              <Text selectable style={{ ...typography.eyebrow, color: statusTone }}>
+                {statusMessage ?? "Ready to rent"}
               </Text>
 
               <Pressable
@@ -285,7 +291,7 @@ export function BikeMarkerDrawer({
           </View>
 
           <View style={{ gap: spacing.sm }}>
-            <PrimaryButton label="Unlock and Ride" onPress={onUnlock} />
+            <PrimaryButton label="Unlock and Ride" onPress={onUnlock} disabled={!canUnlock} />
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
               <View style={{ flex: 1 }}>
                 <PrimaryButton label="View Details" onPress={onViewDetails} variant="secondary" />
@@ -294,6 +300,14 @@ export function BikeMarkerDrawer({
                 <PrimaryButton label="Need Help?" onPress={onHelp} variant="secondary" />
               </View>
             </View>
+            {!canUnlock ? (
+              <Text
+                selectable
+                style={{ color: colors.textMuted, fontSize: 14, lineHeight: 20, marginTop: spacing.xs }}
+              >
+                {unlockDisabledMessage ?? "This bike cannot be unlocked right now."}
+              </Text>
+            ) : null}
           </View>
         </Animated.View>
       </View>

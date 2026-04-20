@@ -80,11 +80,13 @@ export interface Database {
       };
       bikes: {
         Row: {
+          active_rider_id: string | null;
+          created_at: string;
+          estimated_range_km: number;
           id: string;
           model: string;
           image_url: string | null;
           ride_class: string | null;
-          estimated_range_km: number;
           top_speed_kmh: number;
           pricing_label: string;
           status: "available" | "reserved" | "in_use" | "maintenance";
@@ -92,15 +94,16 @@ export interface Database {
           latitude: number;
           longitude: number;
           last_reported_at: string;
-          created_at: string;
           updated_at: string;
         };
         Insert: {
+          active_rider_id?: string | null;
+          created_at?: string;
+          estimated_range_km: number;
           id: string;
           model: string;
           image_url?: string | null;
           ride_class?: string | null;
-          estimated_range_km: number;
           top_speed_kmh: number;
           pricing_label: string;
           status?: "available" | "reserved" | "in_use" | "maintenance";
@@ -108,15 +111,16 @@ export interface Database {
           latitude: number;
           longitude: number;
           last_reported_at?: string;
-          created_at?: string;
           updated_at?: string;
         };
         Update: {
+          active_rider_id?: string | null;
+          created_at?: string;
+          estimated_range_km?: number;
           id?: string;
           model?: string;
           image_url?: string | null;
           ride_class?: string | null;
-          estimated_range_km?: number;
           top_speed_kmh?: number;
           pricing_label?: string;
           status?: "available" | "reserved" | "in_use" | "maintenance";

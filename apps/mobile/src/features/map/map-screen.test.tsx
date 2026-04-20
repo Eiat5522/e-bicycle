@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 
+import { useAuth } from "@/features/auth/auth-provider";
 import { configuredBikeService } from "@/lib/bike-service";
 
 import { MapScreen, MAP_POLL_INTERVAL_MS } from "./map-screen";
@@ -47,6 +48,10 @@ jest.mock("expo-router", () => ({
   }))
 }));
 
+jest.mock("@/features/auth/auth-provider", () => ({
+  useAuth: jest.fn()
+}));
+
 describe("MapScreen", () => {
   const listNearby = jest.mocked(configuredBikeService.listNearby);
   const requestForegroundPermissionsAsync = jest.mocked(
@@ -72,6 +77,10 @@ describe("MapScreen", () => {
     } as Location.LocationObject);
     getLastKnownPositionAsync.mockResolvedValue(null);
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+    jest.mocked(useAuth).mockReturnValue({
+      session: { access_token: "session-token" } as never,
+      user: { id: "user-1" } as never
+    } as never);
     listNearby.mockResolvedValue({
       bikes: [
         {
@@ -356,7 +365,7 @@ describe("MapScreen", () => {
     expect(pressMarker).toBeDefined();
 
     act(() => {
-      pressMarker?.("G-104", "available");
+      pressMarker?.("G-104", "available", null);
     });
 
     expect(screen.getByText("View Details")).toBeTruthy();
@@ -406,7 +415,7 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-205", "in_use");
+      pressMarker?.("G-205", "in_use", "user-1");
     });
 
     expect(push).toHaveBeenCalledWith({
@@ -416,6 +425,92 @@ describe("MapScreen", () => {
       }
     });
     expect(screen.queryByText("Unlock and Ride")).toBeNull();
+  });
+
+  it("shows an in-use bike from another rider with unlock disabled", async () => {
+    listNearby.mockResolvedValue({
+      bikes: [
+        {
+          id: "G-104",
+          model: "Glide Pro X",
+          rideClass: "Pro",
+          estimatedRangeKm: 45,
+          topSpeedKmh: 25,
+          pricingLabel: "$1.20 / 10 min",
+          status: "available",
+          location: "Siam Square",
+          coordinates: { latitude: 13.7466, longitude: 100.5328 },
+          lastReportedAt: "2026-04-06T08:55:00Z"
+        },
+        {
+          id: "G-205",
+          model: "Glide City",
+          rideClass: "City",
+          estimatedRangeKm: 31,
+          topSpeedKmh: 22,
+          pricingLabel: "$0.90 / 10 min",
+          status: "in_use",
+          activeRiderId: "someone-else",
+          location: "อโศก Interchange",
+          coordinates: { latitude: 13.7372, longitude: 100.5606 },
+          lastReportedAt: "2026-04-06T08:56:00Z"
+        }
+      ],
+      serverTime: "2026-04-06T09:00:00Z"
+    });
+
+    await renderScreen();
+
+    await waitForMapCanvas();
+
+    const mapCanvasMock = jest.mocked(MapCanvas);
+    const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
+
+    act(() => {
+      pressMarker?.("G-205", "in_use", "someone-else");
+    });
+
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByText("Currently in use by another rider")).toBeTruthy();
+    expect(screen.getByText("Unlock and Ride")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Unlock and Ride" })).toBeDisabled();
+  });
+
+  it("shows a maintenance bike with unlock disabled", async () => {
+    listNearby.mockResolvedValue({
+      bikes: [
+        {
+          id: "G-104",
+          model: "Glide Pro X",
+          rideClass: "Pro",
+          estimatedRangeKm: 45,
+          topSpeedKmh: 25,
+          pricingLabel: "$1.20 / 10 min",
+          status: "maintenance",
+          location: "Siam Square",
+          coordinates: { latitude: 13.7466, longitude: 100.5328 },
+          lastReportedAt: "2026-04-06T08:55:00Z"
+        }
+      ],
+      serverTime: "2026-04-06T09:00:00Z"
+    });
+
+    await renderScreen();
+
+    await waitForMapCanvas();
+
+    const mapCanvasMock = jest.mocked(MapCanvas);
+    const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
+
+    act(() => {
+      pressMarker?.("G-104", "maintenance", null);
+    });
+
+    expect(screen.getByText("Under maintenance")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Unlock and Ride" })).toBeDisabled();
+    expect(
+      screen.getByText("This bike is under maintenance and cannot be unlocked.")
+    ).toBeTruthy();
   });
 
   it("refreshes the user location when recenter is pressed", async () => {
@@ -481,7 +576,7 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-104", "available");
+      pressMarker?.("G-104", "available", null);
     });
 
     expect(screen.getByText("G-104 · Siam Square")).toBeTruthy();
@@ -531,21 +626,21 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-104", "available");
+      pressMarker?.("G-104", "available", null);
     });
 
     fireEvent.press(screen.getByText("Unlock and Ride"));
     expect(push).toHaveBeenCalledWith("/unlock/G-104");
 
     act(() => {
-      pressMarker?.("G-104", "available");
+      pressMarker?.("G-104", "available", null);
     });
 
     fireEvent.press(screen.getByText("Need Help?"));
     expect(push).toHaveBeenCalledWith("/help");
 
     act(() => {
-      pressMarker?.("G-104", "available");
+      pressMarker?.("G-104", "available", null);
     });
 
     fireEvent.press(screen.getByText("View Details"));

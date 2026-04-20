@@ -54,6 +54,7 @@ function mapBikeRow(row: BikeRow): Bike {
     topSpeedKmh: row.top_speed_kmh,
     pricingLabel: row.pricing_label,
     status: row.status,
+    activeRiderId: row.active_rider_id,
     location: row.location,
     coordinates: {
       latitude: row.latitude,
@@ -69,7 +70,7 @@ function createSupabaseBikeService(): BikeService {
       const { data, error } = await supabase
         .from("bikes")
         .select(
-          "id, model, image_url, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, created_at, updated_at"
+          "id, model, image_url, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, active_rider_id, location, latitude, longitude, last_reported_at, created_at, updated_at"
         )
         .order("last_reported_at", { ascending: false });
 
@@ -103,7 +104,7 @@ function createSupabaseBikeService(): BikeService {
       const { data, error } = await supabase
         .from("bikes")
         .select(
-          "id, model, image_url, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, location, latitude, longitude, last_reported_at, created_at, updated_at"
+          "id, model, image_url, ride_class, estimated_range_km, top_speed_kmh, pricing_label, status, active_rider_id, location, latitude, longitude, last_reported_at, created_at, updated_at"
         )
         .eq("id", id)
         .maybeSingle();

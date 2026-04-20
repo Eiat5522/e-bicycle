@@ -87,6 +87,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 22,
     pricingLabel: "$0.90 / 10 min",
     status: "in_use",
+    activeRiderId: mockUser.id,
     location: "อโศก Interchange",
     coordinates: { latitude: 13.7372, longitude: 100.5606 },
     lastReportedAt: "2026-04-06T08:56:00Z"

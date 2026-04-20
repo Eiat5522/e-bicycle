@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AuthGate } from "@/features/auth/auth-gate";
 import { AuthProvider, useAuth } from "@/features/auth/auth-provider";
+import { RideSessionProvider } from "@/features/ride/ride-session-context";
 import { colors, fontFamilies } from "@/theme/tokens";
 
 SplashScreen.preventAutoHideAsync();
@@ -56,8 +57,10 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <AuthProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
+        <RideSessionProvider>
+          <StatusBar style="dark" />
+          <RootNavigator />
+        </RideSessionProvider>
       </AuthProvider>
     </GestureHandlerRootView>
   );

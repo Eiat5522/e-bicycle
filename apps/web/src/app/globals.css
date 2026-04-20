@@ -140,7 +140,14 @@ textarea {
     inset 1px 1px 0 var(--clay-highlight),
     10px 10px 20px rgba(143, 117, 193, 0.15),
     -8px -8px 18px rgba(255, 255, 255, 0.76);
-  transition: all 0.2s ease;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .clay-button:hover {
@@ -149,6 +156,14 @@ textarea {
     14px 14px 26px rgba(131, 104, 185, 0.2),
     -10px -10px 20px rgba(255, 255, 255, 0.78);
   transform: translateY(-1px) scale(1.01);
+}
+
+.clay-button:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(128, 90, 213, 0.24),
+    inset 1px 1px 0 var(--clay-highlight),
+    10px 10px 20px rgba(143, 117, 193, 0.15),
+    -8px -8px 18px rgba(255, 255, 255, 0.76);
 }
 
 .clay-button:active {
@@ -268,11 +283,20 @@ textarea {
     color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s ease;
+  outline: none;
   white-space: nowrap;
 }
 
 .clay-admin-tab:hover {
   transform: translateY(-1px);
+}
+
+.clay-admin-tab:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(128, 90, 213, 0.26),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.78),
+    8px 8px 16px rgba(129, 102, 182, 0.16),
+    -6px -6px 14px rgba(255, 255, 255, 0.7);
 }
 
 .clay-admin-tab:active {
@@ -347,6 +371,15 @@ textarea {
     -12px -12px 24px rgba(255, 255, 255, 0.72);
 }
 
+.dashboard-interactive-card:focus-within {
+  border-color: rgba(128, 90, 213, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(128, 90, 213, 0.16),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.86),
+    18px 18px 32px rgba(127, 98, 183, 0.14),
+    -10px -10px 22px rgba(255, 255, 255, 0.72);
+}
+
 .dashboard-interactive-card:active {
   transform: scale(0.992);
 }
@@ -373,18 +406,48 @@ textarea {
   background-color: rgba(255, 255, 255, 0.34);
 }
 
+@keyframes dashboard-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.dashboard-skeleton {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.42) 25%,
+      rgba(243, 233, 255, 0.92) 37%,
+      rgba(255, 255, 255, 0.42) 63%
+    );
+  background-size: 200% 100%;
+  animation: dashboard-skeleton-shimmer 1.45s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .clay-button,
+  .clay-admin-tab,
   .dashboard-entrance-item,
   .dashboard-progress-fill {
     animation: none;
     opacity: 1;
   }
 
+  .clay-button,
+  .clay-admin-tab,
   .dashboard-interactive-card,
   .dashboard-table-row {
     transition: none;
   }
 
+  .clay-button:hover,
+  .clay-button:active,
+  .clay-admin-tab:hover,
+  .clay-admin-tab:active,
   .dashboard-interactive-card:hover,
   .dashboard-interactive-card:active {
     transform: none;
@@ -392,5 +455,10 @@ textarea {
 
   .dashboard-progress-fill {
     transform: scaleX(var(--progress-scale, 1));
+  }
+
+  .dashboard-skeleton {
+    animation: none;
+    background-position: 50% 0;
   }
 }

@@ -25,6 +25,7 @@ export interface Bike {
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
   readonly status: BikeStatus;
+  readonly activeRiderId?: string | null;
   readonly location: string;
   readonly coordinates: Coordinates;
   readonly lastReportedAt: string;
