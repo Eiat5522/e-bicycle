@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export function GlideBrand({
   variant = "login"
 }: {
@@ -10,11 +12,12 @@ export function GlideBrand({
 
   return (
     <div className="flex items-center gap-3">
-      <img
+      <Image
         alt="Glide logo"
         className="block shrink-0 object-contain"
         height={logoHeight}
         src={logoSrc}
+        unoptimized
         width={logoWidth}
       />
 

@@ -1,4 +1,4 @@
-jest.mock("react", () => jest.requireActual("@testing-library/react/node_modules/react"));
+jest.mock("react", () => jest.requireActual("react"));
 
 import type { ReactNode } from "react";
 

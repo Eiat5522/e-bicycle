@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-
 describe("configuredWalletService", () => {
   beforeEach(() => {
     jest.resetModules();
@@ -64,7 +62,7 @@ describe("configuredWalletService", () => {
       }
     }));
 
-    const { configuredWalletService } = require("./wallet-service") as typeof import("./wallet-service");
+    const { configuredWalletService } = jest.requireActual("./wallet-service") as typeof import("./wallet-service");
 
     const wallet = await configuredWalletService.getWallet();
 
@@ -128,7 +126,7 @@ describe("configuredWalletService", () => {
       }
     }));
 
-    const { configuredWalletService } = require("./wallet-service") as typeof import("./wallet-service");
+    const { configuredWalletService } = jest.requireActual("./wallet-service") as typeof import("./wallet-service");
 
     const wallet = await configuredWalletService.applyTopUp({
       amount: 20,
@@ -161,7 +159,7 @@ describe("configuredWalletService", () => {
       }
     }));
 
-    const { configuredWalletService } = require("./wallet-service") as typeof import("./wallet-service");
+    const { configuredWalletService } = jest.requireActual("./wallet-service") as typeof import("./wallet-service");
 
     await expect(configuredWalletService.getWallet()).rejects.toThrow("No active rider session was found.");
   });
@@ -212,7 +210,7 @@ describe("configuredWalletService", () => {
       }
     }));
 
-    const { configuredWalletService } = require("./wallet-service") as typeof import("./wallet-service");
+    const { configuredWalletService } = jest.requireActual("./wallet-service") as typeof import("./wallet-service");
 
     await expect(configuredWalletService.getWallet()).rejects.toThrow("Failed to fetch wallet: wallet query failed");
 
@@ -274,7 +272,7 @@ describe("configuredWalletService", () => {
       }
     }));
 
-    const { configuredWalletService } = require("./wallet-service") as typeof import("./wallet-service");
+    const { configuredWalletService } = jest.requireActual("./wallet-service") as typeof import("./wallet-service");
 
     await expect(configuredWalletService.getWallet()).rejects.toThrow("Wallet record is missing for this rider.");
   });
@@ -295,7 +293,7 @@ describe("configuredWalletService", () => {
       }
     }));
 
-    const { configuredWalletService } = require("./wallet-service") as typeof import("./wallet-service");
+    const { configuredWalletService } = jest.requireActual("./wallet-service") as typeof import("./wallet-service");
 
     await expect(
       configuredWalletService.applyTopUp({
@@ -316,7 +314,7 @@ describe("configuredWalletService", () => {
       }
     }));
 
-    const { configuredWalletService } = require("./wallet-service") as typeof import("./wallet-service");
+    const { configuredWalletService } = jest.requireActual("./wallet-service") as typeof import("./wallet-service");
 
     const wallet = await configuredWalletService.applyTopUp({
       amount: 15,

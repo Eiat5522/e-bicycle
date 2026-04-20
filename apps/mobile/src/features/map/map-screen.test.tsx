@@ -7,6 +7,8 @@ import { configuredBikeService } from "@/lib/bike-service";
 import { MapScreen, MAP_POLL_INTERVAL_MS } from "./map-screen";
 import { MapCanvas } from "./map-canvas";
 
+jest.mock("react", () => jest.requireActual("react"));
+
 jest.mock("./map-canvas", () => ({
   MapCanvas: jest.fn(() => null)
 }));

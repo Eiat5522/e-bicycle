@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SCAN_TAB_UNLOCK_HREF } from "@/navigation/scan-tab";
 import { getTabBarStyle } from "@/navigation/tab-bar-style";
-import { colors, fontFamilies, radii, spacing } from "@/theme/tokens";
+import { colors, fontFamilies, radii } from "@/theme/tokens";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();

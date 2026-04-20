@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-
 describe("configuredBikeService", () => {
   beforeEach(() => {
     jest.resetModules();
@@ -68,7 +66,7 @@ describe("configuredBikeService", () => {
       }
     }));
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
 
     const result = await configuredBikeService.listNearby({
       latitude: 13.7563,
@@ -107,7 +105,7 @@ describe("configuredBikeService", () => {
       }
     }));
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
     const result = await configuredBikeService.getById("G-104");
 
     expect(result).toEqual(
@@ -140,7 +138,7 @@ describe("configuredBikeService", () => {
       }
     }));
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
     const result = await configuredBikeService.listNearby({
       latitude: 13.7563,
       longitude: 100.5018,
@@ -207,7 +205,7 @@ describe("configuredBikeService", () => {
     const fetchSpy = jest.fn();
     globalThis.fetch = fetchSpy as typeof globalThis.fetch;
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
 
     await configuredBikeService.listNearby({
       latitude: 13.7563,
@@ -253,7 +251,7 @@ describe("configuredBikeService", () => {
     });
     globalThis.fetch = fetchSpy as typeof globalThis.fetch;
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
 
     await configuredBikeService.listNearby({
       latitude: 13.7563,
@@ -317,7 +315,7 @@ describe("configuredBikeService", () => {
     const fetchSpy = jest.fn();
     globalThis.fetch = fetchSpy as typeof globalThis.fetch;
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
 
     await configuredBikeService.listNearby({
       latitude: 13.7563,
@@ -353,7 +351,7 @@ describe("configuredBikeService", () => {
       }
     }));
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
 
     await expect(configuredBikeService.getById("missing-bike")).resolves.toBeUndefined();
   });
@@ -378,7 +376,7 @@ describe("configuredBikeService", () => {
       }
     }));
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
     const bike = await configuredBikeService.getById("G-104");
 
     expect(bike).toEqual(
@@ -410,7 +408,7 @@ describe("configuredBikeService", () => {
     const fetchSpy = jest.fn();
     globalThis.fetch = fetchSpy as typeof globalThis.fetch;
 
-    const { configuredBikeService } = require("./bike-service") as typeof import("./bike-service");
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
     const result = await configuredBikeService.listNearby({
       latitude: 13.7563,
       longitude: 100.5018,

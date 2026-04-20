@@ -1,4 +1,9 @@
-export function isMissingAuthSessionError(error: { message?: string; code?: string } | null | undefined) {
+type AuthErrorLike = {
+  message?: string | undefined;
+  code?: string | undefined;
+};
+
+export function isMissingAuthSessionError(error: AuthErrorLike | null | undefined) {
   const message = error?.message?.toLowerCase() ?? "";
   const code = error?.code?.toLowerCase() ?? "";
 

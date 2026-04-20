@@ -1,8 +1,9 @@
 import { act, render, screen, waitFor } from "@testing-library/react-native";
-import * as Linking from "expo-linking";
 import { Platform, Text } from "react-native";
 
 import { AuthProvider, useAuth } from "./auth-provider";
+
+jest.mock("react", () => jest.requireActual("react"));
 
 const mockGetSession = jest.fn();
 const mockOnAuthStateChange = jest.fn();

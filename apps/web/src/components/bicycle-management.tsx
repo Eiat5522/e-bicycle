@@ -5,9 +5,11 @@ import type {
   ReactNode,
   SelectHTMLAttributes
 } from "react";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import Image from "next/image";
 import Link from "next/link";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { formatAdminDate } from "@/lib/formatting";
 import { DrawerCloseButton } from "@/components/side-drawer";
@@ -111,12 +113,14 @@ export function BicycleManagementList({
           <article
             className="clay-card grid gap-5 p-6 md:grid-cols-[180px_minmax(0,1fr)_auto]"
             key={bike.id}>
-            <div className="clay-inset overflow-hidden rounded-[1.5rem]">
+            <div className="clay-inset relative min-h-44 overflow-hidden rounded-[1.5rem]">
               {bike.imageUrl ? (
-                <img
+                <Image
                   alt={bike.model}
-                  className="h-full min-h-44 w-full object-cover"
+                  fill
+                  className="object-cover"
                   src={bike.imageUrl}
+                  sizes="(max-width: 768px) 100vw, 180px"
                 />
               ) : (
                 <div className="flex h-full min-h-44 items-center justify-center px-6 text-center text-sm text-[var(--foreground-muted)]">
@@ -215,6 +219,31 @@ interface BicycleEditorFormState {
   readonly status: "idle" | "success" | "error";
 }
 
+function getActionFailureMessage(result: unknown) {
+  if (typeof result !== "object" || result === null) {
+    return null;
+  }
+
+  const typedResult = result as {
+    error?: unknown;
+    success?: boolean;
+  };
+
+  if (typedResult.success === false) {
+    return typeof typedResult.error === "string"
+      ? typedResult.error
+      : "Unable to save bicycle changes.";
+  }
+
+  if (typedResult.error) {
+    return typeof typedResult.error === "string"
+      ? typedResult.error
+      : "Unable to save bicycle changes.";
+  }
+
+  return null;
+}
+
 const initialBicycleEditorFormState: BicycleEditorFormState = {
   message: null,
   status: "idle"
@@ -240,37 +269,9 @@ export function BicycleEditor({
   const [isEditing, setIsEditing] = useState(isCreate);
   const [showSubmitMessage, setShowSubmitMessage] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<BicycleEditorFormState>(initialBicycleEditorFormState);
+  const [isPending, setIsPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const [submitState, submitAction, isPending] = useActionState(
-    async (_previousState: BicycleEditorFormState, formData: FormData) => {
-      try {
-        await action(formData);
-
-        return {
-          message: null,
-          status: "success"
-        } satisfies BicycleEditorFormState;
-      } catch (error) {
-        return {
-          message: error instanceof Error ? error.message : "Unable to save bicycle changes.",
-          status: "error"
-        } satisfies BicycleEditorFormState;
-      }
-    },
-    initialBicycleEditorFormState
-  );
-
-  useEffect(() => {
-    if (submitState.status === "success" && !isCreate) {
-      setIsEditing(false);
-      setShowSubmitMessage(false);
-      setToastMessage("Bicycle saved successfully.");
-    }
-
-    if (submitState.status === "error") {
-      setShowSubmitMessage(true);
-    }
-  }, [isCreate, submitState.status]);
 
   useEffect(() => {
     if (!toastMessage) {
@@ -281,10 +282,58 @@ export function BicycleEditor({
     return () => window.clearTimeout(timeoutId);
   }, [toastMessage]);
 
+  async function handleSubmit(formData: FormData) {
+    setIsPending(true);
+
+    try {
+      const result = await action(formData);
+      const failureMessage = getActionFailureMessage(result);
+
+      if (failureMessage) {
+        setSubmitState({
+          message: failureMessage,
+          status: "error"
+        });
+        setShowSubmitMessage(true);
+        return;
+      }
+
+      setSubmitState({
+        message: null,
+        status: "success"
+      });
+
+      if (!isCreate) {
+        setIsEditing(false);
+        setShowSubmitMessage(false);
+        setToastMessage("Bicycle saved successfully.");
+      }
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
+
+      setSubmitState({
+        message: error instanceof Error ? error.message : "Unable to save bicycle changes.",
+        status: "error"
+      });
+      setShowSubmitMessage(true);
+    } finally {
+      setIsPending(false);
+    }
+  }
+
   function handleCancelEditing() {
     formRef.current?.reset();
     setIsEditing(false);
     setShowSubmitMessage(false);
+    setSubmitState(initialBicycleEditorFormState);
+  }
+
+  function handleStartEditing() {
+    setShowSubmitMessage(false);
+    setSubmitState(initialBicycleEditorFormState);
+    setIsEditing(true);
   }
 
   return (
@@ -319,7 +368,7 @@ export function BicycleEditor({
           ) : null}
         </div>
 
-        <form action={submitAction} className="mt-8 grid gap-5" ref={formRef}>
+        <form action={handleSubmit} className="mt-8 grid gap-5" ref={formRef}>
           {isCreate ? (
             <Field label="Bike ID">
               <TextInput
@@ -434,12 +483,14 @@ export function BicycleEditor({
           </div>
 
           <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="clay-inset overflow-hidden rounded-[1.75rem]">
+            <div className="clay-inset relative min-h-52 overflow-hidden rounded-[1.75rem]">
               {bike.imageUrl ? (
-                <img
+                <Image
                   alt={bike.model}
-                  className="h-full min-h-52 w-full object-cover"
+                  fill
+                  className="object-cover"
                   src={bike.imageUrl}
+                  sizes="(max-width: 768px) 100vw, 220px"
                 />
               ) : (
                 <div className="flex h-full min-h-52 items-center justify-center px-6 text-center text-sm text-[var(--foreground-muted)]">
@@ -487,8 +538,7 @@ export function BicycleEditor({
               <button
                 className="clay-button clay-button-primary inline-flex px-5 py-3 text-sm font-semibold"
                 onClick={() => {
-                  setShowSubmitMessage(false);
-                  setIsEditing(true);
+                  handleStartEditing();
                 }}
                 type="button">
                 Edit Bicycle

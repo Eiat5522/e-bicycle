@@ -56,7 +56,7 @@ describe("configuredRideHistoryService", () => {
       }
     }));
 
-    const { configuredRideHistoryService } = require("./ride-history-service") as typeof import("./ride-history-service");
+    const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
     const rides = await configuredRideHistoryService.getRideHistory();
 
@@ -123,7 +123,7 @@ describe("configuredRideHistoryService", () => {
       }
     }));
 
-    const { configuredRideHistoryService } = require("./ride-history-service") as typeof import("./ride-history-service");
+    const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
     const ride = await configuredRideHistoryService.getRideHistoryById("ride-1");
 
@@ -184,7 +184,7 @@ describe("configuredRideHistoryService", () => {
       }
     }));
 
-    const { configuredRideHistoryService } = require("./ride-history-service") as typeof import("./ride-history-service");
+    const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
     const ride = await configuredRideHistoryService.completeDemoRide({ bikeId: "G-205" });
 
@@ -212,7 +212,7 @@ describe("configuredRideHistoryService", () => {
       }
     }));
 
-    const { configuredRideHistoryService } = require("./ride-history-service") as typeof import("./ride-history-service");
+    const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
     await expect(configuredRideHistoryService.getRideHistory()).rejects.toThrow(
       "No active rider session was found."
@@ -238,7 +238,7 @@ describe("configuredRideHistoryService", () => {
       }
     }));
 
-    const { configuredRideHistoryService } = require("./ride-history-service") as typeof import("./ride-history-service");
+    const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
     await expect(configuredRideHistoryService.getRideHistory()).rejects.toThrow(
       "Failed to fetch ride history: ride query failed"
@@ -254,7 +254,7 @@ describe("configuredRideHistoryService", () => {
       }
     }));
 
-    const { configuredRideHistoryService } = require("./ride-history-service") as typeof import("./ride-history-service");
+    const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
     const rides = await configuredRideHistoryService.getRideHistory();
 
