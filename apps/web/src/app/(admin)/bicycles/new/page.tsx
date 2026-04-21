@@ -20,7 +20,7 @@ export default async function NewBicyclePage() {
         location: "",
         longitude: 100.5018,
         model: "",
-        pricingLabel: "$1.00 / 10 min",
+        pricingLabel: "฿1.00 / 10 min",
         ratePerMinute: 0.1,
         rideClass: "",
         status: "available",

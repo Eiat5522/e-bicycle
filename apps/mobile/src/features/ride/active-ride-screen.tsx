@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
 
-import { mockActiveRide } from "@glide/api";
+import { mockActiveRide, mockBikes } from "@glide/api";
 import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
@@ -11,6 +11,8 @@ import { SurfaceCard } from "@/components/surface-card";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { hasSupabaseConfig } from "@/lib/supabase";
 import { colors, radii, spacing } from "@/theme/tokens";
+import { LiveRideRoutePreview } from "./live-ride-route-preview";
+import { useLiveRideTracker } from "./live-ride-tracker";
 import { useRideSession } from "./ride-session-context";
 
 const isTestEnvironment = process.env.NODE_ENV === "test";
@@ -21,6 +23,18 @@ export function ActiveRideScreen() {
   const { setBikeRideState } = useRideSession();
   const params = useLocalSearchParams<{ bikeId?: string; entry?: string }>();
   const bikeId = params.bikeId ?? mockActiveRide.bikeId;
+  const bike = useMemo(() => mockBikes.find((mockBike) => mockBike.id === bikeId), [bikeId]);
+  const trackerOptions = useMemo(
+    () => ({
+      bikeId,
+      ...(bike?.coordinates ? { startCoordinates: bike.coordinates } : {}),
+      ...(bike?.ratePerMinute !== undefined ? { ratePerMinute: bike.ratePerMinute } : {}),
+      startLocation: bike?.location ?? mockActiveRide.startLocation
+    }),
+    [bike?.coordinates, bike?.location, bike?.ratePerMinute, bikeId]
+  );
+  const { nearestDropoff, snapshot, trackingState, warningMessage } =
+    useLiveRideTracker(trackerOptions);
   const enteredFromUnlock = params.entry === "unlock";
   const [showArrivalOverlay, setShowArrivalOverlay] = useState(enteredFromUnlock);
   const [endRideError, setEndRideError] = useState<string | null>(null);
@@ -131,7 +145,18 @@ export function ActiveRideScreen() {
     setEndRideError(null);
 
     try {
-      const ride = await configuredRideHistoryService.completeDemoRide({ bikeId });
+      const ride = await configuredRideHistoryService.completeRide({
+        bikeId,
+        durationSec: snapshot.durationSec,
+        distanceKm: snapshot.distanceKm,
+        totalCost: snapshot.currentCost,
+        ratePerMinute: snapshot.ratePerMinute,
+        routeLabel: snapshot.routeLabel,
+        endLocation: snapshot.endLocation,
+        co2SavedKg: snapshot.co2SavedKg,
+        route: snapshot.route,
+        checkpoints: snapshot.checkpoints
+      });
       setBikeRideState(bikeId, {
         status: "available",
         activeRiderId: null
@@ -151,7 +176,7 @@ export function ActiveRideScreen() {
     <>
       <ScreenShell
         title="Glide Ride Dashboard"
-        description="The ride is live. This screen now stages the unlock handoff, live fare, and route guidance like a proper in-motion dashboard.">
+        description="The ride is live with local route tracking, fare estimates, and drop-off guidance.">
         <Animated.View
           style={{
             gap: spacing.md,
@@ -217,9 +242,9 @@ export function ActiveRideScreen() {
                   color: colors.surface,
                   fontSize: 30,
                   fontWeight: "800",
-                  letterSpacing: -0.8
+                  letterSpacing: 0
                 }}>
-                {bikeId} is unlocked and moving
+                {bikeId} is tracking live
               </Text>
               <Text
                 selectable
@@ -228,7 +253,7 @@ export function ActiveRideScreen() {
                   fontSize: 15,
                   lineHeight: 22
                 }}>
-                Cruise mode is active, billing is running, and the next safe drop zone is already tracked.
+                Live Ride Companion is recording your route, estimating fare, and watching the next clean drop-off.
               </Text>
             </View>
 
@@ -259,7 +284,7 @@ export function ActiveRideScreen() {
                     fontVariant: ["tabular-nums"],
                     fontWeight: "800"
                   }}>
-                  {formatDuration(mockActiveRide.durationSec)}
+                  {formatDuration(snapshot.durationSec)}
                 </Text>
               </View>
               <View
@@ -282,7 +307,53 @@ export function ActiveRideScreen() {
                     fontVariant: ["tabular-nums"],
                     fontWeight: "800"
                   }}>
-                  {formatCurrency(mockActiveRide.currentCost)}
+                  {formatCurrency(snapshot.currentCost)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.14)",
+                  borderCurve: "continuous",
+                  borderRadius: radii.medium,
+                  gap: 4,
+                  minWidth: 128,
+                  padding: spacing.md
+                }}>
+                <Text selectable style={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 13 }}>
+                  Distance
+                </Text>
+                <Text
+                  selectable
+                  style={{
+                    color: colors.surface,
+                    fontSize: 24,
+                    fontVariant: ["tabular-nums"],
+                    fontWeight: "800"
+                  }}>
+                  {formatDistanceKm(snapshot.distanceKm)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.14)",
+                  borderCurve: "continuous",
+                  borderRadius: radii.medium,
+                  gap: 4,
+                  minWidth: 128,
+                  padding: spacing.md
+                }}>
+                <Text selectable style={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 13 }}>
+                  CO2 saved
+                </Text>
+                <Text
+                  selectable
+                  style={{
+                    color: colors.surface,
+                    fontSize: 24,
+                    fontVariant: ["tabular-nums"],
+                    fontWeight: "800"
+                  }}>
+                  {snapshot.co2SavedKg} kg
                 </Text>
               </View>
             </View>
@@ -291,37 +362,48 @@ export function ActiveRideScreen() {
           <View style={{ gap: spacing.md }}>
             <SurfaceCard tone="accent">
               <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-                Ride corridor
+                Live Ride Companion
               </Text>
               <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-                You have already covered {formatDistanceKm(mockActiveRide.distanceKm)}. Keep heading toward the highlighted drop zone to end cleanly.
+                You have covered {formatDistanceKm(snapshot.distanceKm)} in {formatDuration(snapshot.durationSec)}. Tracking mode: {trackingState.replace(/_/g, " ")}.
               </Text>
-              {mockActiveRide.nextDropoffZoneKm !== undefined ? (
-                <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
-                  Next dropoff zone: {formatDistanceKm(mockActiveRide.nextDropoffZoneKm)}
-                </Text>
-              ) : null}
+              <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
+                Current fare estimate: {formatCurrency(snapshot.currentCost)}
+              </Text>
             </SurfaceCard>
+
+            {warningMessage ? (
+              <SurfaceCard tone="muted">
+                <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+                  Tracking fallback active
+                </Text>
+                <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                  {warningMessage}
+                </Text>
+              </SurfaceCard>
+            ) : null}
 
             <SurfaceCard>
               <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-                Ride telemetry
+                Drop-off guidance
               </Text>
               <View style={{ gap: spacing.xs }}>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                  Current cost: {formatCurrency(mockActiveRide.currentCost)}
+                  Nearest zone: {nearestDropoff.label}
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                  Distance: {formatDistanceKm(mockActiveRide.distanceKm)}
+                  Distance remaining: {formatDistanceKm(nearestDropoff.distanceKm)}
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                  Session ID: {mockActiveRide.id}
+                  Route: {snapshot.routeLabel}
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
                   Bike ID: {bikeId}
                 </Text>
               </View>
             </SurfaceCard>
+
+            <LiveRideRoutePreview snapshot={snapshot} />
           </View>
         </Animated.View>
 

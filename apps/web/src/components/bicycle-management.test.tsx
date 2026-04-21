@@ -4,7 +4,12 @@ import type { ReactNode } from "react";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
-import { BicycleEditor, type BikeRideHistoryEntry, type ManagedBike } from "./bicycle-management";
+import {
+  BicycleEditor,
+  BicycleManagementList,
+  type BikeRideHistoryEntry,
+  type ManagedBike
+} from "./bicycle-management";
 
 jest.mock("next/link", () => {
   return function MockLink({
@@ -14,9 +19,13 @@ jest.mock("next/link", () => {
   }: {
     readonly children: ReactNode;
     readonly href: string;
+    readonly scroll?: boolean;
   }) {
+    const anchorProps = { ...props };
+    delete anchorProps.scroll;
+
     return (
-      <a href={href} {...props}>
+      <a href={href} {...anchorProps}>
         {children}
       </a>
     );
@@ -51,6 +60,25 @@ const bike: ManagedBike = {
 const rideHistory: readonly BikeRideHistoryEntry[] = [];
 
 describe("BicycleEditor", () => {
+  it("falls back when an uploaded bicycle image fails to load", () => {
+    render(
+      <BicycleEditor
+        action={jest.fn(async () => undefined)}
+        bike={{
+          ...bike,
+          imageUrl: "https://storage.example.com/missing-bike.webp"
+        }}
+        mode="edit"
+        rideHistory={rideHistory}
+      />
+    );
+
+    fireEvent.error(screen.getByAltText("Glide Urban"));
+
+    expect(screen.getByText("Image unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Glide Urban media preview")).toBeInTheDocument();
+  });
+
   it("submits edits and exits edit mode after a successful update", async () => {
     const onUpdateBike = jest.fn(async () => undefined);
 
@@ -108,5 +136,34 @@ describe("BicycleEditor", () => {
 
     expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "Close bicycle editor" })).not.toBeInTheDocument();
+  });
+});
+
+describe("BicycleManagementList", () => {
+  it("renders a fleet empty state", () => {
+    render(<BicycleManagementList bikes={[]} rideCounts={{}} />);
+
+    expect(screen.getByRole("heading", { name: "No bicycles yet" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Add Bicycle" })).toHaveAttribute("href", "/bicycles/new");
+  });
+
+  it("falls back when a bicycle card image fails to load", () => {
+    render(
+      <BicycleManagementList
+        bikes={[
+          {
+            ...bike,
+            imageUrl: "https://storage.example.com/broken-card-image.webp"
+          }
+        ]}
+        rideCounts={{
+          [bike.id]: 0
+        }}
+      />
+    );
+
+    fireEvent.error(screen.getByAltText("Glide Urban"));
+
+    expect(screen.getByText("Image unavailable")).toBeInTheDocument();
   });
 });

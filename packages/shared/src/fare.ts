@@ -1,9 +1,9 @@
 export function calculateBillableMinutes(durationSec: number): number {
-  if (!Number.isFinite(durationSec) || durationSec <= 0) {
+  if (!Number.isFinite(durationSec) || durationSec < 0) {
     return 0;
   }
 
-  return Math.ceil(durationSec / 60);
+  return Math.max(1, Math.ceil(durationSec / 60));
 }
 
 export function calculateRideRevenue(input: {

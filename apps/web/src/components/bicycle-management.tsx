@@ -7,7 +7,7 @@ import type {
 } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import Image from "next/image";
+import Image, { type ImageLoaderProps } from "next/image";
 import Link from "next/link";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
@@ -98,6 +98,101 @@ function BikeStatusBadge({ status }: { readonly status: ManagedBike["status"] })
   );
 }
 
+function passthroughImageLoader({ src }: ImageLoaderProps) {
+  return src;
+}
+
+function BikeImageFallback({
+  model,
+  message
+}: {
+  readonly model: string;
+  readonly message: string;
+}) {
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+      <div
+        aria-hidden="true"
+        className="grid h-14 w-14 place-items-center rounded-[1rem] bg-[var(--clay-accent-soft)] text-base font-black text-[var(--clay-accent-strong)] shadow-[inset_1px_1px_0_rgba(255,255,255,0.7)]">
+        GL
+      </div>
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-semibold text-[var(--foreground)]">{message}</p>
+        <p className="text-xs leading-5 text-[var(--foreground-muted)]">{model} media preview</p>
+      </div>
+    </div>
+  );
+}
+
+function BikeImageFrame({
+  className,
+  imageUrl,
+  model,
+  sizes
+}: {
+  readonly className: string;
+  readonly imageUrl: string | null;
+  readonly model: string;
+  readonly sizes: string;
+}) {
+  return (
+    <div className={`clay-inset relative overflow-hidden ${className}`}>
+      <BikeImageContent
+        imageUrl={imageUrl}
+        key={imageUrl ?? "empty-image"}
+        model={model}
+        sizes={sizes}
+      />
+    </div>
+  );
+}
+
+function BikeImageContent({
+  imageUrl,
+  model,
+  sizes
+}: {
+  readonly imageUrl: string | null;
+  readonly model: string;
+  readonly sizes: string;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const showImage = Boolean(imageUrl) && !imageFailed;
+
+  return (
+    <>
+      {showImage ? (
+        <>
+          {!imageLoaded ? <div aria-hidden="true" className="dashboard-skeleton absolute inset-0" /> : null}
+          <Image
+            alt={model}
+            className={`object-cover transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+            fill
+            loader={passthroughImageLoader}
+            onError={() => {
+              setImageFailed(true);
+              setImageLoaded(false);
+            }}
+            onLoad={() => {
+              setImageLoaded(true);
+            }}
+            sizes={sizes}
+            src={imageUrl!}
+            unoptimized
+          />
+        </>
+      ) : (
+        <BikeImageFallback
+          message={imageUrl ? "Image unavailable" : "No image uploaded"}
+          model={model}
+        />
+      )}
+    </>
+  );
+}
+
 export function BicycleManagementList({
   bikes,
   rideCounts
@@ -128,85 +223,94 @@ export function BicycleManagementList({
         </Link>
       </div>
 
-      <div className="grid gap-4">
-        {bikes.map((bike) => (
-          <article
-            className="clay-card grid gap-5 p-6 md:grid-cols-[180px_minmax(0,1fr)_auto]"
-            key={bike.id}>
-            <div className="clay-inset relative min-h-44 overflow-hidden rounded-[1.5rem]">
-              {bike.imageUrl ? (
-                <Image
-                  alt={bike.model}
-                  fill
-                  className="object-cover"
-                  src={bike.imageUrl}
-                  sizes="(max-width: 768px) 100vw, 180px"
-                />
-              ) : (
-                <div className="flex h-full min-h-44 items-center justify-center px-6 text-center text-sm text-[var(--foreground-muted)]">
-                  No image uploaded
-                </div>
-              )}
+      {bikes.length === 0 ? (
+        <div className="clay-card grid min-h-64 place-items-center p-8 text-center">
+          <div className="flex max-w-md flex-col items-center gap-3">
+            <div
+              aria-hidden="true"
+              className="grid h-16 w-16 place-items-center rounded-[1.25rem] bg-[var(--clay-accent-soft)] text-lg font-black text-[var(--clay-accent-strong)] shadow-[inset_1px_1px_0_rgba(255,255,255,0.7)]">
+              GL
             </div>
+            <h3 className="text-2xl font-black tracking-[-0.03em] text-[var(--foreground)]">
+              No bicycles yet
+            </h3>
+            <p className="text-sm leading-6 text-[var(--foreground-muted)]">
+              Add a fleet record to publish the first bicycle into the admin inventory.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {bikes.map((bike) => (
+            <article
+              className="clay-card grid gap-5 p-6 md:grid-cols-[180px_minmax(0,1fr)_auto]"
+              key={bike.id}>
+              <BikeImageFrame
+                className="min-h-44 rounded-[1.5rem]"
+                imageUrl={bike.imageUrl}
+                model={bike.model}
+                sizes="(max-width: 768px) 100vw, 180px"
+              />
 
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-start gap-3">
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-2xl font-black tracking-[-0.03em] text-[var(--foreground)]">
-                      {bike.model}
-                    </h3>
-                    <BikeStatusBadge status={bike.status} />
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-2xl font-black tracking-[-0.03em] text-[var(--foreground)]">
+                        {bike.model}
+                      </h3>
+                      <BikeStatusBadge status={bike.status} />
+                    </div>
+                    <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                      {bike.id}
+                      {bike.rideClass ? ` · ${bike.rideClass}` : ""}
+                      {` · ${bike.location}`}
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-[var(--foreground-muted)]">
+                      {bike.status === "in_use"
+                        ? getActiveRiderText(bike)
+                        : bike.status === "maintenance"
+                          ? "Currently offline for maintenance"
+                          : bike.status === "reserved"
+                            ? "Reserved and awaiting unlock"
+                            : "Available for riders"}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-                    {bike.id}
-                    {bike.rideClass ? ` · ${bike.rideClass}` : ""}
-                    {` · ${bike.location}`}
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-[var(--foreground-muted)]">
-                    {bike.status === "in_use"
-                      ? getActiveRiderText(bike)
-                      : bike.status === "maintenance"
-                        ? "Currently offline for maintenance"
-                        : bike.status === "reserved"
-                          ? "Reserved and awaiting unlock"
-                          : "Available for riders"}
-                  </p>
                 </div>
+
+                <div className="grid gap-3 text-sm text-[var(--foreground-muted)] sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <p className="font-semibold text-[var(--foreground)]">{bike.pricingLabel}</p>
+                    <p>Pricing</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--foreground)]">{bike.topSpeedKmh} km/h</p>
+                    <p>Top speed</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-[var(--foreground)]">{rideCounts[bike.id] ?? 0}</p>
+                    <p>Ride history records</p>
+                  </div>
+                </div>
+
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  Last reported {formatAdminDate(bike.lastReportedAt)} · Updated{" "}
+                  {formatAdminDate(bike.updatedAt)}
+                </p>
               </div>
 
-              <div className="grid gap-3 text-sm text-[var(--foreground-muted)] sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <p className="font-semibold text-[var(--foreground)]">{bike.pricingLabel}</p>
-                  <p>Pricing</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-[var(--foreground)]">{bike.topSpeedKmh} km/h</p>
-                  <p>Top speed</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-[var(--foreground)]">{rideCounts[bike.id] ?? 0}</p>
-                  <p>Ride history records</p>
-                </div>
+              <div className="flex items-start justify-start md:justify-end">
+                <Link
+                  className="clay-button inline-flex px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
+                  href={`/bicycles/${bike.id}`}
+                  scroll={false}>
+                  View Details
+                </Link>
               </div>
-
-              <p className="text-sm text-[var(--foreground-muted)]">
-                Last reported {formatAdminDate(bike.lastReportedAt)} · Updated{" "}
-                {formatAdminDate(bike.updatedAt)}
-              </p>
-            </div>
-
-            <div className="flex items-start justify-start md:justify-end">
-              <Link
-                className="clay-button inline-flex px-4 py-3 text-sm font-semibold text-[var(--foreground)]"
-                href={`/bicycles/${bike.id}`}
-                scroll={false}>
-                View Details
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -546,21 +650,12 @@ export function BicycleEditor({
           </div>
 
           <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="clay-inset relative min-h-52 overflow-hidden rounded-[1.75rem]">
-              {bike.imageUrl ? (
-                <Image
-                  alt={bike.model}
-                  fill
-                  className="object-cover"
-                  src={bike.imageUrl}
-                  sizes="(max-width: 768px) 100vw, 220px"
-                />
-              ) : (
-                <div className="flex h-full min-h-52 items-center justify-center px-6 text-center text-sm text-[var(--foreground-muted)]">
-                  No image uploaded
-                </div>
-              )}
-            </div>
+            <BikeImageFrame
+              className="min-h-52 rounded-[1.75rem]"
+              imageUrl={bike.imageUrl}
+              model={bike.model}
+              sizes="(max-width: 768px) 100vw, 220px"
+            />
 
             <Field label="Upload Bicycle Image">
               <input

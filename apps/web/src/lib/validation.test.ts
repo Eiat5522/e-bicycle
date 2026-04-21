@@ -38,7 +38,7 @@ function createBikeFormData(overrides?: Record<string, string>) {
   formData.set("bikeId", "g-701");
   formData.set("model", "Glide Sprint");
   formData.set("rideClass", "Urban");
-  formData.set("pricingLabel", "$1.10 / 10 min");
+  formData.set("pricingLabel", "฿1.10 / 10 min");
   formData.set("ratePerMinute", "0.11");
   formData.set("status", "available");
   formData.set("location", "Central World");
@@ -76,7 +76,7 @@ describe("validateBikeForm", () => {
       location: "Central World",
       longitude: 100.5393,
       model: "Glide Sprint",
-      pricingLabel: "$1.10 / 10 min",
+      pricingLabel: "฿1.10 / 10 min",
       ratePerMinute: 0.11,
       rideClass: "Urban",
       status: "available",

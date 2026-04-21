@@ -22,7 +22,21 @@ type BikeRideHistoryInsert = Database["public"]["Tables"]["bike_ride_history"]["
 export interface ConfiguredRideHistoryService {
   getRideHistory(): Promise<readonly RideHistoryItem[]>;
   getRideHistoryById(id: string): Promise<RideHistoryItem | undefined>;
+  completeRide(input: CompleteRideInput): Promise<RideHistoryItem>;
   completeDemoRide(input: { bikeId: string }): Promise<RideHistoryItem>;
+}
+
+export interface CompleteRideInput {
+  readonly bikeId: string;
+  readonly durationSec?: number;
+  readonly distanceKm?: number;
+  readonly totalCost?: number;
+  readonly ratePerMinute?: number;
+  readonly routeLabel?: string;
+  readonly endLocation?: string;
+  readonly co2SavedKg?: number;
+  readonly route?: readonly Coordinates[];
+  readonly checkpoints?: readonly RideHistoryCheckpoint[];
 }
 
 async function getAuthenticatedUserId() {
@@ -151,28 +165,28 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
       return mapRideHistoryRow(data, bikeModelMap);
     },
 
-    async completeDemoRide({ bikeId }) {
+    async completeRide(input) {
       const userId = await getAuthenticatedUserId();
 
       if (!userId) {
         throw new Error("No active rider session was found.");
       }
 
-      const route = (mockRideHistory[0]?.route ?? []) as unknown as NonNullable<
+      const route = (input.route ?? mockRideHistory[0]?.route ?? []) as unknown as NonNullable<
         BikeRideHistoryInsert["route"]
       >;
-      const checkpoints = (mockRideHistory[0]?.checkpoints ?? []) as unknown as NonNullable<
+      const checkpoints = (input.checkpoints ?? mockRideHistory[0]?.checkpoints ?? []) as unknown as NonNullable<
         BikeRideHistoryInsert["checkpoints"]
       >;
 
       const { data, error } = await supabase.rpc("complete_ride", {
-        p_bike_id: bikeId,
-        p_distance_km: mockRideSummary.distanceKm,
-        p_end_location: mockActiveRide.endLocation ?? "Benjakitti Park",
-        p_route_label: mockRideSummary.routeLabel,
+        p_bike_id: input.bikeId,
+        p_distance_km: input.distanceKm ?? mockRideSummary.distanceKm,
+        p_end_location: input.endLocation ?? mockActiveRide.endLocation ?? "Benjakitti Park",
+        p_route_label: input.routeLabel ?? mockRideSummary.routeLabel,
         p_route: route,
         p_checkpoints: checkpoints,
-        p_co2_saved_kg: mockRideSummary.co2SavedKg
+        p_co2_saved_kg: input.co2SavedKg ?? mockRideSummary.co2SavedKg
       });
 
       if (error) {
@@ -186,6 +200,10 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
       const bikeModelMap = await getBikeModelMap([data.bike_id]);
 
       return mapRideHistoryRow(data, bikeModelMap);
+    },
+
+    async completeDemoRide({ bikeId }) {
+      return this.completeRide({ bikeId });
     }
   };
 }
@@ -198,41 +216,56 @@ function createMockRideHistoryService(): ConfiguredRideHistoryService {
     async getRideHistoryById(id: string) {
       return getMockRideHistoryById(id);
     },
-    async completeDemoRide({ bikeId }) {
-      const ratePerMinute = 0.17;
-      const billableMinutes = calculateBillableMinutes(mockActiveRide.durationSec);
+    async completeRide(input) {
+      const ratePerMinute = input.ratePerMinute ?? 0.17;
+      const durationSec = input.durationSec ?? mockActiveRide.durationSec;
+      const distanceKm = input.distanceKm ?? mockRideSummary.distanceKm;
+      const billableMinutes = calculateBillableMinutes(durationSec);
       const totalCost = calculateRideRevenue({
-        durationSec: mockActiveRide.durationSec,
+        durationSec,
         ratePerMinute
       });
 
       return {
         ...(mockRideHistory[0] ?? {
           id: `mock-ride-${Date.now()}`,
-          bikeId,
-          bikeModel: bikeId,
+          bikeId: input.bikeId,
+          bikeModel: input.bikeId,
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
-          durationSec: mockActiveRide.durationSec,
-          distanceKm: mockRideSummary.distanceKm,
-          totalCost,
+          durationSec,
+          distanceKm,
+          totalCost: input.totalCost ?? totalCost,
           ratePerMinute,
           billableMinutes,
           currencyCode: "THB",
           walletTransactionId: null,
           fareCalculationMethod: "ceil_minutes_v1",
-          co2SavedKg: mockRideSummary.co2SavedKg,
+          co2SavedKg: input.co2SavedKg ?? mockRideSummary.co2SavedKg,
           startLocation: mockActiveRide.startLocation,
-          endLocation: mockActiveRide.endLocation ?? "Benjakitti Park",
-          routeLabel: mockRideSummary.routeLabel,
+          endLocation: input.endLocation ?? mockActiveRide.endLocation ?? "Benjakitti Park",
+          routeLabel: input.routeLabel ?? mockRideSummary.routeLabel,
           paymentLabel: "Charged to your Glide wallet",
-          route: [],
-          checkpoints: []
+          route: input.route ?? [],
+          checkpoints: input.checkpoints ?? []
         }),
         id: `mock-ride-${Date.now()}`,
-        bikeId,
-        bikeModel: mockRideHistory[0]?.bikeModel ?? bikeId
+        bikeId: input.bikeId,
+        bikeModel: mockRideHistory[0]?.bikeModel ?? input.bikeId,
+        durationSec,
+        distanceKm,
+        totalCost: input.totalCost ?? totalCost,
+        ratePerMinute,
+        billableMinutes,
+        co2SavedKg: input.co2SavedKg ?? mockRideSummary.co2SavedKg,
+        endLocation: input.endLocation ?? mockActiveRide.endLocation ?? "Benjakitti Park",
+        routeLabel: input.routeLabel ?? mockRideSummary.routeLabel,
+        route: input.route ?? mockRideHistory[0]?.route ?? [],
+        checkpoints: input.checkpoints ?? mockRideHistory[0]?.checkpoints ?? []
       };
+    },
+    async completeDemoRide({ bikeId }) {
+      return this.completeRide({ bikeId });
     }
   };
 }

@@ -5,12 +5,13 @@ import {
 
 describe("fare calculation", () => {
   it("rounds partial ride durations up to the next billable minute", () => {
-    expect(calculateBillableMinutes(0)).toBe(0);
+    expect(calculateBillableMinutes(0)).toBe(1);
     expect(calculateBillableMinutes(60)).toBe(1);
     expect(calculateBillableMinutes(61)).toBe(2);
   });
 
   it("calculates ride revenue from billable minutes and rate per minute", () => {
+    expect(calculateRideRevenue({ durationSec: 0, ratePerMinute: 0.09 })).toBeCloseTo(0.09, 2);
     expect(calculateRideRevenue({ durationSec: 750, ratePerMinute: 0.09 })).toBeCloseTo(1.17, 2);
   });
 
