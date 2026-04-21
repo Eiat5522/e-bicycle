@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --clay-base: #f3ecff;
@@ -211,6 +212,59 @@ textarea {
     -6px -6px 14px rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(var(--clay-blur-radius));
   -webkit-backdrop-filter: blur(var(--clay-blur-radius));
+}
+
+.glide-route-map {
+  min-height: 280px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--clay-radius-md);
+  background:
+    linear-gradient(145deg, rgba(246, 240, 255, 0.92), rgba(222, 246, 239, 0.72)),
+    var(--clay-background);
+}
+
+.glide-route-map .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--foreground-muted);
+  font-size: 10px;
+}
+
+.glide-route-marker {
+  background: transparent;
+  border: 0;
+}
+
+.glide-route-marker__pin {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.96);
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 8px rgba(128, 90, 213, 0.16),
+    0 10px 22px rgba(45, 31, 79, 0.24);
+}
+
+.glide-route-marker__pin--start {
+  background: var(--clay-success);
+}
+
+.glide-route-marker__pin--checkpoint {
+  background: var(--clay-accent);
+}
+
+.glide-route-marker__pin--finish,
+.glide-route-marker__pin--current {
+  background: var(--coral);
+}
+
+.glide-route-marker__pin--active {
+  width: 24px;
+  height: 24px;
+  box-shadow:
+    0 0 0 10px rgba(217, 115, 140, 0.2),
+    0 14px 28px rgba(45, 31, 79, 0.28);
 }
 
 .clay-shell {

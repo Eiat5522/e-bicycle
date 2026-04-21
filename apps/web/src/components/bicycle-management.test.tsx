@@ -59,6 +59,54 @@ const bike: ManagedBike = {
 
 const rideHistory: readonly BikeRideHistoryEntry[] = [];
 
+const rideWithRoute = {
+  id: "ride-history-1",
+  startedAt: "2026-04-04T10:15:00.000Z",
+  completedAt: "2026-04-04T10:41:00.000Z",
+  durationSec: 1560,
+  distanceKm: 3.4,
+  totalCost: 4.8,
+  ratePerMinute: 0.1846,
+  billableMinutes: 26,
+  currencyCode: "THB",
+  walletTransactionId: "txn-1",
+  fareCalculationMethod: "ceil_minutes_v1",
+  co2SavedKg: 0.9,
+  startLocation: "Asok Interchange",
+  endLocation: "Benjakitti Park",
+  routeLabel: "Asok Interchange to Benjakitti Park",
+  paymentLabel: "Charged to Visa **** 4242",
+  route: [
+    { latitude: 13.7372, longitude: 100.5606 },
+    { latitude: 13.7354, longitude: 100.5544 },
+    { latitude: 13.7319, longitude: 100.5459 }
+  ],
+  checkpoints: [
+    {
+      id: "ride-history-1-start",
+      label: "Unlock",
+      description: "Bike unlocked near the BTS exit.",
+      coordinates: { latitude: 13.7372, longitude: 100.5606 },
+      elapsedSec: 0
+    },
+    {
+      id: "ride-history-1-end",
+      label: "Drop-off",
+      description: "Ride ended at the park gate station.",
+      coordinates: { latitude: 13.7319, longitude: 100.5459 },
+      elapsedSec: 1560
+    }
+  ]
+} satisfies BikeRideHistoryEntry;
+
+const rideWithoutRoute = {
+  ...rideWithRoute,
+  id: "ride-history-empty",
+  routeLabel: "Route without telemetry",
+  route: [],
+  checkpoints: []
+} satisfies BikeRideHistoryEntry;
+
 describe("BicycleEditor", () => {
   it("falls back when an uploaded bicycle image fails to load", () => {
     render(
@@ -136,6 +184,72 @@ describe("BicycleEditor", () => {
 
     expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "Close bicycle editor" })).not.toBeInTheDocument();
+  });
+
+  it("expands a route map and lets admins inspect ride checkpoints", () => {
+    render(
+      <BicycleEditor
+        action={jest.fn(async () => undefined)}
+        bike={bike}
+        mode="edit"
+        rideHistory={[rideWithRoute]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View route for Asok Interchange to Benjakitti Park" }));
+
+    expect(screen.getByRole("img", { name: "Route map for Asok Interchange to Benjakitti Park" })).toBeInTheDocument();
+    expect(screen.getByTestId("leaflet-route-map")).toHaveAttribute("data-map-provider", "leaflet");
+    expect(screen.getByRole("button", { name: "Play replay" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hide route for Asok Interchange to Benjakitti Park" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Drop-off checkpoint, 26 min" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Drop-off checkpoint, 26 min" }));
+
+    expect(screen.getByText("Ride ended at the park gate station.")).toBeInTheDocument();
+  });
+
+  it("keeps only one ride route map expanded at a time", () => {
+    const secondRide = {
+      ...rideWithRoute,
+      id: "ride-history-2",
+      routeLabel: "Silom lunch loop",
+      startLocation: "Silom Complex",
+      endLocation: "Lumphini Park West Gate"
+    } satisfies BikeRideHistoryEntry;
+
+    render(
+      <BicycleEditor
+        action={jest.fn(async () => undefined)}
+        bike={bike}
+        mode="edit"
+        rideHistory={[rideWithRoute, secondRide]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View route for Asok Interchange to Benjakitti Park" }));
+    expect(screen.getByRole("img", { name: "Route map for Asok Interchange to Benjakitti Park" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "View route for Silom lunch loop" }));
+
+    expect(screen.queryByRole("img", { name: "Route map for Asok Interchange to Benjakitti Park" })).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Route map for Silom lunch loop" })).toBeInTheDocument();
+  });
+
+  it("shows a route unavailable state for ride records without route coordinates", () => {
+    render(
+      <BicycleEditor
+        action={jest.fn(async () => undefined)}
+        bike={bike}
+        mode="edit"
+        rideHistory={[rideWithoutRoute]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View route for Route without telemetry" }));
+
+    expect(screen.getByText("Route unavailable")).toBeInTheDocument();
+    expect(screen.getByText("This ride record does not include coordinate telemetry yet.")).toBeInTheDocument();
   });
 });
 

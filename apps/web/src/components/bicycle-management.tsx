@@ -1,11 +1,13 @@
 "use client";
 
+import type { Coordinates, RideHistoryCheckpoint } from "@glide/shared";
+import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import type {
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes
 } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Image, { type ImageLoaderProps } from "next/image";
 import Link from "next/link";
@@ -51,6 +53,8 @@ export interface BikeRideHistoryEntry {
   readonly endLocation: string;
   readonly routeLabel: string;
   readonly paymentLabel: string;
+  readonly route: readonly Coordinates[];
+  readonly checkpoints: readonly RideHistoryCheckpoint[];
 }
 
 const statusClasses: Record<ManagedBike["status"], string> = {
@@ -59,6 +63,8 @@ const statusClasses: Record<ManagedBike["status"], string> = {
   in_use: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
   maintenance: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]"
 };
+const routeReplayIntervalMs = 900;
+const coordinateEpsilon = 1e-9;
 
 function getActiveRiderText(bike: ManagedBike) {
   if (!bike.activeRiderId) {
@@ -87,6 +93,363 @@ function formatMoney(amount: number, currencyCode: string, locale?: string) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(amount);
+}
+
+function getElapsedLabel(elapsedSec: number) {
+  if (elapsedSec === 0) {
+    return "0 min";
+  }
+
+  return formatDuration(elapsedSec);
+}
+
+function getSyntheticCheckpoints(ride: BikeRideHistoryEntry): readonly RideHistoryCheckpoint[] {
+  if (ride.checkpoints.length > 0) {
+    return ride.checkpoints;
+  }
+
+  const start = ride.route[0];
+  const end = ride.route[ride.route.length - 1];
+
+  if (!start || !end) {
+    return [];
+  }
+
+  return [
+    {
+      id: `${ride.id}-route-start`,
+      label: "Start",
+      description: `Ride started at ${ride.startLocation}.`,
+      coordinates: start,
+      elapsedSec: 0
+    },
+    {
+      id: `${ride.id}-route-end`,
+      label: "End",
+      description: `Ride ended at ${ride.endLocation}.`,
+      coordinates: end,
+      elapsedSec: ride.durationSec
+    }
+  ];
+}
+
+function findRouteIndex(route: readonly Coordinates[], coordinates: Coordinates) {
+  return route.findIndex(
+    (point) =>
+      Math.abs(point.latitude - coordinates.latitude) < coordinateEpsilon &&
+      Math.abs(point.longitude - coordinates.longitude) < coordinateEpsilon
+  );
+}
+
+function getCurrentCheckpoint(
+  route: readonly Coordinates[],
+  checkpoints: readonly RideHistoryCheckpoint[],
+  currentPointIndex: number
+) {
+  return (
+    checkpoints
+      .map((checkpoint) => ({
+        checkpoint,
+        routeIndex: findRouteIndex(route, checkpoint.coordinates)
+      }))
+      .filter((entry) => entry.routeIndex >= 0 && entry.routeIndex <= currentPointIndex)
+      .at(-1)?.checkpoint ?? checkpoints[0] ?? null
+  );
+}
+
+function RouteUnavailable() {
+  return (
+    <div className="clay-inset mt-4 px-4 py-5 text-sm text-[var(--foreground-muted)]">
+      <p className="font-semibold text-[var(--foreground)]">Route unavailable</p>
+      <p className="mt-1 leading-6">This ride record does not include coordinate telemetry yet.</p>
+    </div>
+  );
+}
+
+function createMarkerIcon(
+  leaflet: typeof import("leaflet"),
+  tone: "start" | "checkpoint" | "finish" | "current",
+  isActive = false
+) {
+  return leaflet.divIcon({
+    className: "glide-route-marker",
+    html: `<span class="glide-route-marker__pin glide-route-marker__pin--${tone}${isActive ? " glide-route-marker__pin--active" : ""}"></span>`,
+    iconAnchor: [12, 12],
+    iconSize: [24, 24]
+  });
+}
+
+function RideRouteMap({ ride }: { readonly ride: BikeRideHistoryEntry }) {
+  const checkpoints = useMemo(() => getSyntheticCheckpoints(ride), [ride]);
+  const mapElementRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<LeafletMap | null>(null);
+  const currentPointRef = useRef<Coordinates | null>(null);
+  const replayMarkerRef = useRef<LeafletMarker | null>(null);
+  const [currentPointIndex, setCurrentPointIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const currentPoint = ride.route[currentPointIndex] ?? ride.route[0] ?? null;
+  const currentCheckpoint = useMemo(
+    () => getCurrentCheckpoint(ride.route, checkpoints, currentPointIndex),
+    [checkpoints, currentPointIndex, ride.route]
+  );
+  const progressPercent =
+    ride.route.length <= 1 ? 100 : Math.round((currentPointIndex / (ride.route.length - 1)) * 100);
+
+  useEffect(() => {
+    setCurrentPointIndex(0);
+    setIsPlaying(false);
+  }, [ride.id]);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      return undefined;
+    }
+
+    if (currentPointIndex >= ride.route.length - 1) {
+      setIsPlaying(false);
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setCurrentPointIndex((index) => (index >= ride.route.length - 1 ? index : index + 1));
+    }, routeReplayIntervalMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [currentPointIndex, isPlaying, ride.route.length]);
+
+  useEffect(() => {
+    currentPointRef.current = currentPoint;
+  }, [currentPoint]);
+
+  useEffect(() => {
+    const mapElement = mapElementRef.current;
+
+    if (!mapElement || ride.route.length === 0) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function renderMap() {
+      const leaflet = await import("leaflet");
+
+      if (cancelled || !mapElementRef.current) {
+        return;
+      }
+
+      mapRef.current?.remove();
+      replayMarkerRef.current = null;
+
+      const routeCoordinates = ride.route.map(
+        (point) => [point.latitude, point.longitude] as [number, number]
+      );
+      const map = leaflet.map(mapElementRef.current, {
+        attributionControl: true,
+        scrollWheelZoom: true,
+        zoomControl: true
+      });
+      mapRef.current = map;
+
+      leaflet
+        .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        })
+        .addTo(map);
+
+      leaflet
+        .polyline(routeCoordinates, {
+          color: "#1f9d7a",
+          lineCap: "round",
+          lineJoin: "round",
+          opacity: 0.92,
+          weight: 5
+        })
+        .addTo(map);
+
+      const startPoint = ride.route[0];
+      const endPoint = ride.route[ride.route.length - 1] ?? startPoint;
+
+      if (startPoint) {
+        leaflet
+          .marker([startPoint.latitude, startPoint.longitude], {
+            icon: createMarkerIcon(leaflet, "start")
+          })
+          .bindTooltip("Start")
+          .addTo(map);
+      }
+
+      if (endPoint) {
+        leaflet
+          .marker([endPoint.latitude, endPoint.longitude], {
+            icon: createMarkerIcon(leaflet, "finish")
+          })
+          .bindTooltip("Finish")
+          .addTo(map);
+      }
+
+      checkpoints.forEach((checkpoint) => {
+        const routeIndex = findRouteIndex(ride.route, checkpoint.coordinates);
+
+        leaflet
+          .marker([checkpoint.coordinates.latitude, checkpoint.coordinates.longitude], {
+            icon: createMarkerIcon(leaflet, "checkpoint")
+          })
+          .bindTooltip(`${checkpoint.label} · ${getElapsedLabel(checkpoint.elapsedSec)}`)
+          .on("click", () => {
+            setIsPlaying(false);
+            setCurrentPointIndex(routeIndex >= 0 ? routeIndex : 0);
+          })
+          .addTo(map);
+      });
+
+      if (startPoint) {
+        const replayPoint = currentPointRef.current ?? startPoint;
+
+        replayMarkerRef.current = leaflet
+          .marker([replayPoint.latitude, replayPoint.longitude], {
+            icon: createMarkerIcon(leaflet, "current", true)
+          })
+          .bindTooltip("Replay position")
+          .addTo(map);
+      }
+
+      map.fitBounds(leaflet.latLngBounds(routeCoordinates).pad(0.2), {
+        maxZoom: 16
+      });
+    }
+
+    void renderMap();
+
+    return () => {
+      cancelled = true;
+      replayMarkerRef.current = null;
+      mapRef.current?.remove();
+      mapRef.current = null;
+    };
+  }, [checkpoints, ride.id, ride.route]);
+
+  useEffect(() => {
+    const replayMarker = replayMarkerRef.current;
+    const replayPoint = currentPoint;
+
+    if (!replayMarker || !replayPoint) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function updateReplayMarker(marker: LeafletMarker, point: Coordinates) {
+      const leaflet = await import("leaflet");
+
+      if (cancelled) {
+        return;
+      }
+
+      marker.setLatLng([point.latitude, point.longitude]);
+      marker.setIcon(createMarkerIcon(leaflet, "current", currentPointIndex >= 0));
+    }
+
+    void updateReplayMarker(replayMarker, replayPoint);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPoint, currentPointIndex]);
+
+  if (ride.route.length === 0) {
+    return <RouteUnavailable />;
+  }
+
+  const controlLabel =
+    isPlaying ? "Pause replay" : currentPointIndex >= ride.route.length - 1 ? "Replay route" : "Play replay";
+
+  function handleTogglePlayback() {
+    if (isPlaying) {
+      setIsPlaying(false);
+      return;
+    }
+
+    if (currentPointIndex >= ride.route.length - 1) {
+      setCurrentPointIndex(0);
+    }
+
+    setIsPlaying(true);
+  }
+
+  function handleSelectCheckpoint(checkpoint: RideHistoryCheckpoint) {
+    const routeIndex = findRouteIndex(ride.route, checkpoint.coordinates);
+    setIsPlaying(false);
+    setCurrentPointIndex(routeIndex >= 0 ? routeIndex : 0);
+  }
+
+  return (
+    <div className="mt-4 grid gap-4">
+      <div className="clay-inset overflow-hidden p-3">
+        <div
+          aria-label={`Route map for ${ride.routeLabel}`}
+          className="glide-route-map"
+          data-map-provider="leaflet"
+          data-testid="leaflet-route-map"
+          ref={mapElementRef}
+          role="img"
+        />
+      </div>
+
+      {checkpoints.length > 0 ? (
+        <div className="grid gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-[var(--foreground-muted)]">
+              Replay progress: {progressPercent}%
+            </p>
+            <button
+              className="clay-button clay-button-primary px-4 py-2 text-sm font-semibold"
+              onClick={handleTogglePlayback}
+              type="button">
+              {controlLabel}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {checkpoints.map((checkpoint) => {
+              const isSelected = checkpoint.id === currentCheckpoint?.id;
+
+              return (
+                <button
+                  aria-pressed={isSelected}
+                  className={
+                    isSelected
+                      ? "clay-button clay-button-primary px-3 py-2 text-xs font-semibold"
+                      : "clay-button px-3 py-2 text-xs font-semibold text-[var(--foreground)]"
+                  }
+                  key={checkpoint.id}
+                  onClick={() => handleSelectCheckpoint(checkpoint)}
+                  type="button">
+                  <span className="sr-only">
+                    {checkpoint.label} checkpoint, {getElapsedLabel(checkpoint.elapsedSec)}
+                  </span>
+                  <span aria-hidden="true">{checkpoint.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {currentCheckpoint ? (
+            <div className="rounded-[var(--clay-radius-sm)] border border-[var(--clay-border-subtle)] bg-white/50 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-[var(--foreground)]">{currentCheckpoint.label}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--clay-accent-strong)]">
+                  {getElapsedLabel(currentCheckpoint.elapsedSec)}
+                </p>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-[var(--foreground-muted)]">
+                {currentCheckpoint.description}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function BikeStatusBadge({ status }: { readonly status: ManagedBike["status"] }) {
@@ -404,6 +767,7 @@ export function BicycleEditor({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<BicycleEditorFormState>(initialBicycleEditorFormState);
   const [isPending, setIsPending] = useState(false);
+  const [expandedRideId, setExpandedRideId] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -748,44 +1112,60 @@ export function BicycleEditor({
                 No rides have been recorded for this bicycle yet.
               </div>
             ) : (
-              rideHistory.map((ride) => (
-                <article className="clay-inset px-5 py-4" key={ride.id}>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex flex-col gap-1">
-                        <h4 className="text-base font-semibold text-[var(--foreground)]">
-                          {ride.routeLabel}
-                        </h4>
-                        <p className="text-sm text-[var(--foreground-muted)]">
-                          {ride.startLocation} to {ride.endLocation}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-base font-semibold text-[var(--foreground)]">
-                          {formatMoney(ride.totalCost, ride.currencyCode)}
-                        </p>
-                        <p className="text-sm text-[var(--foreground-muted)]">
-                          {formatAdminDate(ride.completedAt)}
-                        </p>
-                      </div>
-                    </div>
+              rideHistory.map((ride) => {
+                const isExpanded = expandedRideId === ride.id;
 
-                    <div className="flex flex-wrap gap-2 text-sm text-[var(--foreground-muted)]">
-                      <span>{formatDuration(ride.durationSec)}</span>
-                      <span>•</span>
-                      <span>{formatDistance(ride.distanceKm)}</span>
-                      <span>•</span>
-                      <span>{ride.billableMinutes} billable min</span>
-                      <span>•</span>
-                      <span>{formatMoney(ride.ratePerMinute, ride.currencyCode)}/min</span>
-                      <span>•</span>
-                      <span>{ride.co2SavedKg.toFixed(1)} kg CO2 saved</span>
-                    </div>
+                return (
+                  <article className="clay-inset px-5 py-4" key={ride.id}>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-1">
+                          <h4 className="text-base font-semibold text-[var(--foreground)]">
+                            {ride.routeLabel}
+                          </h4>
+                          <p className="text-sm text-[var(--foreground-muted)]">
+                            {ride.startLocation} to {ride.endLocation}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-base font-semibold text-[var(--foreground)]">
+                            {formatMoney(ride.totalCost, ride.currencyCode)}
+                          </p>
+                          <p className="text-sm text-[var(--foreground-muted)]">
+                            {formatAdminDate(ride.completedAt)}
+                          </p>
+                        </div>
+                      </div>
 
-                    <p className="text-sm text-[var(--foreground-muted)]">{ride.paymentLabel}</p>
-                  </div>
-                </article>
-              ))
+                      <div className="flex flex-wrap gap-2 text-sm text-[var(--foreground-muted)]">
+                        <span>{formatDuration(ride.durationSec)}</span>
+                        <span>•</span>
+                        <span>{formatDistance(ride.distanceKm)}</span>
+                        <span>•</span>
+                        <span>{ride.billableMinutes} billable min</span>
+                        <span>•</span>
+                        <span>{formatMoney(ride.ratePerMinute, ride.currencyCode)}/min</span>
+                        <span>•</span>
+                        <span>{ride.co2SavedKg.toFixed(1)} kg CO2 saved</span>
+                      </div>
+
+                      <p className="text-sm text-[var(--foreground-muted)]">{ride.paymentLabel}</p>
+
+                      <div className="flex justify-start">
+                        <button
+                          aria-expanded={isExpanded}
+                          className="clay-button px-4 py-2 text-sm font-semibold text-[var(--foreground)]"
+                          onClick={() => setExpandedRideId(isExpanded ? null : ride.id)}
+                          type="button">
+                          {isExpanded ? "Hide" : "View"} route for {ride.routeLabel}
+                        </button>
+                      </div>
+
+                      {isExpanded ? <RideRouteMap ride={ride} /> : null}
+                    </div>
+                  </article>
+                );
+              })
             )}
           </div>
         </section>
