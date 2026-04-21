@@ -299,21 +299,17 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
           console.warn("Failed to refresh Supabase profile", error);
 
           if (isMounted) {
-            if (error instanceof MissingProfileError) {
-              setSession(null);
-              setUser(null);
-              setProfile(null);
-              setAuthError(error.message);
-              setAuthStatus("unauthenticated");
-              void supabase.auth.signOut().catch((signOutError) => {
-                console.warn("Failed to sign out after profile reconciliation error", signOutError);
-              });
-            } else {
-              // Transient error - keep user authenticated but profile unavailable
-              setProfile(null);
-              setAuthStatus("authenticated");
-              // Consider surfacing this error to the user
-            }
+            const nextError =
+              error instanceof Error ? error.message : "Unable to refresh your rider profile.";
+
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setAuthError(nextError);
+            setAuthStatus("unauthenticated");
+            void supabase.auth.signOut().catch((signOutError) => {
+              console.warn("Failed to sign out after profile reconciliation error", signOutError);
+            });
           }
         });
     });
