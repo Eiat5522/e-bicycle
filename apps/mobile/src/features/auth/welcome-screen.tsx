@@ -6,8 +6,11 @@ import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
 import { colors, spacing } from "@/theme/tokens";
 
+import { useAuth } from "./auth-provider";
+
 export function WelcomeScreen() {
   const router = useRouter();
+  const { authError } = useAuth();
 
   return (
     <ScreenShell
@@ -22,6 +25,17 @@ export function WelcomeScreen() {
           Expo Router.
         </Text>
       </SurfaceCard>
+
+      {authError ? (
+        <SurfaceCard>
+          <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+            Session recovery needs attention
+          </Text>
+          <Text selectable style={{ color: colors.danger, fontSize: 15, lineHeight: 22 }}>
+            {authError}
+          </Text>
+        </SurfaceCard>
+      ) : null}
 
       <View style={{ gap: spacing.sm }}>
         <PrimaryButton label="Continue to Login" onPress={() => router.push("/(auth)/login")} />

@@ -6,27 +6,28 @@ import { useAuth } from "./auth-provider";
 export function AuthGate({ children }: { readonly children: ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
-  const { isLoading, session } = useAuth();
+  const { authStatus, session } = useAuth();
 
   useEffect(() => {
-    if (isLoading) {
+    if (authStatus === "loading") {
       return;
     }
 
     const rootSegment = segments[0];
     const inAuthGroup = rootSegment === "(auth)";
+    const isCallbackRoute = inAuthGroup && segments[1] === "callback";
 
     if (!session && !inAuthGroup) {
       router.replace("/(auth)/welcome");
       return;
     }
 
-    if (session && inAuthGroup) {
+    if (session && inAuthGroup && !isCallbackRoute) {
       router.replace("/(tabs)");
     }
-  }, [isLoading, router, segments, session]);
+  }, [authStatus, router, segments, session]);
 
-  if (isLoading) {
+  if (authStatus === "loading") {
     return null; // Or return a loading spinner
   }
 

@@ -30,7 +30,7 @@ describe("ProfileScreen", () => {
     render(<ProfileScreen />);
 
     await waitFor(() => {
-      expect(screen.queryByText("Loading rides")).toBeNull();
+      expect(screen.getByText("alex@rideglide.app")).toBeTruthy();
     });
   }
 

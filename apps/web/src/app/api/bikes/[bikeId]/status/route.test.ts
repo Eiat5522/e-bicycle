@@ -5,6 +5,7 @@ const mockSelectCurrentBike = jest.fn();
 const mockSelectUpdatedBike = jest.fn();
 const mockEqCurrentBike = jest.fn();
 const mockEqUpdatedBike = jest.fn();
+const mockIsUpdatedBike = jest.fn();
 const mockUpdate = jest.fn();
 const mockFrom = jest.fn();
 
@@ -67,22 +68,23 @@ describe("/api/bikes/[bikeId]/status", () => {
       error: null
     });
 
-    mockSelectCurrentBike.mockReturnValue({
-      eq: mockEqCurrentBike
-    });
-
-    mockEqCurrentBike.mockReturnValue({
+    const currentBikeQuery = {
+      eq: mockEqCurrentBike,
       maybeSingle: mockCurrentBikeMaybeSingle
-    });
+    };
 
-    mockUpdate.mockReturnValue({
-      eq: mockEqUpdatedBike
-    });
-
-    mockEqUpdatedBike.mockReturnValue({
+    const updatedBikeQuery = {
+      eq: mockEqUpdatedBike,
+      is: mockIsUpdatedBike,
       select: mockSelectUpdatedBike
-    });
+    };
 
+    mockSelectCurrentBike.mockReturnValue(currentBikeQuery);
+    mockEqCurrentBike.mockReturnValue(currentBikeQuery);
+
+    mockUpdate.mockReturnValue(updatedBikeQuery);
+    mockEqUpdatedBike.mockReturnValue(updatedBikeQuery);
+    mockIsUpdatedBike.mockReturnValue(updatedBikeQuery);
     mockSelectUpdatedBike.mockReturnValue({
       maybeSingle: mockUpdatedBikeMaybeSingle
     });

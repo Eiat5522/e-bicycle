@@ -67,9 +67,9 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { isLoading } = useAuth();
+  const { authStatus, isLoading } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || authStatus === "loading") {
     return (
       <View
         style={{

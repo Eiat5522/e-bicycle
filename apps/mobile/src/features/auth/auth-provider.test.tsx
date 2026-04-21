@@ -54,11 +54,12 @@ jest.mock("expo-linking", () => ({
 
 function AuthProbe() {
   latestAuth = useAuth();
-  const { isLoading, profile, session, user } = latestAuth;
+  const { authStatus, isLoading, profile, session, user } = latestAuth;
 
   return (
     <>
       <Text>{isLoading ? "loading" : "ready"}</Text>
+      <Text>{authStatus}</Text>
       <Text>{session?.user.id ?? "no-session"}</Text>
       <Text>{user?.email ?? "no-email"}</Text>
       <Text>{profile?.firstName ?? "no-profile"}</Text>
@@ -154,6 +155,7 @@ describe("AuthProvider", () => {
       },
       error: null
     });
+    mockSignOut.mockResolvedValue({ error: null });
 
     mockFrom.mockReturnValue({
       select: mockSelect,
@@ -220,7 +222,17 @@ describe("AuthProvider", () => {
   });
 
   it("includes a native redirect URL when signing up", async () => {
-    mockSignUp.mockResolvedValueOnce({ error: null });
+    mockSignUp.mockResolvedValueOnce({
+      data: {
+        session: {
+          user: {
+            id: "user-1",
+            email: "alex@rideglide.app"
+          }
+        }
+      },
+      error: null
+    });
 
     render(
       <AuthProvider>
@@ -233,7 +245,11 @@ describe("AuthProvider", () => {
     });
 
     await act(async () => {
-      await latestAuth?.signUp("Alex", "Alex@RideGlide.App ", "secret-pass");
+      await expect(
+        latestAuth?.signUp("Alex", "Alex@RideGlide.App ", "secret-pass")
+      ).resolves.toEqual({
+        status: "signed_in"
+      });
     });
 
     expect(mockSignUp).toHaveBeenCalledWith({
@@ -295,10 +311,13 @@ describe("AuthProvider", () => {
     });
 
     await expect(latestAuth?.signIn("alex@rideglide.app", "wrong-pass")).rejects.toThrow("Unable to sign in.");
-    await expect(latestAuth?.signOut()).rejects.toThrow("Unable to sign out.");
+
+    await act(async () => {
+      await expect(latestAuth?.signOut()).rejects.toThrow("Unable to sign out.");
+    });
   });
 
-  it("refreshes the current profile and clears it when auth state changes fail", async () => {
+  it("signs out and clears auth state when auth-state profile refresh fails", async () => {
     mockMaybeSingle
       .mockResolvedValueOnce({
         data: {
@@ -351,9 +370,14 @@ describe("AuthProvider", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("no-profile")).toBeTruthy();
+      expect(latestAuth?.authStatus).toBe("unauthenticated");
     });
 
+    expect(latestAuth?.session).toBeNull();
+    expect(latestAuth?.user).toBeNull();
+    expect(latestAuth?.profile).toBeNull();
+    expect(latestAuth?.authError).toBe("profile fetch failed");
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
     expect(consoleWarn).toHaveBeenCalledWith("Failed to refresh Supabase profile", expect.any(Error));
     consoleWarn.mockRestore();
   });
@@ -394,6 +418,35 @@ describe("AuthProvider", () => {
     });
 
     await expect(latestAuth?.updateDisplayName("   ")).rejects.toThrow("Enter a display name.");
+  });
+
+  it("reports when sign up requires email confirmation", async () => {
+    mockSignUp.mockResolvedValueOnce({
+      data: {
+        session: null
+      },
+      error: null
+    });
+
+    render(
+      <AuthProvider>
+        <AuthProbe />
+      </AuthProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ready")).toBeTruthy();
+    });
+
+    await act(async () => {
+      await expect(latestAuth?.signUp("Alex", "alex@rideglide.app", "secret-pass")).resolves.toEqual(
+        {
+          status: "awaiting_email_confirmation"
+        }
+      );
+    });
+
+    expect(screen.getByText("awaiting_email_confirmation")).toBeTruthy();
   });
 
   it("restores a session from the initial deep link and runtime URL events", async () => {

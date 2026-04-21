@@ -20,7 +20,9 @@ describe("SignupScreen", () => {
     jest.clearAllMocks();
 
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+    signUp.mockResolvedValue({ status: "signed_in" });
     jest.mocked(useAuth).mockReturnValue({
+      authError: null,
       configError: null,
       signUp
     } as never);
@@ -63,6 +65,7 @@ describe("SignupScreen", () => {
 
   it("shows the config error and routes back to login", () => {
     jest.mocked(useAuth).mockReturnValue({
+      authError: null,
       configError: "Supabase is not configured.",
       signUp
     } as never);
@@ -74,5 +77,22 @@ describe("SignupScreen", () => {
     fireEvent.press(screen.getByText("Back to Login"));
 
     expect(push).toHaveBeenCalledWith("/(auth)/login");
+  });
+
+  it("shows confirmation guidance when sign up requires email verification", async () => {
+    signUp.mockResolvedValueOnce({ status: "awaiting_email_confirmation" });
+
+    render(<SignupScreen />);
+
+    fireEvent.changeText(screen.getByPlaceholderText("Enter your first name"), "Alex");
+    fireEvent.changeText(screen.getByPlaceholderText("Enter your email"), "alex@rideglide.app");
+    fireEvent.changeText(screen.getByPlaceholderText("Create a password"), "secret-pass");
+    fireEvent.press(screen.getByText("Create Account"));
+
+    expect(
+      await screen.findByText(
+        "Check your email to confirm your account, then return to the app to finish signing in."
+      )
+    ).toBeTruthy();
   });
 });

@@ -15,14 +15,26 @@ import type { Session, User } from "@supabase/supabase-js";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 import type { Database, Profile } from "@/lib/supabase.types";
 
+export type AuthStatus =
+  | "loading"
+  | "authenticated"
+  | "unauthenticated"
+  | "awaiting_email_confirmation";
+
+export interface SignUpResult {
+  readonly status: "signed_in" | "awaiting_email_confirmation";
+}
+
 interface AuthContextValue {
+  readonly authError: string | null;
+  readonly authStatus: AuthStatus;
   readonly session: Session | null;
   readonly user: User | null;
   readonly profile: Profile | null;
   readonly isLoading: boolean;
   readonly configError: string | null;
   signIn(email: string, password: string): Promise<void>;
-  signUp(firstName: string, email: string, password: string): Promise<void>;
+  signUp(firstName: string, email: string, password: string): Promise<SignUpResult>;
   signOut(): Promise<void>;
   refreshProfile(): Promise<void>;
   updateDisplayName(displayName: string): Promise<void>;
@@ -36,6 +48,14 @@ type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 const nativeEmailRedirectPath = "callback";
 const bootstrapTimeoutMs = 5000;
+const profileRetryDelayMs = 250;
+const profileRetryLimit = 8;
+
+class MissingProfileError extends Error {
+  constructor() {
+    super("We couldn't finish preparing your rider profile. Please sign in again.");
+  }
+}
 
 function normalizeError(error: unknown, fallbackMessage: string) {
   if (error instanceof Error && error.message.length > 0) {
@@ -117,7 +137,29 @@ async function fetchProfile(userId: string) {
   return data ? mapProfileRow(data) : null;
 }
 
+async function waitForProfile(userId: string) {
+  for (let attempt = 0; attempt <= profileRetryLimit; attempt += 1) {
+    const profile = await fetchProfile(userId);
+
+    if (profile) {
+      return profile;
+    }
+
+    if (attempt === profileRetryLimit) {
+      break;
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, profileRetryDelayMs);
+    });
+  }
+
+  throw new MissingProfileError();
+}
+
 export function AuthProvider({ children }: { readonly children: ReactNode }) {
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>("loading");
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -132,6 +174,8 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
           return;
         }
 
+        setAuthError(null);
+        setAuthStatus("unauthenticated");
         setIsLoading(false);
         return;
       }
@@ -156,7 +200,27 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
             }
           }
 
-          const nextProfile = currentSession?.user ? await fetchProfile(currentSession.user.id) : null;
+          let nextProfile: Profile | null = null;
+
+          if (currentSession?.user) {
+            try {
+              nextProfile = await waitForProfile(currentSession.user.id);
+            } catch (error) {
+              if (error instanceof MissingProfileError) {
+                const { error: signOutError } = await supabase.auth.signOut();
+
+                if (signOutError) {
+                  console.warn("Failed to clear an incomplete Supabase session", signOutError);
+                }
+
+                throw error;
+              }
+
+              console.warn("Failed to reconcile Supabase profile during bootstrap", error);
+              // Consider surfacing this error to the user
+              // nextProfile remains null, user will be authenticated but profile unavailable
+            }
+          }
 
           return {
             currentSession,
@@ -183,9 +247,11 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
           return;
         }
 
-        setSession(currentSession);
+        setAuthError(null);
+        setSession(currentSession ?? null);
         setUser(currentSession?.user ?? null);
         setProfile(nextProfile);
+        setAuthStatus(currentSession?.user ? "authenticated" : "unauthenticated");
       } catch (error) {
         if (!isMounted) {
           return;
@@ -195,6 +261,8 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         setSession(null);
         setUser(null);
         setProfile(null);
+        setAuthError(error instanceof Error ? error.message : "Unable to restore your rider session.");
+        setAuthStatus("unauthenticated");
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -207,6 +275,11 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (nextSession?.user) {
+        setAuthError(null);
+      }
+
+      setAuthStatus(nextSession?.user ? "loading" : "unauthenticated");
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
 
@@ -215,17 +288,32 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         return;
       }
 
-      void fetchProfile(nextSession.user.id)
+      void waitForProfile(nextSession.user.id)
         .then((nextProfile) => {
           if (isMounted) {
             setProfile(nextProfile);
+            setAuthStatus("authenticated");
           }
         })
         .catch((error) => {
           console.warn("Failed to refresh Supabase profile", error);
 
           if (isMounted) {
-            setProfile(null);
+            if (error instanceof MissingProfileError) {
+              setSession(null);
+              setUser(null);
+              setProfile(null);
+              setAuthError(error.message);
+              setAuthStatus("unauthenticated");
+              void supabase.auth.signOut().catch((signOutError) => {
+                console.warn("Failed to sign out after profile reconciliation error", signOutError);
+              });
+            } else {
+              // Transient error - keep user authenticated but profile unavailable
+              setProfile(null);
+              setAuthStatus("authenticated");
+              // Consider surfacing this error to the user
+            }
           }
         });
     });
@@ -279,36 +367,57 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     }
   }, []);
 
-  const signUp = useCallback(async (firstName: string, email: string, password: string) => {
-    if (!hasSupabaseConfig) {
-      throw new Error(missingConfigMessage);
-    }
-
-    const trimmedEmail = email.trim().toLowerCase();
-    const normalizedFirstName = firstName.trim();
-    const emailRedirectTo = getEmailRedirectUrl();
-
-    const { error } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: {
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
-        data: {
-          first_name: normalizedFirstName
-        }
+  const signUp = useCallback(
+    async (firstName: string, email: string, password: string) => {
+      if (!hasSupabaseConfig) {
+        throw new Error(missingConfigMessage);
       }
-    });
 
-    if (error) {
-      throw normalizeError(error, "Unable to create your account.");
-    }
-  }, []);
+      const trimmedEmail = email.trim().toLowerCase();
+      const normalizedFirstName = firstName.trim();
+      const emailRedirectTo = getEmailRedirectUrl();
+
+      setAuthError(null);
+
+      const {
+        data: { session: nextSession },
+        error
+      } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: {
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
+          data: {
+            first_name: normalizedFirstName
+          }
+        }
+      });
+
+      if (error) {
+        throw normalizeError(error, "Unable to create your account.");
+      }
+
+      if (!nextSession) {
+        setAuthStatus("awaiting_email_confirmation");
+
+        return {
+          status: "awaiting_email_confirmation"
+        } satisfies SignUpResult;
+      }
+
+      return {
+        status: "signed_in"
+      } satisfies SignUpResult;
+    },
+    []
+  );
 
   const signOut = useCallback(async () => {
     if (!hasSupabaseConfig) {
       throw new Error(missingConfigMessage);
     }
 
+    setAuthError(null);
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -350,6 +459,8 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
+      authError,
+      authStatus,
       session,
       user,
       profile,
@@ -361,7 +472,19 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       refreshProfile,
       updateDisplayName
     }),
-    [isLoading, profile, refreshProfile, session, signIn, signOut, signUp, updateDisplayName, user]
+    [
+      authError,
+      authStatus,
+      isLoading,
+      profile,
+      refreshProfile,
+      session,
+      signIn,
+      signOut,
+      signUp,
+      updateDisplayName,
+      user
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

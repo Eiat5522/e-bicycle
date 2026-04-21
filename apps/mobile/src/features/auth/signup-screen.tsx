@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 
 import { PrimaryButton } from "@/components/primary-button";
@@ -12,12 +12,17 @@ import { useAuth } from "./auth-provider";
 
 export function SignupScreen() {
   const router = useRouter();
-  const { configError, signUp } = useAuth();
+  const { authError, configError, signUp } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(configError);
+  const [errorMessage, setErrorMessage] = useState<string | null>(configError ?? authError);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setErrorMessage(configError ?? authError ?? null);
+  }, [authError, configError]);
 
   async function handleSignUp() {
     const trimmedFirstName = firstName.trim();
@@ -30,9 +35,17 @@ export function SignupScreen() {
 
     setIsSubmitting(true);
     setErrorMessage(null);
+    setInfoMessage(null);
 
     try {
-      await signUp(trimmedFirstName, trimmedEmail, password);
+      const result = await signUp(trimmedFirstName, trimmedEmail, password);
+
+      if (result.status === "awaiting_email_confirmation") {
+        setInfoMessage("Check your email to confirm your account, then return to the app to finish signing in.");
+        return;
+      }
+
+      setInfoMessage("Account created. Restoring your rider session...");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to create your account.");
     } finally {
@@ -94,6 +107,11 @@ export function SignupScreen() {
             accessibilityRole="alert"
             style={{ ...typography.bodyStrong, color: colors.danger }}>
             {errorMessage}
+          </Text>
+        ) : null}
+        {infoMessage ? (
+          <Text selectable style={{ ...typography.bodyStrong, color: colors.teal }}>
+            {infoMessage}
           </Text>
         ) : null}
       </SurfaceCard>

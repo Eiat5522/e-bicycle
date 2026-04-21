@@ -45,7 +45,6 @@ describe("WalletScreen", () => {
   };
 
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     jest.mocked(configuredWalletService.getWallet).mockResolvedValue(initialWallet);
@@ -68,7 +67,6 @@ describe("WalletScreen", () => {
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
     jest.useRealTimers();
   });
 
@@ -76,6 +74,19 @@ describe("WalletScreen", () => {
     await act(async () => {
       await jest.advanceTimersByTimeAsync(5000);
     });
+  }
+
+  async function runWithFakeTimers(assertions: () => Promise<void>) {
+    jest.useFakeTimers();
+
+    try {
+      await assertions();
+    } finally {
+      await act(async () => {
+        await jest.runOnlyPendingTimersAsync();
+      });
+      jest.useRealTimers();
+    }
   }
 
   it("renders wallet content from the configured wallet service", async () => {
@@ -232,17 +243,19 @@ describe("WalletScreen", () => {
     expect(screen.getByText("Confirm top-up")).toBeTruthy();
     expect(screen.getByText("KBank")).toBeTruthy();
 
-    fireEvent.press(screen.getByText("Confirm & pay"));
-    await settleTopUpFlow();
+    await runWithFakeTimers(async () => {
+      fireEvent.press(screen.getByText("Confirm & pay"));
+      await settleTopUpFlow();
 
-    expect(await screen.findByText("Top-up successful!")).toBeTruthy();
-    expect(configuredWalletService.applyTopUp).toHaveBeenCalledWith({
-      amount: 20,
-      methodLabel: "Mobile Banking",
-      title: "Wallet Top-up"
+      expect(screen.getByText("Top-up successful!")).toBeTruthy();
+      expect(configuredWalletService.applyTopUp).toHaveBeenCalledWith({
+        amount: 20,
+        methodLabel: "Mobile Banking",
+        title: "Wallet Top-up"
+      });
+
+      expect(screen.getByText("Payment successful!")).toBeTruthy();
     });
-
-    expect(screen.getByText("Payment successful!")).toBeTruthy();
     fireEvent.press(screen.getByText("Done"));
     await waitFor(() => {
       expect(screen.queryByText("Payment successful!")).toBeNull();
@@ -262,13 +275,15 @@ describe("WalletScreen", () => {
     expect(configuredWalletService.applyTopUp).not.toHaveBeenCalled();
 
     fireEvent.press(screen.getByLabelText("Generate TrueMoney mobile number"));
-    fireEvent.press(screen.getByText("Confirm & pay"));
-    await settleTopUpFlow();
+    await runWithFakeTimers(async () => {
+      fireEvent.press(screen.getByText("Confirm & pay"));
+      await settleTopUpFlow();
 
-    expect(configuredWalletService.applyTopUp).toHaveBeenCalledWith({
-      amount: 5,
-      methodLabel: "TrueMoney",
-      title: "Wallet Top-up"
+      expect(configuredWalletService.applyTopUp).toHaveBeenCalledWith({
+        amount: 5,
+        methodLabel: "TrueMoney",
+        title: "Wallet Top-up"
+      });
     });
   });
 
@@ -287,15 +302,17 @@ describe("WalletScreen", () => {
     expect(configuredWalletService.applyTopUp).not.toHaveBeenCalled();
 
     fireEvent.press(screen.getByText("Tap to generate a code"));
-    fireEvent.press(screen.getAllByText("Redeem voucher")[1]!);
-    await settleTopUpFlow();
+    await runWithFakeTimers(async () => {
+      fireEvent.press(screen.getAllByText("Redeem voucher")[1]!);
+      await settleTopUpFlow();
 
-    expect(configuredWalletService.applyTopUp).toHaveBeenCalledWith({
-      amount: 50,
-      methodLabel: "Gift Voucher",
-      title: "Voucher Credit"
+      expect(configuredWalletService.applyTopUp).toHaveBeenCalledWith({
+        amount: 50,
+        methodLabel: "Gift Voucher",
+        title: "Voucher Credit"
+      });
+      expect(screen.getByText("Top-up successful!")).toBeTruthy();
     });
-    expect(await screen.findByText("Top-up successful!")).toBeTruthy();
 
     fireEvent.press(screen.getByText("Done"));
     await waitFor(() => {
@@ -316,10 +333,12 @@ describe("WalletScreen", () => {
     fireEvent.press(screen.getByLabelText("Select ฿10.00"));
     fireEvent.press(screen.getByLabelText("Select PromptPay"));
     fireEvent.press(screen.getByText("Top up now"));
-    fireEvent.press(screen.getByText("Confirm & pay"));
-    await settleTopUpFlow();
+    await runWithFakeTimers(async () => {
+      fireEvent.press(screen.getByText("Confirm & pay"));
+      await settleTopUpFlow();
 
-    expect(await screen.findByText("Top-up failed")).toBeTruthy();
-    expect(screen.getByText("Gateway unavailable")).toBeTruthy();
+      expect(screen.getByText("Top-up failed")).toBeTruthy();
+      expect(screen.getByText("Gateway unavailable")).toBeTruthy();
+    });
   });
 });

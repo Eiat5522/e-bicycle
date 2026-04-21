@@ -25,7 +25,7 @@ describe("AuthGate", () => {
   it("redirects signed-out users away from protected routes", async () => {
     jest.mocked(useSegments).mockReturnValue(["(tabs)", "index"] as never);
     jest.mocked(useAuth).mockReturnValue({
-      isLoading: false,
+      authStatus: "unauthenticated",
       session: null
     } as never);
 
@@ -43,7 +43,7 @@ describe("AuthGate", () => {
   it("redirects signed-in users out of auth routes", async () => {
     jest.mocked(useSegments).mockReturnValue(["(auth)", "login"] as never);
     jest.mocked(useAuth).mockReturnValue({
-      isLoading: false,
+      authStatus: "authenticated",
       session: { user: { id: "user-1" } }
     } as never);
 
@@ -61,7 +61,25 @@ describe("AuthGate", () => {
   it("leaves authenticated non-auth routes alone", async () => {
     jest.mocked(useSegments).mockReturnValue(["(tabs)", "index"] as never);
     jest.mocked(useAuth).mockReturnValue({
-      isLoading: false,
+      authStatus: "authenticated",
+      session: { user: { id: "user-1" } }
+    } as never);
+
+    render(
+      <AuthGate>
+        <Text>child</Text>
+      </AuthGate>
+    );
+
+    await waitFor(() => {
+      expect(replace).not.toHaveBeenCalled();
+    });
+  });
+
+  it("allows the callback route to finish before redirecting", async () => {
+    jest.mocked(useSegments).mockReturnValue(["(auth)", "callback"] as never);
+    jest.mocked(useAuth).mockReturnValue({
+      authStatus: "authenticated",
       session: { user: { id: "user-1" } }
     } as never);
 

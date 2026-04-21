@@ -12,16 +12,16 @@ import { useAuth } from "./auth-provider";
 
 export function LoginScreen() {
   const router = useRouter();
-  const { configError, signIn } = useAuth();
+  const { authError, configError, signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (configError) {
-      setErrorMessage(configError);
+    if (configError ?? authError) {
+      setErrorMessage(configError ?? authError);
     }
-  }, [configError]);
+  }, [authError, configError]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSignIn() {

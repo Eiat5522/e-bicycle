@@ -12,6 +12,7 @@ const customJestConfig = {
     "^@glide/shared$": "<rootDir>/../../packages/shared/src/index.ts"
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+  testMatch: ["<rootDir>/src/**/*.test.[jt]s?(x)"],
   testEnvironment: "jsdom"
 };
 

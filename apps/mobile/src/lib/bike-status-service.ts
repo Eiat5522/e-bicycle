@@ -12,23 +12,25 @@ function createHttpBikeStatusService(baseUrl: string): BikeStatusService {
 
   return {
     async updateBikeStatus({ bikeId, status, accessToken }) {
-      const controller = new AbortController();
+      const controller = new global.AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
       }, requestTimeoutMs);
 
       try {
+        const requestInit = {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ status }),
+          signal: controller.signal
+        } as Parameters<typeof fetch>[1];
+
         const response = await fetch(
           `${normalizedBaseUrl}/bikes/${encodeURIComponent(bikeId)}/status`,
-          {
-            method: "PATCH",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ status }),
-            signal: controller.signal
-          }
+          requestInit
         );
 
         if (!response.ok) {

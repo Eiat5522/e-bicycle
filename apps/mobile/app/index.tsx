@@ -3,9 +3,9 @@ import { Redirect } from "expo-router";
 import { useAuth } from "@/features/auth/auth-provider";
 
 export default function IndexRoute() {
-  const { isLoading, session } = useAuth();
+  const { authStatus, isLoading, session } = useAuth();
 
-  if (isLoading) {
+  if (isLoading || authStatus === "loading") {
     return null;
   }
 

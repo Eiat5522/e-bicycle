@@ -21,6 +21,7 @@ describe("LoginScreen", () => {
 
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     jest.mocked(useAuth).mockReturnValue({
+      authError: null,
       configError: null,
       signIn
     } as never);
@@ -61,6 +62,7 @@ describe("LoginScreen", () => {
 
   it("shows the config error and routes to sign up", () => {
     jest.mocked(useAuth).mockReturnValue({
+      authError: null,
       configError: "Supabase is not configured.",
       signIn
     } as never);
