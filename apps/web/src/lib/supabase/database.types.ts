@@ -22,50 +22,65 @@ export interface Database {
           distance_km: number;
           duration_sec: number;
           end_location: string;
+          fare_calculation_method: string;
           id: string;
           payment_label: string;
           profile_id: string | null;
+          rate_per_minute: number;
           route: Json;
           route_label: string;
           start_location: string;
           started_at: string;
           total_cost: number;
+          billable_minutes: number;
+          currency_code: string;
+          wallet_transaction_id: string | null;
         };
         Insert: {
           bike_id: string;
+          billable_minutes?: number;
           checkpoints?: Json;
           co2_saved_kg?: number;
           completed_at: string;
           created_at?: string;
+          currency_code?: string;
           distance_km: number;
           duration_sec: number;
           end_location: string;
+          fare_calculation_method?: string;
           id?: string;
           payment_label: string;
           profile_id?: string | null;
+          rate_per_minute?: number;
           route?: Json;
           route_label: string;
           start_location: string;
           started_at: string;
           total_cost: number;
+          wallet_transaction_id?: string | null;
         };
         Update: {
           bike_id?: string;
+          billable_minutes?: number;
           checkpoints?: Json;
           co2_saved_kg?: number;
           completed_at?: string;
           created_at?: string;
+          currency_code?: string;
           distance_km?: number;
           duration_sec?: number;
           end_location?: string;
+          fare_calculation_method?: string;
           id?: string;
           payment_label?: string;
           profile_id?: string | null;
+          rate_per_minute?: number;
           route?: Json;
           route_label?: string;
           start_location?: string;
           started_at?: string;
           total_cost?: number;
+          wallet_transaction_id?: string | null;
         };
         Relationships: [
           {
@@ -87,6 +102,8 @@ export interface Database {
       bikes: {
         Row: {
           active_rider_id: string | null;
+          active_ride_start_location: string | null;
+          active_ride_started_at: string | null;
           created_at: string;
           estimated_range_km: number;
           id: string;
@@ -97,6 +114,7 @@ export interface Database {
           longitude: number;
           model: string;
           pricing_label: string;
+          rate_per_minute: number;
           ride_class: string | null;
           status: Database["public"]["Enums"]["bike_status"];
           top_speed_kmh: number;
@@ -104,6 +122,8 @@ export interface Database {
         };
         Insert: {
           active_rider_id?: string | null;
+          active_ride_start_location?: string | null;
+          active_ride_started_at?: string | null;
           created_at?: string;
           estimated_range_km: number;
           id: string;
@@ -114,6 +134,7 @@ export interface Database {
           longitude: number;
           model: string;
           pricing_label: string;
+          rate_per_minute?: number;
           ride_class?: string | null;
           status?: Database["public"]["Enums"]["bike_status"];
           top_speed_kmh: number;
@@ -121,6 +142,8 @@ export interface Database {
         };
         Update: {
           active_rider_id?: string | null;
+          active_ride_start_location?: string | null;
+          active_ride_started_at?: string | null;
           created_at?: string;
           estimated_range_km?: number;
           id?: string;
@@ -131,6 +154,7 @@ export interface Database {
           longitude?: number;
           model?: string;
           pricing_label?: string;
+          rate_per_minute?: number;
           ride_class?: string | null;
           status?: Database["public"]["Enums"]["bike_status"];
           top_speed_kmh?: number;
@@ -248,6 +272,18 @@ export interface Database {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      complete_ride: {
+        Args: {
+          p_bike_id: string;
+          p_distance_km?: number;
+          p_end_location?: string | null;
+          p_route_label?: string | null;
+          p_route?: Json;
+          p_checkpoints?: Json;
+          p_co2_saved_kg?: number;
+        };
+        Returns: Database["public"]["Tables"]["bike_ride_history"]["Row"];
       };
     };
     Enums: {

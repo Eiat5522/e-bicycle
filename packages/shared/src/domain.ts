@@ -24,6 +24,7 @@ export interface Bike {
   readonly estimatedRangeKm: number;
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
+  readonly ratePerMinute?: number;
   readonly status: BikeStatus;
   readonly activeRiderId?: string | null;
   readonly location: string;
@@ -103,6 +104,11 @@ export interface RideHistoryItem {
   readonly durationSec: number;
   readonly distanceKm: number;
   readonly totalCost: number;
+  readonly ratePerMinute: number;
+  readonly billableMinutes: number;
+  readonly currencyCode: string;
+  readonly walletTransactionId: string | null;
+  readonly fareCalculationMethod: string;
   readonly co2SavedKg: number;
   readonly startLocation: string;
   readonly endLocation: string;

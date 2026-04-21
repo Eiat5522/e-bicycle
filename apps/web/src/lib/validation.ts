@@ -119,6 +119,8 @@ export function validateBikeForm(formData: FormData) {
   const model = String(formData.get("model") ?? "").trim();
   const rideClass = String(formData.get("rideClass") ?? "").trim();
   const pricingLabel = String(formData.get("pricingLabel") ?? "").trim();
+  const ratePerMinuteValue = String(formData.get("ratePerMinute") ?? "").trim();
+  const ratePerMinute = Number(ratePerMinuteValue);
   const status = String(formData.get("status") ?? "").trim();
   const location = String(formData.get("location") ?? "").trim();
   const topSpeedKmh = Number(formData.get("topSpeedKmh") ?? "");
@@ -135,6 +137,10 @@ export function validateBikeForm(formData: FormData) {
 
   if (!pricingLabel) {
     throw new Error("Pricing label is required.");
+  }
+
+  if (!ratePerMinuteValue || !Number.isFinite(ratePerMinute) || ratePerMinute < 0) {
+    throw new Error("Rate per minute must be zero or greater.");
   }
 
   if (!location) {
@@ -164,6 +170,7 @@ export function validateBikeForm(formData: FormData) {
     longitude,
     model,
     pricingLabel,
+    ratePerMinute,
     rideClass: rideClass || null,
     status: status as "available" | "reserved" | "in_use" | "maintenance",
     topSpeedKmh

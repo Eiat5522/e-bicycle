@@ -19,6 +19,18 @@ export interface Database {
           updated_at: string;
         }[];
       };
+      complete_ride: {
+        Args: {
+          p_bike_id: string;
+          p_distance_km?: number;
+          p_end_location?: string | null;
+          p_route_label?: string | null;
+          p_route?: Json;
+          p_checkpoints?: Json;
+          p_co2_saved_kg?: number;
+        };
+        Returns: Database["public"]["Tables"]["bike_ride_history"]["Row"];
+      };
     };
     Tables: {
       bike_ride_history: {
@@ -31,6 +43,11 @@ export interface Database {
           duration_sec: number;
           distance_km: number;
           total_cost: number;
+          rate_per_minute: number;
+          billable_minutes: number;
+          currency_code: string;
+          wallet_transaction_id: string | null;
+          fare_calculation_method: string;
           co2_saved_kg: number;
           start_location: string;
           end_location: string;
@@ -49,6 +66,11 @@ export interface Database {
           duration_sec: number;
           distance_km: number;
           total_cost: number;
+          rate_per_minute?: number;
+          billable_minutes?: number;
+          currency_code?: string;
+          wallet_transaction_id?: string | null;
+          fare_calculation_method?: string;
           co2_saved_kg?: number;
           start_location: string;
           end_location: string;
@@ -67,6 +89,11 @@ export interface Database {
           duration_sec?: number;
           distance_km?: number;
           total_cost?: number;
+          rate_per_minute?: number;
+          billable_minutes?: number;
+          currency_code?: string;
+          wallet_transaction_id?: string | null;
+          fare_calculation_method?: string;
           co2_saved_kg?: number;
           start_location?: string;
           end_location?: string;
@@ -89,11 +116,14 @@ export interface Database {
           ride_class: string | null;
           top_speed_kmh: number;
           pricing_label: string;
+          rate_per_minute: number;
           status: "available" | "reserved" | "in_use" | "maintenance";
           location: string;
           latitude: number;
           longitude: number;
           last_reported_at: string;
+          active_ride_started_at: string | null;
+          active_ride_start_location: string | null;
           updated_at: string;
         };
         Insert: {
@@ -106,11 +136,14 @@ export interface Database {
           ride_class?: string | null;
           top_speed_kmh: number;
           pricing_label: string;
+          rate_per_minute?: number;
           status?: "available" | "reserved" | "in_use" | "maintenance";
           location: string;
           latitude: number;
           longitude: number;
           last_reported_at?: string;
+          active_ride_started_at?: string | null;
+          active_ride_start_location?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -123,11 +156,14 @@ export interface Database {
           ride_class?: string | null;
           top_speed_kmh?: number;
           pricing_label?: string;
+          rate_per_minute?: number;
           status?: "available" | "reserved" | "in_use" | "maintenance";
           location?: string;
           latitude?: number;
           longitude?: number;
           last_reported_at?: string;
+          active_ride_started_at?: string | null;
+          active_ride_start_location?: string | null;
           updated_at?: string;
         };
         Relationships: [];

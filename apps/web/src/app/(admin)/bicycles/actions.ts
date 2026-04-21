@@ -67,6 +67,7 @@ export async function createBikeAction(formData: FormData) {
     longitude: values.longitude,
     model: values.model,
     pricing_label: values.pricingLabel,
+    rate_per_minute: values.ratePerMinute,
     ride_class: values.rideClass,
     status: values.status,
     top_speed_kmh: values.topSpeedKmh
@@ -90,6 +91,7 @@ export async function updateBikeAction(formData: FormData) {
     longitude: values.longitude,
     model: values.model,
     pricing_label: values.pricingLabel,
+    rate_per_minute: values.ratePerMinute,
     ride_class: values.rideClass,
     status: values.status,
     top_speed_kmh: values.topSpeedKmh

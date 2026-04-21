@@ -21,6 +21,7 @@ export interface ManagedBike {
   readonly rideClass: string | null;
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
+  readonly ratePerMinute: number;
   readonly status: "available" | "reserved" | "in_use" | "maintenance";
   readonly activeRiderId: string | null;
   readonly activeRiderLabel: string | null;
@@ -40,6 +41,11 @@ export interface BikeRideHistoryEntry {
   readonly durationSec: number;
   readonly distanceKm: number;
   readonly totalCost: number;
+  readonly ratePerMinute: number;
+  readonly billableMinutes: number;
+  readonly currencyCode: string;
+  readonly walletTransactionId: string | null;
+  readonly fareCalculationMethod: string;
   readonly co2SavedKg: number;
   readonly startLocation: string;
   readonly endLocation: string;
@@ -74,9 +80,9 @@ function formatDuration(durationSec: number) {
   return `${Math.round(durationSec / 60)} min`;
 }
 
-function formatMoney(amount: number) {
-  return new Intl.NumberFormat("th-TH", {
-    currency: "THB",
+function formatMoney(amount: number, currencyCode: string, locale?: string) {
+  return new Intl.NumberFormat(locale, {
+    currency: currencyCode,
     style: "currency",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -443,6 +449,20 @@ export function BicycleEditor({
               />
             </Field>
 
+            <Field label="Rate per Minute">
+              <TextInput
+                defaultValue={bike.ratePerMinute.toString()}
+                disabled={!isEditing}
+                min="0"
+                name="ratePerMinute"
+                required
+                step="0.0001"
+                type="number"
+              />
+            </Field>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
             <Field label="Status">
               <SelectInput defaultValue={bike.status} disabled={!isEditing} name="status">
                 <option value="available">Available</option>
@@ -647,7 +667,7 @@ export function BicycleEditor({
                       </div>
                       <div className="text-right">
                         <p className="text-base font-semibold text-[var(--foreground)]">
-                          {formatMoney(ride.totalCost)}
+                          {formatMoney(ride.totalCost, ride.currencyCode)}
                         </p>
                         <p className="text-sm text-[var(--foreground-muted)]">
                           {formatAdminDate(ride.completedAt)}
@@ -659,6 +679,10 @@ export function BicycleEditor({
                       <span>{formatDuration(ride.durationSec)}</span>
                       <span>•</span>
                       <span>{formatDistance(ride.distanceKm)}</span>
+                      <span>•</span>
+                      <span>{ride.billableMinutes} billable min</span>
+                      <span>•</span>
+                      <span>{formatMoney(ride.ratePerMinute, ride.currencyCode)}/min</span>
                       <span>•</span>
                       <span>{ride.co2SavedKg.toFixed(1)} kg CO2 saved</span>
                     </div>

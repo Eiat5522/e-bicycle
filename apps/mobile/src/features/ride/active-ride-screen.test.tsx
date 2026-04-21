@@ -1,8 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { useAuth } from "@/features/auth/auth-provider";
-import { configuredBikeStatusService } from "@/lib/bike-status-service";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { ActiveRideScreen } from "./active-ride-screen";
 
@@ -11,19 +9,9 @@ jest.mock("expo-router", () => ({
   useRouter: jest.fn()
 }));
 
-jest.mock("@/features/auth/auth-provider", () => ({
-  useAuth: jest.fn()
-}));
-
 jest.mock("@/lib/ride-history-service", () => ({
   configuredRideHistoryService: {
     completeDemoRide: jest.fn()
-  }
-}));
-
-jest.mock("@/lib/bike-status-service", () => ({
-  configuredBikeStatusService: {
-    updateBikeStatus: jest.fn()
   }
 }));
 
@@ -33,16 +21,10 @@ jest.mock("@/lib/supabase", () => ({
 
 describe("ActiveRideScreen", () => {
   const push = jest.fn();
-  const updateBikeStatus = jest.mocked(configuredBikeStatusService.updateBikeStatus);
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
-    jest.mocked(useAuth).mockReturnValue({
-      session: { access_token: "session-token" } as never,
-      user: { id: "user-1" } as never
-    } as never);
-    updateBikeStatus.mockResolvedValue(undefined);
     jest.mocked(configuredRideHistoryService.completeDemoRide).mockResolvedValue({
       id: "ride-new",
       bikeId: "G-205",
@@ -52,6 +34,11 @@ describe("ActiveRideScreen", () => {
       durationSec: 1560,
       distanceKm: 3.4,
       totalCost: 4.8,
+      ratePerMinute: 0.1846,
+      billableMinutes: 26,
+      currencyCode: "THB",
+      walletTransactionId: "txn-ride",
+      fareCalculationMethod: "ceil_minutes_v1",
       co2SavedKg: 0.9,
       startLocation: "อโศก Interchange",
       endLocation: "Benjakitti Park",
@@ -88,11 +75,6 @@ describe("ActiveRideScreen", () => {
     fireEvent.press(screen.getByText("End Ride"));
 
     expect(await screen.findByText("End Ride")).toBeTruthy();
-    expect(updateBikeStatus).toHaveBeenCalledWith({
-      bikeId: "G-205",
-      status: "available",
-      accessToken: "session-token"
-    });
     expect(configuredRideHistoryService.completeDemoRide).toHaveBeenCalledWith({ bikeId: "G-205" });
     expect(push).toHaveBeenCalledWith({
       pathname: "/ride/summary",

@@ -27,6 +27,7 @@ function mapBike(row: {
   readonly longitude: number;
   readonly model: string;
   readonly pricing_label: string;
+  readonly rate_per_minute: number;
   readonly ride_class: string | null;
   readonly status: ManagedBike["status"];
   readonly top_speed_kmh: number;
@@ -44,6 +45,7 @@ function mapBike(row: {
     longitude: row.longitude,
     model: row.model,
     pricingLabel: row.pricing_label,
+    ratePerMinute: Number(row.rate_per_minute),
     rideClass: row.ride_class,
     status: row.status,
     topSpeedKmh: row.top_speed_kmh,
@@ -63,7 +65,7 @@ export default async function BicyclesPage() {
       supabase
         .from("bikes")
         .select(
-          "id, model, ride_class, top_speed_kmh, pricing_label, status, active_rider_id, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
+          "id, model, ride_class, top_speed_kmh, pricing_label, rate_per_minute, status, active_rider_id, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
         )
         .order("updated_at", { ascending: false }),
       supabase.from("bike_ride_history").select("bike_id")

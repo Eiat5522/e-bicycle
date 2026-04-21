@@ -98,6 +98,7 @@ insert into public.bikes (
   estimated_range_km,
   top_speed_kmh,
   pricing_label,
+  rate_per_minute,
   status,
   active_rider_id,
   location,
@@ -106,12 +107,12 @@ insert into public.bikes (
   last_reported_at
 )
 values
-  ('G-104', 'Glide Pro X', 'Pro', 45, 25, '$1.20 / 10 min', 'available', null, 'Siam Square', 13.7466, 100.5328, '2026-04-06T08:55:00Z'),
-  ('G-205', 'Glide City', 'City', 31, 22, '$0.90 / 10 min', 'in_use', null, 'อโศก Interchange', 13.7372, 100.5606, '2026-04-06T08:56:00Z'),
-  ('G-318', 'Glide Lite', 'Urban', 28, 20, '$0.80 / 10 min', 'available', null, 'Ari Soi 1', 13.7797, 100.5446, '2026-04-06T08:58:00Z'),
-  ('G-412', 'Glide Cargo', 'Cargo', 36, 20, '$1.40 / 10 min', 'available', null, 'Lumphini Park West Gate', 13.7305, 100.5418, '2026-04-06T08:57:00Z'),
-  ('G-509', 'Glide Metro', 'City', 33, 23, '$1.00 / 10 min', 'available', null, 'Silom Complex', 13.7286, 100.5345, '2026-04-06T08:54:00Z'),
-  ('G-620', 'Glide Street+', 'Pro', 47, 25, '$1.20 / 10 min', 'available', null, 'Phrom Phong BTS', 13.7301, 100.5697, '2026-04-06T08:59:00Z')
+  ('G-104', 'Glide Pro X', 'Pro', 45, 25, '$1.20 / 10 min', 0.1200, 'available', null, 'Siam Square', 13.7466, 100.5328, '2026-04-06T08:55:00Z'),
+  ('G-205', 'Glide City', 'City', 31, 22, '$0.90 / 10 min', 0.0900, 'in_use', null, 'อโศก Interchange', 13.7372, 100.5606, '2026-04-06T08:56:00Z'),
+  ('G-318', 'Glide Lite', 'Urban', 28, 20, '$0.80 / 10 min', 0.0800, 'available', null, 'Ari Soi 1', 13.7797, 100.5446, '2026-04-06T08:58:00Z'),
+  ('G-412', 'Glide Cargo', 'Cargo', 36, 20, '$1.40 / 10 min', 0.1400, 'available', null, 'Lumphini Park West Gate', 13.7305, 100.5418, '2026-04-06T08:57:00Z'),
+  ('G-509', 'Glide Metro', 'City', 33, 23, '$1.00 / 10 min', 0.1000, 'available', null, 'Silom Complex', 13.7286, 100.5345, '2026-04-06T08:54:00Z'),
+  ('G-620', 'Glide Street+', 'Pro', 47, 25, '$1.20 / 10 min', 0.1200, 'available', null, 'Phrom Phong BTS', 13.7301, 100.5697, '2026-04-06T08:59:00Z')
 on conflict (id) do update
 set
   model = excluded.model,
@@ -119,6 +120,7 @@ set
   estimated_range_km = excluded.estimated_range_km,
   top_speed_kmh = excluded.top_speed_kmh,
   pricing_label = excluded.pricing_label,
+  rate_per_minute = excluded.rate_per_minute,
   status = excluded.status,
   active_rider_id = excluded.active_rider_id,
   location = excluded.location,
@@ -312,7 +314,10 @@ set
   is_admin = excluded.is_admin;
 
 update public.bikes
-set active_rider_id = '33333333-3333-3333-3333-333333333333'
+set
+  active_rider_id = '33333333-3333-3333-3333-333333333333',
+  active_ride_started_at = '2026-04-06T08:43:30Z',
+  active_ride_start_location = location
 where id = 'G-205';
 
 insert into public.wallets (
@@ -386,6 +391,11 @@ insert into public.bike_ride_history (
   duration_sec,
   distance_km,
   total_cost,
+  rate_per_minute,
+  billable_minutes,
+  currency_code,
+  wallet_transaction_id,
+  fare_calculation_method,
   co2_saved_kg,
   start_location,
   end_location,
@@ -404,6 +414,11 @@ values
     1560,
     3.4,
     4.8,
+    0.1846,
+    26,
+    'THB',
+    '63333333-3333-3333-3333-333333333331',
+    'ceil_minutes_v1',
     0.9,
     'อโศก Interchange',
     'Benjakitti Park',
@@ -432,6 +447,11 @@ values
     1200,
     2.6,
     3.95,
+    0.1975,
+    20,
+    'THB',
+    '63333333-3333-3333-3333-333333333332',
+    'ceil_minutes_v1',
     0.6,
     'Silom Complex',
     'Lumphini Park West Gate',
@@ -460,6 +480,11 @@ values
     1980,
     4.1,
     5.3,
+    0.1606,
+    33,
+    'THB',
+    '63333333-3333-3333-3333-333333333333',
+    'ceil_minutes_v1',
     1.1,
     'Ari Soi 1',
     'Victory Monument',
@@ -488,6 +513,11 @@ set
   duration_sec = excluded.duration_sec,
   distance_km = excluded.distance_km,
   total_cost = excluded.total_cost,
+  rate_per_minute = excluded.rate_per_minute,
+  billable_minutes = excluded.billable_minutes,
+  currency_code = excluded.currency_code,
+  wallet_transaction_id = excluded.wallet_transaction_id,
+  fare_calculation_method = excluded.fare_calculation_method,
   co2_saved_kg = excluded.co2_saved_kg,
   start_location = excluded.start_location,
   end_location = excluded.end_location,

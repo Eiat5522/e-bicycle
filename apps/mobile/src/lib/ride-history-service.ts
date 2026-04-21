@@ -1,7 +1,9 @@
-import type {
-  Coordinates,
-  RideHistoryCheckpoint,
-  RideHistoryItem
+import {
+  calculateBillableMinutes,
+  calculateRideRevenue,
+  type Coordinates,
+  type RideHistoryCheckpoint,
+  type RideHistoryItem
 } from "@glide/shared";
 
 import {
@@ -55,6 +57,11 @@ function mapRideHistoryRow(
     | "duration_sec"
     | "distance_km"
     | "total_cost"
+    | "rate_per_minute"
+    | "billable_minutes"
+    | "currency_code"
+    | "wallet_transaction_id"
+    | "fare_calculation_method"
     | "co2_saved_kg"
     | "start_location"
     | "end_location"
@@ -74,6 +81,11 @@ function mapRideHistoryRow(
     durationSec: row.duration_sec,
     distanceKm: Number(row.distance_km),
     totalCost: Number(row.total_cost),
+    ratePerMinute: Number(row.rate_per_minute),
+    billableMinutes: row.billable_minutes,
+    currencyCode: row.currency_code,
+    walletTransactionId: row.wallet_transaction_id,
+    fareCalculationMethod: row.fare_calculation_method,
     co2SavedKg: Number(row.co2_saved_kg),
     startLocation: row.start_location,
     endLocation: row.end_location,
@@ -96,7 +108,7 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
       const { data, error } = await supabase
         .from("bike_ride_history")
         .select(
-          "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
+          "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
         )
         .eq("profile_id", userId)
         .order("completed_at", { ascending: false });
@@ -120,7 +132,7 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
       const { data, error } = await supabase
         .from("bike_ride_history")
         .select(
-          "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
+          "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
         )
         .eq("id", id)
         .eq("profile_id", userId)
@@ -146,8 +158,6 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
         throw new Error("No active rider session was found.");
       }
 
-      const completedAt = new Date();
-      const startedAt = new Date(completedAt.getTime() - mockActiveRide.durationSec * 1000);
       const route = (mockRideHistory[0]?.route ?? []) as unknown as NonNullable<
         BikeRideHistoryInsert["route"]
       >;
@@ -155,30 +165,15 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
         BikeRideHistoryInsert["checkpoints"]
       >;
 
-      const insertPayload: BikeRideHistoryInsert = {
-        bike_id: bikeId,
-        profile_id: userId,
-        started_at: startedAt.toISOString(),
-        completed_at: completedAt.toISOString(),
-        duration_sec: mockActiveRide.durationSec,
-        distance_km: mockRideSummary.distanceKm,
-        total_cost: mockRideSummary.totalCost,
-        co2_saved_kg: mockRideSummary.co2SavedKg,
-        start_location: mockActiveRide.startLocation,
-        end_location: mockActiveRide.endLocation ?? "Benjakitti Park",
-        route_label: mockRideSummary.routeLabel,
-        payment_label: "Charged to your Glide wallet",
-        route,
-        checkpoints
-      };
-
-      const { data, error } = await supabase
-        .from("bike_ride_history")
-        .insert(insertPayload)
-        .select(
-          "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
-        )
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("complete_ride", {
+        p_bike_id: bikeId,
+        p_distance_km: mockRideSummary.distanceKm,
+        p_end_location: mockActiveRide.endLocation ?? "Benjakitti Park",
+        p_route_label: mockRideSummary.routeLabel,
+        p_route: route,
+        p_checkpoints: checkpoints,
+        p_co2_saved_kg: mockRideSummary.co2SavedKg
+      });
 
       if (error) {
         throw new Error(`Failed to complete ride: ${error.message}`);
@@ -204,6 +199,13 @@ function createMockRideHistoryService(): ConfiguredRideHistoryService {
       return getMockRideHistoryById(id);
     },
     async completeDemoRide({ bikeId }) {
+      const ratePerMinute = 0.17;
+      const billableMinutes = calculateBillableMinutes(mockActiveRide.durationSec);
+      const totalCost = calculateRideRevenue({
+        durationSec: mockActiveRide.durationSec,
+        ratePerMinute
+      });
+
       return {
         ...(mockRideHistory[0] ?? {
           id: `mock-ride-${Date.now()}`,
@@ -213,7 +215,12 @@ function createMockRideHistoryService(): ConfiguredRideHistoryService {
           completedAt: new Date().toISOString(),
           durationSec: mockActiveRide.durationSec,
           distanceKm: mockRideSummary.distanceKm,
-          totalCost: mockRideSummary.totalCost,
+          totalCost,
+          ratePerMinute,
+          billableMinutes,
+          currencyCode: "THB",
+          walletTransactionId: null,
+          fareCalculationMethod: "ceil_minutes_v1",
           co2SavedKg: mockRideSummary.co2SavedKg,
           startLocation: mockActiveRide.startLocation,
           endLocation: mockActiveRide.endLocation ?? "Benjakitti Park",

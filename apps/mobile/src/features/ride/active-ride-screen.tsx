@@ -8,8 +8,6 @@ import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared"
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
-import { useAuth } from "@/features/auth/auth-provider";
-import { configuredBikeStatusService } from "@/lib/bike-status-service";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { hasSupabaseConfig } from "@/lib/supabase";
 import { colors, radii, spacing } from "@/theme/tokens";
@@ -20,7 +18,6 @@ const ARRIVAL_OVERLAY_MS = 1600;
 
 export function ActiveRideScreen() {
   const router = useRouter();
-  const { session, user } = useAuth();
   const { setBikeRideState } = useRideSession();
   const params = useLocalSearchParams<{ bikeId?: string; entry?: string }>();
   const bikeId = params.bikeId ?? mockActiveRide.bikeId;
@@ -134,21 +131,11 @@ export function ActiveRideScreen() {
     setEndRideError(null);
 
     try {
-      if (!session?.access_token) {
-        throw new Error("You need to sign in again before updating ride status.");
-      }
-
-      await configuredBikeStatusService.updateBikeStatus({
-        bikeId,
-        status: "available",
-        accessToken: session.access_token
-      });
+      const ride = await configuredRideHistoryService.completeDemoRide({ bikeId });
       setBikeRideState(bikeId, {
         status: "available",
         activeRiderId: null
       });
-
-      const ride = await configuredRideHistoryService.completeDemoRide({ bikeId });
       router.push({
         pathname: "/ride/summary",
         params: { id: ride.id }

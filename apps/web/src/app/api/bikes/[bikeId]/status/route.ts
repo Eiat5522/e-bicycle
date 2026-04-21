@@ -94,7 +94,7 @@ export async function PATCH(
 
   const { data: currentBike, error: currentBikeError } = await supabase
     .from("bikes")
-    .select("id, status, active_rider_id")
+    .select("id, status, active_rider_id, location")
     .eq("id", bikeId)
     .maybeSingle();
 
@@ -141,10 +141,13 @@ export async function PATCH(
     );
   }
 
+  const reportedAt = new Date().toISOString();
   const updateValues: Database["public"]["Tables"]["bikes"]["Update"] = {
     status: payload.status as BikeStatus,
-    active_rider_id: isStartingRide ? currentUserId : null,
-    last_reported_at: new Date().toISOString()
+    active_rider_id: isStartingRide || isReserving ? currentUserId : null,
+    active_ride_started_at: isStartingRide ? reportedAt : null,
+    active_ride_start_location: isStartingRide ? currentBike.location : null,
+    last_reported_at: reportedAt
   };
 
   let updateQuery = supabase

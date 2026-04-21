@@ -54,7 +54,8 @@ describe("/api/bikes/[bikeId]/status", () => {
       data: {
         id: "G-205",
         status: "available",
-        active_rider_id: null
+        active_rider_id: null,
+        location: "อโศก Interchange"
       },
       error: null
     });
@@ -63,7 +64,8 @@ describe("/api/bikes/[bikeId]/status", () => {
       data: {
         id: "G-205",
         status: "in_use",
-        active_rider_id: "user-1"
+        active_rider_id: "user-1",
+        location: "อโศก Interchange"
       },
       error: null
     });
@@ -134,7 +136,8 @@ describe("/api/bikes/[bikeId]/status", () => {
       data: {
         id: "G-205",
         status: "in_use",
-        active_rider_id: "user-1"
+        active_rider_id: "user-1",
+        location: "อโศก Interchange"
       },
       error: null
     });

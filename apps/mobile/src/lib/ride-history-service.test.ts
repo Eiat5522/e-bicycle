@@ -15,6 +15,11 @@ describe("configuredRideHistoryService", () => {
           duration_sec: 1560,
           distance_km: 3.4,
           total_cost: 4.8,
+          rate_per_minute: 0.1846,
+          billable_minutes: 26,
+          currency_code: "THB",
+          wallet_transaction_id: "txn-ride",
+          fare_calculation_method: "ceil_minutes_v1",
           co2_saved_kg: 0.9,
           start_location: "อโศก Interchange",
           end_location: "Benjakitti Park",
@@ -82,6 +87,11 @@ describe("configuredRideHistoryService", () => {
         duration_sec: 1560,
         distance_km: 3.4,
         total_cost: 4.8,
+        rate_per_minute: 0.1846,
+        billable_minutes: 26,
+        currency_code: "THB",
+        wallet_transaction_id: "txn-ride",
+        fare_calculation_method: "ceil_minutes_v1",
         co2_saved_kg: 0.9,
         start_location: "อโศก Interchange",
         end_location: "Benjakitti Park",
@@ -134,7 +144,7 @@ describe("configuredRideHistoryService", () => {
   });
 
   it("creates a completed demo ride in Supabase", async () => {
-    const maybeSingle = jest.fn().mockResolvedValue({
+    const rpc = jest.fn().mockResolvedValue({
       data: {
         id: "ride-new",
         bike_id: "G-205",
@@ -144,6 +154,11 @@ describe("configuredRideHistoryService", () => {
         duration_sec: 1560,
         distance_km: 3.4,
         total_cost: 4.8,
+        rate_per_minute: 0.1846,
+        billable_minutes: 26,
+        currency_code: "THB",
+        wallet_transaction_id: "txn-ride",
+        fare_calculation_method: "ceil_minutes_v1",
         co2_saved_kg: 0.9,
         start_location: "อโศก Interchange",
         end_location: "Benjakitti Park",
@@ -154,8 +169,6 @@ describe("configuredRideHistoryService", () => {
       },
       error: null
     });
-    const insertSelect = jest.fn().mockReturnValue({ maybeSingle });
-    const insert = jest.fn().mockReturnValue({ select: insertSelect });
     const bikeIn = jest.fn().mockResolvedValue({
       data: [{ id: "G-205", model: "Glide City" }],
       error: null
@@ -165,10 +178,6 @@ describe("configuredRideHistoryService", () => {
       data: { session: { user: { id: "user-1" } } }
     });
     const from = jest.fn((table: string) => {
-      if (table === "bike_ride_history") {
-        return { insert };
-      }
-
       if (table === "bikes") {
         return { select: bikeSelect };
       }
@@ -180,7 +189,8 @@ describe("configuredRideHistoryService", () => {
       hasSupabaseConfig: true,
       supabase: {
         auth: { getSession },
-        from
+        from,
+        rpc
       }
     }));
 
@@ -189,12 +199,11 @@ describe("configuredRideHistoryService", () => {
     const ride = await configuredRideHistoryService.completeDemoRide({ bikeId: "G-205" });
 
     expect(ride.id).toBe("ride-new");
-    expect(insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        bike_id: "G-205",
-        profile_id: "user-1"
-      })
-    );
+    expect(rpc).toHaveBeenCalledWith("complete_ride", expect.objectContaining({
+      p_bike_id: "G-205",
+      p_distance_km: 3.1,
+      p_route_label: "อโศก to Benjakitti Park"
+    }));
     expect(bikeSelect).toHaveBeenCalledWith("id, model");
     expect(bikeIn).toHaveBeenCalledWith("id", ["G-205"]);
   });

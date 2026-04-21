@@ -35,6 +35,7 @@ const bike: ManagedBike = {
   rideClass: "City",
   topSpeedKmh: 32,
   pricingLabel: "฿15 / 30 min",
+  ratePerMinute: 0.5,
   status: "available",
   activeRiderId: null,
   activeRiderLabel: null,

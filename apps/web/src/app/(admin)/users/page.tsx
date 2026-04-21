@@ -16,6 +16,11 @@ type BikeRideHistoryWithBike = Pick<
   | "duration_sec"
   | "distance_km"
   | "total_cost"
+  | "rate_per_minute"
+  | "billable_minutes"
+  | "currency_code"
+  | "wallet_transaction_id"
+  | "fare_calculation_method"
   | "co2_saved_kg"
   | "start_location"
   | "end_location"
@@ -37,6 +42,11 @@ function mapRideHistory(row: BikeRideHistoryWithBike): RideHistoryItem {
     durationSec: row.duration_sec,
     distanceKm: Number(row.distance_km),
     totalCost: Number(row.total_cost),
+    ratePerMinute: Number(row.rate_per_minute),
+    billableMinutes: Number(row.billable_minutes),
+    currencyCode: row.currency_code,
+    walletTransactionId: row.wallet_transaction_id,
+    fareCalculationMethod: row.fare_calculation_method,
     co2SavedKg: Number(row.co2_saved_kg),
     startLocation: row.start_location,
     endLocation: row.end_location,
@@ -68,7 +78,7 @@ export default async function UsersPage() {
       supabase
         .from("bike_ride_history")
         .select(
-          "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints, bike:bikes(model)"
+          "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints, bike:bikes(model)"
         )
         .not("profile_id", "is", null)
         .order("completed_at", { ascending: false })

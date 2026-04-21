@@ -39,6 +39,7 @@ function createBikeFormData(overrides?: Record<string, string>) {
   formData.set("model", "Glide Sprint");
   formData.set("rideClass", "Urban");
   formData.set("pricingLabel", "$1.10 / 10 min");
+  formData.set("ratePerMinute", "0.11");
   formData.set("status", "available");
   formData.set("location", "Central World");
   formData.set("topSpeedKmh", "25");
@@ -76,6 +77,7 @@ describe("validateBikeForm", () => {
       longitude: 100.5393,
       model: "Glide Sprint",
       pricingLabel: "$1.10 / 10 min",
+      ratePerMinute: 0.11,
       rideClass: "Urban",
       status: "available",
       topSpeedKmh: 25
@@ -130,6 +132,16 @@ describe("validateBikeForm", () => {
         })
       )
     ).toThrow("Pricing label is required.");
+  });
+
+  it("rejects invalid rate per minute values", () => {
+    expect(() =>
+      validateBikeForm(
+        createBikeFormData({
+          ratePerMinute: "-0.01"
+        })
+      )
+    ).toThrow("Rate per minute must be zero or greater.");
   });
 
   it("rejects missing bike locations", () => {
