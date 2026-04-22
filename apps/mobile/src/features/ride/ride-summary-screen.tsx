@@ -8,14 +8,23 @@ import { formatCurrency, formatDistanceKm, type RideHistoryItem } from "@glide/s
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import {
+  getRewardMilestoneCelebration,
+  parseRewardMilestoneKey
+} from "@/lib/reward-milestones";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { hasSupabaseConfig } from "@/lib/supabase";
 import { colors, spacing } from "@/theme/tokens";
 
 export function RideSummaryScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const { id, milestone } = useLocalSearchParams<{
+    id?: string | string[];
+    milestone?: string | string[];
+  }>();
   const rideId = Array.isArray(id) ? id[0] : id;
+  const milestoneKey = parseRewardMilestoneKey(Array.isArray(milestone) ? milestone[0] : milestone);
+  const milestoneCelebration = milestoneKey ? getRewardMilestoneCelebration(milestoneKey) : null;
   const [ride, setRide] = useState<RideHistoryItem | undefined>();
   const [isLoading, setIsLoading] = useState(hasSupabaseConfig);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -160,6 +169,17 @@ export function RideSummaryScreen() {
           Route: {summary.routeLabel}
         </Text>
       </SurfaceCard>
+
+      {milestoneCelebration ? (
+        <SurfaceCard tone="accent">
+          <Text selectable style={{ color: colors.text, fontSize: 18, fontWeight: "800" }}>
+            {milestoneCelebration.confetti} {milestoneCelebration.headline}
+          </Text>
+          <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 22 }}>
+            {milestoneCelebration.message}
+          </Text>
+        </SurfaceCard>
+      ) : null}
 
       <View style={{ gap: spacing.sm }}>
         <PrimaryButton label="Share My Trip" variant="secondary" disabled />

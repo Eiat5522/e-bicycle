@@ -50,7 +50,7 @@ describe("RideSummaryScreen", () => {
   });
 
   it("renders the completed ride summary from Supabase", async () => {
-    jest.mocked(useLocalSearchParams).mockReturnValue({ id: "ride-new" });
+    jest.mocked(useLocalSearchParams).mockReturnValue({ id: "ride-new", milestone: "first_ride" });
 
     render(<RideSummaryScreen />);
 
@@ -58,6 +58,7 @@ describe("RideSummaryScreen", () => {
     expect(screen.getByText("Distance: 3.4 km")).toBeTruthy();
     expect(screen.getByText("CO2 saved: 0.9 kg")).toBeTruthy();
     expect(screen.getByText("Route: อโศก Interchange to Benjakitti Park")).toBeTruthy();
+    expect(screen.getByText("🎊✨ First ride milestone complete!")).toBeTruthy();
   });
 
   it("shows an unavailable state when the ride is missing", async () => {

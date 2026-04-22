@@ -331,5 +331,6 @@ describe("configuredWalletService", () => {
         amount: 15
       })
     );
+    expect(wallet.points).toBe(120);
   });
 });

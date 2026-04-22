@@ -50,7 +50,7 @@ describe("WalletScreen", () => {
     jest.mocked(configuredWalletService.getWallet).mockResolvedValue(initialWallet);
     jest.mocked(configuredWalletService.applyTopUp).mockImplementation(async ({ amount, methodLabel, title }) => ({
       balance: initialWallet.balance + amount,
-      points: initialWallet.points + amount * 10,
+      points: initialWallet.points,
       paymentMethods: initialWallet.paymentMethods,
       transactions: [
         {
@@ -312,6 +312,7 @@ describe("WalletScreen", () => {
         title: "Voucher Credit"
       });
       expect(screen.getByText("Top-up successful!")).toBeTruthy();
+      expect(screen.getByText("Top-ups increase your Baht wallet balance only.")).toBeTruthy();
     });
 
     fireEvent.press(screen.getByText("Done"));
@@ -339,6 +340,39 @@ describe("WalletScreen", () => {
 
       expect(screen.getByText("Top-up failed")).toBeTruthy();
       expect(screen.getByText("Gateway unavailable")).toBeTruthy();
+    });
+  });
+
+  it("shows milestone celebration copy when a first top-up reward is returned", async () => {
+    jest.mocked(configuredWalletService.applyTopUp).mockResolvedValueOnce({
+      balance: initialWallet.balance + 10,
+      points: initialWallet.points + 10,
+      paymentMethods: initialWallet.paymentMethods,
+      transactions: [
+        {
+          id: "reward-1",
+          type: "reward",
+          title: "Milestone unlocked: First wallet top-up",
+          subtitle: "Milestone key: first_wallet_top_up",
+          amount: 10,
+          timestamp: new Date().toISOString()
+        },
+        ...initialWallet.transactions
+      ]
+    });
+
+    const screen = render(<WalletScreen />);
+
+    await screen.findByText("฿24.50");
+    fireEvent.press(screen.getByLabelText("Select ฿10.00"));
+    fireEvent.press(screen.getByLabelText("Select PromptPay"));
+    fireEvent.press(screen.getByText("Top up now"));
+
+    await runWithFakeTimers(async () => {
+      fireEvent.press(screen.getByText("Confirm & pay"));
+      await settleTopUpFlow();
+
+      expect(screen.getByText("🎉🎊 First top-up milestone complete!")).toBeTruthy();
     });
   });
 });

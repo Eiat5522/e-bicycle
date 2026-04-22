@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
+import { configuredWalletService } from "@/lib/wallet-service";
 import { ActiveRideScreen } from "./active-ride-screen";
 import { useLiveRideTracker } from "./live-ride-tracker";
 
@@ -14,6 +15,12 @@ jest.mock("@/lib/ride-history-service", () => ({
   configuredRideHistoryService: {
     completeRide: jest.fn(),
     completeDemoRide: jest.fn()
+  }
+}));
+
+jest.mock("@/lib/wallet-service", () => ({
+  configuredWalletService: {
+    getWallet: jest.fn()
   }
 }));
 
@@ -95,6 +102,21 @@ describe("ActiveRideScreen", () => {
       route: [],
       checkpoints: []
     });
+    jest.mocked(configuredWalletService.getWallet).mockResolvedValue({
+      balance: 20,
+      points: 150,
+      paymentMethods: ["Visa **** 4242"],
+      transactions: [
+        {
+          id: "reward-recent",
+          type: "reward",
+          title: "Milestone unlocked: First ride",
+          subtitle: "Milestone key: first_ride",
+          amount: 20,
+          timestamp: new Date().toISOString()
+        }
+      ]
+    });
   });
 
   it("renders the unlock arrival overlay when entering from the unlock flow", () => {
@@ -157,7 +179,7 @@ describe("ActiveRideScreen", () => {
     });
     expect(push).toHaveBeenCalledWith({
       pathname: "/ride/summary",
-      params: { id: "ride-new" }
+      params: { id: "ride-new", milestone: "first_ride" }
     });
   });
 
