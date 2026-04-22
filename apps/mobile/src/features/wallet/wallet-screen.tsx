@@ -17,6 +17,11 @@ import type { Wallet } from "@glide/shared";
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import {
+  findRecentRewardMilestone,
+  getRewardMilestoneCelebration,
+  type RewardMilestoneKey
+} from "@/lib/reward-milestones";
 import { configuredWalletService } from "@/lib/wallet-service";
 import {
   borderWidths,
@@ -686,6 +691,7 @@ export function WalletScreen() {
   const [voucherCode, setVoucherCode] = useState("");
   const [promptPayPayload, setPromptPayPayload] = useState("");
   const [trueMoneyMobileNumber, setTrueMoneyMobileNumber] = useState("");
+  const [recentMilestone, setRecentMilestone] = useState<RewardMilestoneKey | null>(null);
 
   useEffect(() => {
     return () => {
@@ -838,6 +844,9 @@ export function WalletScreen() {
 
         setWallet(nextWallet);
         setWalletError(null);
+        setRecentMilestone(
+          findRecentRewardMilestone(nextWallet.transactions, ["first_wallet_top_up"])
+        );
         setTopUp({ status: "success", amount, method });
       } catch (error) {
         if (!isMountedRef.current || runIdRef.current !== runId) return;
@@ -917,6 +926,7 @@ export function WalletScreen() {
     setPromptPayPayload("");
     setVoucherCode("");
     setTrueMoneyMobileNumber("");
+    setRecentMilestone(null);
   }
 
   const isProcessing = topUp.status === "processing";
@@ -933,6 +943,7 @@ export function WalletScreen() {
   const balance = wallet?.balance ?? 0;
   const points = wallet?.points ?? 0;
   const transactions = wallet?.transactions ?? [];
+  const milestoneCelebration = recentMilestone ? getRewardMilestoneCelebration(recentMilestone) : null;
 
   return (
     <>
@@ -1136,10 +1147,21 @@ export function WalletScreen() {
                 {formatCurrency(topUp.amount)} has been added to your wallet via {methodLabels[topUp.method]}.
               </Text>
               <Text selectable style={{ color: colors.textMuted, fontSize: 14 }}>
-                You earned {Math.floor(topUp.amount * 10)} loyalty points!
+                Top-ups increase your Baht wallet balance only.
               </Text>
             </SurfaceCard>
           )}
+
+          {topUp.status === "success" && milestoneCelebration ? (
+            <SurfaceCard tone="accent">
+              <Text selectable style={{ color: colors.text, fontSize: 17, fontWeight: "800" }}>
+                {milestoneCelebration.confetti} {milestoneCelebration.headline}
+              </Text>
+              <Text selectable style={{ color: colors.textMuted, fontSize: 14, lineHeight: 22 }}>
+                {milestoneCelebration.message}
+              </Text>
+            </SurfaceCard>
+          ) : null}
 
           {topUp.status === "failed" && (
             <SurfaceCard tone="accent">

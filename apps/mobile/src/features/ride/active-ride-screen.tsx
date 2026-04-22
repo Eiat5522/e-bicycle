@@ -8,8 +8,10 @@ import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared"
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { findRecentRewardMilestone } from "@/lib/reward-milestones";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { hasSupabaseConfig } from "@/lib/supabase";
+import { configuredWalletService } from "@/lib/wallet-service";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { LiveRideRoutePreview } from "./live-ride-route-preview";
 import { useLiveRideTracker } from "./live-ride-tracker";
@@ -157,13 +159,26 @@ export function ActiveRideScreen() {
         route: snapshot.route,
         checkpoints: snapshot.checkpoints
       });
+
+      let milestone: string | undefined;
+      try {
+        const wallet = await configuredWalletService.getWallet();
+        milestone = findRecentRewardMilestone(wallet.transactions, [
+          "first_ride",
+          "five_rides",
+          "ten_rides"
+        ]) ?? undefined;
+      } catch {
+        milestone = undefined;
+      }
+
       setBikeRideState(bikeId, {
         status: "available",
         activeRiderId: null
       });
       router.push({
         pathname: "/ride/summary",
-        params: { id: ride.id }
+        params: milestone ? { id: ride.id, milestone } : { id: ride.id }
       });
     } catch (error) {
       setEndRideError(error instanceof Error ? error.message : "Unable to complete the ride.");

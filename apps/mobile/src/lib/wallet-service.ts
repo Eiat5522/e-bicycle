@@ -116,7 +116,7 @@ export const configuredWalletService: ConfiguredWalletService = hasSupabaseConfi
 
         return {
           balance: wallet.balance + amount,
-          points: wallet.points + Math.floor(amount * 10),
+          points: wallet.points,
           paymentMethods: wallet.paymentMethods,
           transactions: [nextTransaction, ...wallet.transactions]
         };
