@@ -3,6 +3,7 @@ import {
   createHttpBikeService,
   getRideHistoryById,
   mockAdminOverview,
+  mockExecutiveKpiSummary,
   mockRideHistory,
   supportService,
   walletService
@@ -40,6 +41,22 @@ describe("mock api services", () => {
 
   it("exposes admin overview data", () => {
     expect(mockAdminOverview.activeRides).toBe(1);
+  });
+
+  it("exposes executive KPI trend data", () => {
+    expect(mockExecutiveKpiSummary.headlineMetrics.map((metric) => metric.label)).toEqual(
+      expect.arrayContaining(["Wallet float", "Tracked revenue", "Active rides"])
+    );
+    expect(mockExecutiveKpiSummary.trends).toHaveLength(7);
+    expect(mockExecutiveKpiSummary.trends[0]).toEqual(
+      expect.objectContaining({
+        label: expect.any(String),
+        revenue: expect.any(Number),
+        activeRides: expect.any(Number),
+        utilization: expect.any(Number),
+        supportLoad: expect.any(Number)
+      })
+    );
   });
 
   it("creates an http bike service with typed nearby query parameters", async () => {

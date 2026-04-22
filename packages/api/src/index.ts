@@ -1,7 +1,9 @@
 import {
   calculateRideRevenue,
+  formatCurrency,
   type AdminOverview,
   type Bike,
+  type ExecutiveKpiSummary,
   type NearbyBikesQuery,
   type NearbyBikesResult,
   type Ride,
@@ -382,6 +384,92 @@ export const mockAdminOverview: AdminOverview = {
   activeRides: 1,
   openSupportSessions: 2,
   walletBalanceTotal: 1240.75
+};
+
+const mockCompletedRideRevenue = mockRideHistory.reduce(
+  (totalRevenue, ride) => totalRevenue + ride.totalCost,
+  0
+);
+const mockTrackedRevenue = mockCompletedRideRevenue + mockActiveRide.currentCost;
+
+export const mockExecutiveKpiSummary: ExecutiveKpiSummary = {
+  headlineMetrics: [
+    {
+      label: "Wallet float",
+      value: formatCurrency(mockAdminOverview.walletBalanceTotal),
+      delta: "+8.4%",
+      deltaTone: "positive",
+      detail: "Available rider balance across active payment wallets.",
+      trendKey: "revenue"
+    },
+    {
+      label: "Tracked revenue",
+      value: formatCurrency(mockTrackedRevenue),
+      delta: "+12.1%",
+      deltaTone: "positive",
+      detail: "Completed ride revenue plus the currently open ride.",
+      trendKey: "revenue"
+    },
+    {
+      label: "Active rides",
+      value: "1",
+      delta: "Live",
+      deltaTone: "neutral",
+      detail: "Trips in motion across the Bangkok operations zone.",
+      trendKey: "activeRides"
+    },
+    {
+      label: "Fleet utilization",
+      value: "17%",
+      delta: "-2.0 pts",
+      deltaTone: "warning",
+      detail: "Share of bikes currently reserved or in use.",
+      trendKey: "utilization"
+    },
+    {
+      label: "Support pressure",
+      value: "2 open",
+      delta: "+1 queue",
+      deltaTone: "warning",
+      detail: "Open chatbot and live-agent sessions needing attention.",
+      trendKey: "supportLoad"
+    }
+  ],
+  trends: [
+    { label: "Mon", revenue: 12.4, activeRides: 7, utilization: 42, supportLoad: 3 },
+    { label: "Tue", revenue: 14.8, activeRides: 9, utilization: 48, supportLoad: 4 },
+    { label: "Wed", revenue: 13.6, activeRides: 8, utilization: 45, supportLoad: 2 },
+    { label: "Thu", revenue: 18.2, activeRides: 11, utilization: 56, supportLoad: 5 },
+    { label: "Fri", revenue: 21.5, activeRides: 13, utilization: 61, supportLoad: 6 },
+    { label: "Sat", revenue: 24.1, activeRides: 15, utilization: 66, supportLoad: 4 },
+    {
+      label: "Sun",
+      revenue: Number(mockTrackedRevenue.toFixed(2)),
+      activeRides: mockAdminOverview.activeRides,
+      utilization: Math.round((mockAdminOverview.activeRides / mockBikes.length) * 100),
+      supportLoad: mockAdminOverview.openSupportSessions
+    }
+  ],
+  insights: [
+    {
+      title: "Demand is weekend-led",
+      value: "15 rides",
+      detail: "Saturday demand remains the high-water mark for staffing and bike staging.",
+      tone: "accent"
+    },
+    {
+      title: "Revenue quality is improving",
+      value: "+12.1%",
+      detail: "Tracked revenue is up versus the previous mock reporting period.",
+      tone: "success"
+    },
+    {
+      title: "Support needs a watch",
+      value: "2 open",
+      detail: "Keep live-agent coverage ready while utilization rises.",
+      tone: "warning"
+    }
+  ]
 };
 
 export const authService: AuthService = {

@@ -152,3 +152,35 @@ export interface AdminOverview {
   readonly openSupportSessions: number;
   readonly walletBalanceTotal: number;
 }
+
+export type KpiTrendKey = "revenue" | "activeRides" | "utilization" | "supportLoad";
+
+export interface KpiTrendPoint {
+  readonly label: string;
+  readonly revenue: number;
+  readonly activeRides: number;
+  readonly utilization: number;
+  readonly supportLoad: number;
+}
+
+export interface ExecutiveKpiMetric {
+  readonly label: string;
+  readonly value: string;
+  readonly delta: string;
+  readonly deltaTone: "positive" | "neutral" | "warning";
+  readonly detail: string;
+  readonly trendKey: KpiTrendKey;
+}
+
+export interface ExecutiveKpiInsight {
+  readonly title: string;
+  readonly value: string;
+  readonly detail: string;
+  readonly tone: "accent" | "success" | "warning";
+}
+
+export interface ExecutiveKpiSummary {
+  readonly headlineMetrics: readonly ExecutiveKpiMetric[];
+  readonly trends: readonly KpiTrendPoint[];
+  readonly insights: readonly ExecutiveKpiInsight[];
+}
