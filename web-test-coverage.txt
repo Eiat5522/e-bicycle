@@ -1,0 +1,44 @@
+
+> @glide/web@0.1.0 test /home/eiat/projects/e-bicycle/apps/web
+> jest --config ./jest.config.js --runInBand --coverage
+
+PASS src/components/admin-shell.test.tsx
+PASS src/components/user-management-table.test.tsx
+PASS src/app/login/login-form.test.tsx
+PASS src/components/admin-nav.test.tsx
+PASS src/app/login/login-form-hooks.test.tsx
+PASS src/app/login/actions.test.ts
+PASS src/lib/validation.test.ts
+PASS src/lib/auth.test.ts
+PASS src/lib/supabase/config.test.ts
+PASS src/lib/supabase/server.test.ts
+PASS src/app/(admin)/user-update-form-state.test.ts
+----------------------------|---------|----------|---------|---------|-------------------
+File                        | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+----------------------------|---------|----------|---------|---------|-------------------
+All files                   |   99.58 |    87.84 |     100 |   99.56 |                   
+ app/(admin)                |     100 |      100 |     100 |     100 |                   
+  user-update-form-state.ts |     100 |      100 |     100 |     100 |                   
+ app/login                  |     100 |    95.23 |     100 |     100 |                   
+  actions.ts                |     100 |     92.3 |     100 |     100 | 31                
+  login-form-state.ts       |     100 |      100 |     100 |     100 |                   
+  login-form.tsx            |     100 |      100 |     100 |     100 |                   
+ components                 |     100 |    91.95 |     100 |     100 |                   
+  admin-nav.tsx             |     100 |      100 |     100 |     100 |                   
+  admin-shell.tsx           |     100 |    91.42 |     100 |     100 | 165,173,344       
+  user-management-table.tsx |     100 |     91.3 |     100 |     100 | 287,368-370       
+ lib                        |   98.83 |    78.78 |     100 |   98.83 |                   
+  auth.ts                   |   96.55 |      100 |     100 |   96.55 | 99                
+  formatting.ts             |     100 |      100 |     100 |     100 |                   
+  validation.ts             |     100 |       75 |     100 |     100 | 20-23,45-46,69-80 
+ lib/supabase               |     100 |      100 |     100 |     100 |                   
+  auth-errors.ts            |     100 |      100 |     100 |     100 |                   
+  config.ts                 |     100 |      100 |     100 |     100 |                   
+  server.ts                 |     100 |      100 |     100 |     100 |                   
+----------------------------|---------|----------|---------|---------|-------------------
+
+Test Suites: 11 passed, 11 total
+Tests:       59 passed, 59 total
+Snapshots:   0 total
+Time:        11.05 s
+Ran all test suites.
