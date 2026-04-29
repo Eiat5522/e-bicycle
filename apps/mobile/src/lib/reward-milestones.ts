@@ -54,10 +54,8 @@ export function parseRewardMilestoneKey(rawValue: string | null | undefined): Re
     return null;
   }
 
-  const normalizedValue = rawValue.toLowerCase() as RewardMilestoneKey;
-
-  return rewardMilestoneKeys.has(normalizedValue)
-    ? normalizedValue
+  return rewardMilestoneKeys.has(rawValue as RewardMilestoneKey)
+    ? (rawValue as RewardMilestoneKey)
     : null;
 }
 

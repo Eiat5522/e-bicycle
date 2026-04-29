@@ -315,26 +315,6 @@ export function MapScreen() {
         setDrawerBikeId(undefined);
         router.push("/help");
       }}
-      onNavigate={() => {
-        if (!drawerBike || !userCoordinates) {
-          return;
-        }
-
-        setDrawerBikeId(undefined);
-        router.push({
-          pathname: "/ride/navigation",
-          params: {
-            bikeId: drawerBike.id,
-            bikeModel: drawerBike.model,
-            destinationLatitude: String(drawerBike.coordinates.latitude),
-            destinationLongitude: String(drawerBike.coordinates.longitude),
-            destinationName: drawerBike.location,
-            originLatitude: String(userCoordinates.latitude),
-            originLongitude: String(userCoordinates.longitude),
-            originName: "Current location"
-          }
-        } as never);
-      }}
       onUnlock={() => {
         if (!drawerBike) {
           return;

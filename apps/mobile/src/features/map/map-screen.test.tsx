@@ -513,53 +513,6 @@ describe("MapScreen", () => {
     ).toBeTruthy();
   });
 
-  it("opens the navigation preview for the selected bike", async () => {
-    listNearby.mockResolvedValue({
-      bikes: [
-        {
-          id: "G-104",
-          model: "Glide Pro X",
-          rideClass: "Pro",
-          estimatedRangeKm: 45,
-          topSpeedKmh: 25,
-          pricingLabel: "฿1.20 / 10 min",
-          status: "available",
-          location: "Siam Square",
-          coordinates: { latitude: 13.7466, longitude: 100.5328 },
-          lastReportedAt: "2026-04-06T08:55:00Z"
-        }
-      ],
-      serverTime: "2026-04-06T09:00:00Z"
-    });
-
-    await renderScreen();
-
-    await waitForMapCanvas();
-
-    const mapCanvasMock = jest.mocked(MapCanvas);
-    const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
-
-    act(() => {
-      pressMarker?.("G-104", "available", null);
-    });
-
-    fireEvent.press(screen.getByText("Navigate to"));
-
-    expect(push).toHaveBeenCalledWith({
-      pathname: "/ride/navigation",
-      params: {
-        bikeId: "G-104",
-        bikeModel: "Glide Pro X",
-        destinationLatitude: "13.7466",
-        destinationLongitude: "100.5328",
-        destinationName: "Siam Square",
-        originLatitude: "37.7749",
-        originLongitude: "-122.4194",
-        originName: "Current location"
-      }
-    });
-  });
-
   it("refreshes the user location when recenter is pressed", async () => {
     await renderScreen();
 

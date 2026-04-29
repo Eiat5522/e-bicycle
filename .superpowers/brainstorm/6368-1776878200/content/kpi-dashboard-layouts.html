@@ -1,0 +1,76 @@
+<h2>Which KPI dashboard shape should the Next.js admin app use?</h2>
+<p class="subtitle">Click one option if a direction feels right. These are structure choices, not final visuals.</p>
+
+<div class="cards">
+  <div class="card" data-choice="ops-command" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. Operations Command</div>
+        <div class="mockup-body">
+          <div class="mock-nav">Glide Admin | Dashboard | Users | Bicycles</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px">
+            <div class="placeholder">Availability</div>
+            <div class="placeholder">Active rides</div>
+            <div class="placeholder">Revenue</div>
+            <div class="placeholder">Support</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:12px;margin-top:12px">
+            <div class="placeholder" style="min-height:120px">Fleet status + thresholds</div>
+            <div class="placeholder" style="min-height:120px">Lowest-range watchlist</div>
+          </div>
+          <div class="placeholder" style="margin-top:12px;min-height:70px">Recent ride revenue table</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Operations Command</h3>
+      <p>Dense, practical, and closest to the current admin shell. Best for operators checking fleet readiness, active rides, and exceptions quickly.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="executive-scorecard" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. Executive Scorecard</div>
+        <div class="mockup-body">
+          <div class="mock-nav">Glide Admin | Dashboard | Users | Bicycles</div>
+          <div class="placeholder" style="min-height:86px;margin-top:12px">Hero summary: growth, fleet health, rider demand</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px">
+            <div class="placeholder" style="min-height:95px">Revenue trend</div>
+            <div class="placeholder" style="min-height:95px">Utilization trend</div>
+            <div class="placeholder" style="min-height:95px">Support trend</div>
+          </div>
+          <div class="placeholder" style="margin-top:12px;min-height:70px">Narrative insights and business notes</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Executive Scorecard</h3>
+      <p>More boardroom-oriented. Best if the dashboard is for leadership reviewing business health more than day-to-day dispatch.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="fleet-map-center" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. Fleet Map Center</div>
+        <div class="mockup-body">
+          <div class="mock-nav">Glide Admin | Dashboard | Users | Bicycles</div>
+          <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:12px;margin-top:12px">
+            <div class="placeholder" style="min-height:180px">Live fleet map / route activity</div>
+            <div style="display:grid;gap:10px">
+              <div class="placeholder">Availability</div>
+              <div class="placeholder">Battery risk</div>
+              <div class="placeholder">Support load</div>
+            </div>
+          </div>
+          <div class="placeholder" style="margin-top:12px;min-height:70px">Selected zone and bike details</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Fleet Map Center</h3>
+      <p>Spatial and field-ops heavy. Best if the dashboard should primarily answer where bikes and service risks are right now.</p>
+    </div>
+  </div>
+</div>

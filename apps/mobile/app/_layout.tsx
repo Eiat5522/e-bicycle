@@ -115,7 +115,6 @@ function RootNavigator() {
         <Stack.Screen name="bike/[id]" options={{ title: "Bike Details" }} />
         <Stack.Screen name="unlock/[id]" options={{ title: "Unlock Bike" }} />
         <Stack.Screen name="ride/active" options={{ title: "Active Ride" }} />
-        <Stack.Screen name="ride/navigation" options={{ title: "Navigation Summary" }} />
         <Stack.Screen
           name="ride/history/[id]"
           options={{ presentation: "modal", title: "Ride Details" }}

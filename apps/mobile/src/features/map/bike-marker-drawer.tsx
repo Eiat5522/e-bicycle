@@ -34,7 +34,6 @@ interface BikeMarkerDrawerProps {
   readonly statusMessage: string | undefined;
   readonly unlockDisabledMessage: string | undefined;
   readonly onClose: () => void;
-  readonly onNavigate: () => void;
   readonly onViewDetails: () => void;
   readonly onUnlock: () => void;
   readonly onHelp: () => void;
@@ -57,7 +56,6 @@ export function BikeMarkerDrawer({
   statusMessage,
   unlockDisabledMessage,
   onClose,
-  onNavigate,
   onViewDetails,
   onUnlock,
   onHelp
@@ -294,7 +292,6 @@ export function BikeMarkerDrawer({
 
           <View style={{ gap: spacing.sm }}>
             <PrimaryButton label="Unlock and Ride" onPress={onUnlock} disabled={!canUnlock} />
-            <PrimaryButton label="Navigate to" onPress={onNavigate} variant="secondary" />
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
               <View style={{ flex: 1 }}>
                 <PrimaryButton label="View Details" onPress={onViewDetails} variant="secondary" />

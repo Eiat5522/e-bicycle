@@ -28,7 +28,7 @@ export function LoginFormCard({
   readonly state: LoginFormState;
 }) {
   return (
-    <section className="clay-card-raised w-full max-w-full p-8 md:max-w-md md:p-9">
+    <section className="clay-card-raised w-full max-w-md p-8 md:p-9">
       <div className="flex flex-col gap-3">
         <span className="clay-badge w-fit px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--clay-accent-strong)]">
           Restricted
