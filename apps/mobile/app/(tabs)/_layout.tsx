@@ -94,12 +94,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat-support"
+        name="eco"
         options={{
-          title: "Chat Support",
-          tabBarLabel: "Support",
+          title: "Eco Impact",
+          tabBarLabel: "Eco",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons color={color} name="message-text-outline" size={size} />
+            <MaterialCommunityIcons color={color} name="leaf" size={size} />
           )
         }}
       />
