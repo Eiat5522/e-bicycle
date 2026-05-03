@@ -4,6 +4,7 @@ import {
   appendRoutePoint,
   createLiveRideSnapshot,
   createMockLiveRideRoute,
+  getDropoffGuidance,
   getNearestDropoffZone
 } from "./live-ride-tracker";
 
@@ -52,5 +53,22 @@ describe("live ride tracker calculations", () => {
 
     expect(dropoff.label).toBe("Benjakitti Park");
     expect(dropoff.distanceKm).toBeGreaterThan(0);
+  });
+
+  it("marks a rider as approaching when near the nearest drop-off", () => {
+    const guidance = getDropoffGuidance({ latitude: 13.7312, longitude: 100.5462 });
+
+    expect(guidance.zone.label).toBe("Benjakitti Park");
+    expect(guidance.remainingDistanceKm).toBeGreaterThan(0);
+    expect(guidance.remainingDistanceKm).toBeLessThanOrEqual(0.25);
+    expect(guidance.state).toBe("approaching");
+  });
+
+  it("marks a rider as arrived inside the drop-off threshold", () => {
+    const guidance = getDropoffGuidance({ latitude: 13.7319, longitude: 100.5459 });
+
+    expect(guidance.zone.label).toBe("Benjakitti Park");
+    expect(guidance.remainingDistanceKm).toBeCloseTo(0, 6);
+    expect(guidance.state).toBe("arrived");
   });
 });

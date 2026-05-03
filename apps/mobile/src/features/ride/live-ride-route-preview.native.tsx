@@ -6,7 +6,7 @@ import { formatDistanceKm, type Coordinates } from "@glide/shared";
 import { SurfaceCard } from "@/components/surface-card";
 import { colors, radii } from "@/theme/tokens";
 
-import type { LiveRideSnapshot } from "./live-ride-tracker";
+import type { LiveRideDropoffGuidance, LiveRideSnapshot } from "./live-ride-tracker";
 
 const MIN_DELTA = 0.01;
 const DELTA_PADDING = 1.8;
@@ -27,7 +27,13 @@ function getRegionFromRoute(route: readonly Coordinates[]) {
   };
 }
 
-export function LiveRideRoutePreview({ snapshot }: { readonly snapshot: LiveRideSnapshot }) {
+export function LiveRideRoutePreview({
+  snapshot,
+  dropoffGuidance
+}: {
+  readonly snapshot: LiveRideSnapshot;
+  readonly dropoffGuidance: LiveRideDropoffGuidance;
+}) {
   const startPoint = snapshot.route[0];
   const currentPoint = snapshot.route.at(-1);
 
@@ -63,6 +69,9 @@ export function LiveRideRoutePreview({ snapshot }: { readonly snapshot: LiveRide
       </View>
       <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
         {snapshot.route.length} route points · {formatDistanceKm(snapshot.distanceKm)} recorded
+      </Text>
+      <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+        Destination: {dropoffGuidance.zone.label} · {dropoffGuidance.state.replaceAll("_", " ")}
       </Text>
     </SurfaceCard>
   );

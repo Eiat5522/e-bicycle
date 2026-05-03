@@ -19,6 +19,31 @@ import { useRideSession } from "./ride-session-context";
 
 const isTestEnvironment = process.env.NODE_ENV === "test";
 const ARRIVAL_OVERLAY_MS = 1600;
+const DROPOFF_BANNER_MS = 2800;
+
+function getDropoffGuidanceCopy(
+  state: "en_route" | "approaching" | "arrived",
+  label: string
+) {
+  if (state === "arrived") {
+    return {
+      eyebrow: "Ready to end ride",
+      body: `You have reached ${label}. Park safely, then end your ride.`
+    };
+  }
+
+  if (state === "approaching") {
+    return {
+      eyebrow: "Almost there",
+      body: `You are close to ${label}. Slow down and prepare to park.`
+    };
+  }
+
+  return {
+    eyebrow: "Recommended drop-off",
+    body: `Head to ${label} to end your ride smoothly.`
+  };
+}
 
 export function ActiveRideScreen() {
   const router = useRouter();
@@ -35,12 +60,14 @@ export function ActiveRideScreen() {
     }),
     [bike?.coordinates, bike?.location, bike?.ratePerMinute, bikeId]
   );
-  const { nearestDropoff, snapshot, trackingState, warningMessage } =
+  const { dropoffGuidance, snapshot, trackingState, warningMessage } =
     useLiveRideTracker(trackerOptions);
   const enteredFromUnlock = params.entry === "unlock";
   const [showArrivalOverlay, setShowArrivalOverlay] = useState(enteredFromUnlock);
+  const [showDropoffArrivalBanner, setShowDropoffArrivalBanner] = useState(false);
   const [endRideError, setEndRideError] = useState<string | null>(null);
   const [isEndingRide, setIsEndingRide] = useState(false);
+  const hasAnnouncedDropoffArrivalRef = useRef(false);
   const heroOpacity = useRef(new Animated.Value(isTestEnvironment ? 1 : 0)).current;
   const heroTranslateY = useRef(new Animated.Value(isTestEnvironment ? 0 : 20)).current;
   const glowPulse = useRef(new Animated.Value(0)).current;
@@ -136,6 +163,27 @@ export function ActiveRideScreen() {
     inputRange: [0, 1],
     outputRange: [0.16, 0.32]
   });
+  const dropoffGuidanceCopy = useMemo(
+    () => getDropoffGuidanceCopy(dropoffGuidance.state, dropoffGuidance.zone.label),
+    [dropoffGuidance.state, dropoffGuidance.zone.label]
+  );
+
+  useEffect(() => {
+    if (dropoffGuidance.state !== "arrived" || hasAnnouncedDropoffArrivalRef.current) {
+      return;
+    }
+
+    hasAnnouncedDropoffArrivalRef.current = true;
+    setShowDropoffArrivalBanner(true);
+
+    const timer = setTimeout(() => {
+      setShowDropoffArrivalBanner(false);
+    }, DROPOFF_BANNER_MS);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [dropoffGuidance.state]);
 
   async function handleEndRide() {
     if (!hasSupabaseConfig) {
@@ -380,7 +428,7 @@ export function ActiveRideScreen() {
                 Live Ride Companion
               </Text>
               <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
-                You have covered {formatDistanceKm(snapshot.distanceKm)} in {formatDuration(snapshot.durationSec)}. Tracking mode: {trackingState.replace(/_/g, " ")}.
+                You have covered {formatDistanceKm(snapshot.distanceKm)} in {formatDuration(snapshot.durationSec)}. Tracking mode: {trackingState.replaceAll("_", " ")}.
               </Text>
               <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
                 Current fare estimate: {formatCurrency(snapshot.currentCost)}
@@ -398,16 +446,36 @@ export function ActiveRideScreen() {
               </SurfaceCard>
             ) : null}
 
+            {showDropoffArrivalBanner ? (
+              <SurfaceCard tone="accent">
+                <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+                  You are inside the drop-off zone.
+                </Text>
+                <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                  Park safely at {dropoffGuidance.zone.label}, then end your ride when you are ready.
+                </Text>
+              </SurfaceCard>
+            ) : null}
+
             <SurfaceCard>
+              <Text selectable style={{ color: colors.text, fontSize: 13, fontWeight: "700" }}>
+                {dropoffGuidanceCopy.eyebrow}
+              </Text>
               <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-                Drop-off guidance
+                {dropoffGuidance.zone.label}
               </Text>
               <View style={{ gap: spacing.xs }}>
-                <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                  Nearest zone: {nearestDropoff.label}
+                <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                  {dropoffGuidanceCopy.body}
+                </Text>
+                <Text selectable style={{ color: colors.text, fontSize: 15, fontWeight: "700" }}>
+                  {formatDistanceKm(dropoffGuidance.remainingDistanceKm)} remaining
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
-                  Distance remaining: {formatDistanceKm(nearestDropoff.distanceKm)}
+                  We will keep updating the closest drop-off as you ride.
+                </Text>
+                <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
+                  Guidance state: {dropoffGuidance.state.replaceAll("_", " ")}
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 15 }}>
                   Route: {snapshot.routeLabel}
@@ -418,7 +486,7 @@ export function ActiveRideScreen() {
               </View>
             </SurfaceCard>
 
-            <LiveRideRoutePreview snapshot={snapshot} />
+            <LiveRideRoutePreview snapshot={snapshot} dropoffGuidance={dropoffGuidance} />
           </View>
         </Animated.View>
 

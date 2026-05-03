@@ -15,6 +15,8 @@ const DEFAULT_RATE_PER_MINUTE = 0.17;
 const CO2_SAVED_KG_PER_KM = 0.24;
 const LOCATION_DISTANCE_INTERVAL_METERS = 12;
 const LOCATION_TIME_INTERVAL_MS = 5000;
+const APPROACHING_DROPOFF_THRESHOLD_KM = 0.25;
+const ARRIVED_DROPOFF_THRESHOLD_KM = 0.05;
 
 export type LiveRideTrackingState = "starting" | "live" | "mock" | "permission_denied" | "error";
 
@@ -47,6 +49,14 @@ export interface DropoffZone {
   readonly label: string;
   readonly coordinates: Coordinates;
   readonly distanceKm: number;
+}
+
+export type DropoffGuidanceState = "en_route" | "approaching" | "arrived";
+
+export interface LiveRideDropoffGuidance {
+  readonly zone: DropoffZone;
+  readonly remainingDistanceKm: number;
+  readonly state: DropoffGuidanceState;
 }
 
 export const DEFAULT_LIVE_RIDE_START_COORDINATES: Coordinates = {
@@ -147,6 +157,24 @@ export function getNearestDropoffZone(coordinates: Coordinates): DropoffZone {
   }
 
   return nearestZone;
+}
+
+export function getDropoffGuidance(coordinates: Coordinates): LiveRideDropoffGuidance {
+  const zone = getNearestDropoffZone(coordinates);
+
+  let state: DropoffGuidanceState = "en_route";
+
+  if (zone.distanceKm <= ARRIVED_DROPOFF_THRESHOLD_KM) {
+    state = "arrived";
+  } else if (zone.distanceKm <= APPROACHING_DROPOFF_THRESHOLD_KM) {
+    state = "approaching";
+  }
+
+  return {
+    zone,
+    remainingDistanceKm: zone.distanceKm,
+    state
+  };
 }
 
 export function createLiveRideSnapshot({
@@ -333,12 +361,13 @@ export function useLiveRideTracker({
     [bikeId, nowMs, ratePerMinute, route, startLocation]
   );
   const currentPoint = snapshot.route.at(-1) ?? stableStartCoordinates;
-  const nearestDropoff = useMemo(() => getNearestDropoffZone(currentPoint), [currentPoint]);
+  const dropoffGuidance = useMemo(() => getDropoffGuidance(currentPoint), [currentPoint]);
 
   return {
     snapshot,
     trackingState,
     warningMessage,
-    nearestDropoff
+    nearestDropoff: dropoffGuidance.zone,
+    dropoffGuidance
   };
 }

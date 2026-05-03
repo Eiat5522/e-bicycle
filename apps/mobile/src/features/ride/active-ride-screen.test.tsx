@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
@@ -32,6 +32,41 @@ jest.mock("./live-ride-tracker", () => ({
   useLiveRideTracker: jest.fn()
 }));
 
+function createMockSnapshot() {
+  return {
+    bikeId: "G-205",
+    startedAt: "2026-04-14T10:00:00.000Z",
+    durationSec: 125,
+    distanceKm: 0.8,
+    currentCost: 0.55,
+    ratePerMinute: 0.1846,
+    co2SavedKg: 0.2,
+    startLocation: "อโศก Interchange",
+    endLocation: "Benjakitti Park",
+    routeLabel: "อโศก Interchange to Benjakitti Park",
+    route: [
+      { latitude: 13.7372, longitude: 100.5606 },
+      { latitude: 13.7319, longitude: 100.5459 }
+    ],
+    checkpoints: [
+      {
+        id: "G-205-unlock",
+        label: "Unlock",
+        description: "Bike unlocked and live ride tracking started.",
+        coordinates: { latitude: 13.7372, longitude: 100.5606 },
+        elapsedSec: 0
+      },
+      {
+        id: "G-205-dropoff",
+        label: "Drop-off",
+        description: "Nearest suggested drop-off is Benjakitti Park.",
+        coordinates: { latitude: 13.7319, longitude: 100.5459 },
+        elapsedSec: 125
+      }
+    ]
+  };
+}
+
 describe("ActiveRideScreen", () => {
   const push = jest.fn();
 
@@ -41,44 +76,23 @@ describe("ActiveRideScreen", () => {
     jest.mocked(useLiveRideTracker).mockReturnValue({
       trackingState: "mock",
       warningMessage: "Using simulated ride tracking for this environment.",
+      dropoffGuidance: {
+        zone: {
+          id: "benjakitti",
+          label: "Benjakitti Park",
+          coordinates: { latitude: 13.7319, longitude: 100.5459 },
+          distanceKm: 0.7
+        },
+        remainingDistanceKm: 0.7,
+        state: "en_route"
+      },
       nearestDropoff: {
         id: "benjakitti",
         label: "Benjakitti Park",
         coordinates: { latitude: 13.7319, longitude: 100.5459 },
         distanceKm: 0.7
       },
-      snapshot: {
-        bikeId: "G-205",
-        startedAt: "2026-04-14T10:00:00.000Z",
-        durationSec: 125,
-        distanceKm: 0.8,
-        currentCost: 0.55,
-        ratePerMinute: 0.1846,
-        co2SavedKg: 0.2,
-        startLocation: "อโศก Interchange",
-        endLocation: "Benjakitti Park",
-        routeLabel: "อโศก Interchange to Benjakitti Park",
-        route: [
-          { latitude: 13.7372, longitude: 100.5606 },
-          { latitude: 13.7319, longitude: 100.5459 }
-        ],
-        checkpoints: [
-          {
-            id: "G-205-unlock",
-            label: "Unlock",
-            description: "Bike unlocked and live ride tracking started.",
-            coordinates: { latitude: 13.7372, longitude: 100.5606 },
-            elapsedSec: 0
-          },
-          {
-            id: "G-205-dropoff",
-            label: "Drop-off",
-            description: "Nearest suggested drop-off is Benjakitti Park.",
-            coordinates: { latitude: 13.7319, longitude: 100.5459 },
-            elapsedSec: 125
-          }
-        ]
-      }
+      snapshot: createMockSnapshot()
     });
     jest.mocked(configuredRideHistoryService.completeRide).mockResolvedValue({
       id: "ride-new",
@@ -141,7 +155,9 @@ describe("ActiveRideScreen", () => {
     expect(screen.getByText("Live Ride Companion")).toBeTruthy();
     expect(screen.getByText("Distance")).toBeTruthy();
     expect(screen.getByText("CO2 saved")).toBeTruthy();
-    expect(screen.getByText("Drop-off guidance")).toBeTruthy();
+    expect(screen.getByText("Recommended drop-off")).toBeTruthy();
+    expect(screen.getByText("Benjakitti Park")).toBeTruthy();
+    expect(screen.getByText("0.7 km remaining")).toBeTruthy();
     expect(screen.getByText("Using simulated ride tracking for this environment.")).toBeTruthy();
 
     fireEvent.press(screen.getByText("End Ride"));
@@ -195,5 +211,50 @@ describe("ActiveRideScreen", () => {
 
     expect(await screen.findByText("Ride completion failed")).toBeTruthy();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it("shows one-time arrival feedback when the rider reaches the drop-off zone", () => {
+    jest.useFakeTimers();
+    jest.mocked(useLocalSearchParams).mockReturnValue({});
+    jest.mocked(useLiveRideTracker).mockReturnValue({
+      trackingState: "live",
+      warningMessage: null,
+      dropoffGuidance: {
+        zone: {
+          id: "benjakitti",
+          label: "Benjakitti Park",
+          coordinates: { latitude: 13.7319, longitude: 100.5459 },
+          distanceKm: 0
+        },
+        remainingDistanceKm: 0,
+        state: "arrived"
+      },
+      nearestDropoff: {
+        id: "benjakitti",
+        label: "Benjakitti Park",
+        coordinates: { latitude: 13.7319, longitude: 100.5459 },
+        distanceKm: 0
+      },
+      snapshot: createMockSnapshot()
+    });
+
+    const rendered = render(<ActiveRideScreen />);
+
+    expect(screen.getByText("You are inside the drop-off zone.")).toBeTruthy();
+    expect(screen.getByText("Ready to end ride")).toBeTruthy();
+
+    act(() => {
+      jest.advanceTimersByTime(2800);
+    });
+
+    expect(screen.queryByText("You are inside the drop-off zone.")).toBeNull();
+    expect(screen.queryByText("Ready to end ride")).toBeNull();
+
+    rendered.rerender(<ActiveRideScreen />);
+
+    expect(screen.queryByText("You are inside the drop-off zone.")).toBeNull();
+    expect(screen.queryByText("Ready to end ride")).toBeNull();
+
+    jest.useRealTimers();
   });
 });
