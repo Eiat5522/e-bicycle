@@ -506,6 +506,61 @@ describe("AuthProvider", () => {
     }
   });
 
+  it("restores a session when the URL implementation does not expose searchParams", async () => {
+    const previousPlatform = Platform.OS;
+    const originalUrl = globalThis.URL;
+
+    class UrlWithoutSearchParams {
+      readonly hash = "";
+      readonly search = "?access_token=query-access&refresh_token=query-refresh";
+
+      constructor(_url: string) {}
+    }
+
+    jest.replaceProperty(Platform, "OS", "ios");
+    globalThis.URL = UrlWithoutSearchParams as unknown as typeof URL;
+
+    try {
+      mockGetSession
+        .mockResolvedValueOnce({
+          data: {
+            session: null
+          }
+        })
+        .mockResolvedValueOnce({
+          data: {
+            session: {
+              user: {
+                id: "user-1",
+                email: "alex@rideglide.app"
+              }
+            }
+          }
+        });
+      mockLinkingGetInitialURL.mockResolvedValueOnce(
+        "glide://callback?access_token=query-access&refresh_token=query-refresh"
+      );
+
+      render(
+        <AuthProvider>
+          <AuthProbe />
+        </AuthProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("ready")).toBeTruthy();
+      });
+
+      expect(mockSetSession).toHaveBeenCalledWith({
+        access_token: "query-access",
+        refresh_token: "query-refresh"
+      });
+    } finally {
+      globalThis.URL = originalUrl;
+      jest.replaceProperty(Platform, "OS", previousPlatform);
+    }
+  });
+
   it("warns when a deep link cannot be parsed", async () => {
     const previousPlatform = Platform.OS;
     jest.replaceProperty(Platform, "OS", "ios");

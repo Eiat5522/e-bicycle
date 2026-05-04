@@ -4,7 +4,7 @@ name = "mobile"
 
 [setup]
 script = '''
-cd "CODEX_WORKTREE_PATH"
+cd "$CODEX_WORKTREE_PATH/apps/mobile"
 pnpm install
 pnpm build
 '''
@@ -12,9 +12,9 @@ pnpm build
 [[actions]]
 name = "Run Dev Server"
 icon = "run"
-command = "pnpm dev"
+command = 'pnpm dev'
 
 [[actions]]
 name = "Run Jest Unit Test"
 icon = "test"
-command = "pnpm test"
+command = 'pnpm test'

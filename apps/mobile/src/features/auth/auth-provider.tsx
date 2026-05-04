@@ -1,13 +1,13 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode
-} from "react";
 import * as Linking from "expo-linking";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    type ReactNode
+} from "react";
 import { Platform } from "react-native";
 
 import type { Session, User } from "@supabase/supabase-js";
@@ -86,7 +86,9 @@ function getSessionTokensFromUrl(url: string) {
   try {
     const parsedUrl = new URL(url);
     const hashParams = new URLSearchParams(parsedUrl.hash.startsWith("#") ? parsedUrl.hash.slice(1) : "");
-    const queryParams = parsedUrl.searchParams;
+    const queryParams = new URLSearchParams(
+      parsedUrl.search.startsWith("?") ? parsedUrl.search.slice(1) : parsedUrl.search
+    );
     const accessToken = hashParams.get("access_token") ?? queryParams.get("access_token");
     const refreshToken = hashParams.get("refresh_token") ?? queryParams.get("refresh_token");
 
