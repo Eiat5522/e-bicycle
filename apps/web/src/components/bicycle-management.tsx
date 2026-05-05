@@ -1083,7 +1083,14 @@ export function BicycleEditor({
         </form>
 
         {deleteAction && !isCreate && isEditing ? (
-          <form action={deleteAction} className="mt-6 flex justify-end">
+          <form
+            action={deleteAction}
+            className="mt-6 flex justify-end"
+            onSubmit={(e) => {
+              if (!window.confirm("Are you sure you want to delete this bicycle? This action cannot be undone.")) {
+                e.preventDefault();
+              }
+            }}>
             <input name="bikeId" type="hidden" value={bike.id} />
             <button
               className="clay-button inline-flex border-[var(--clay-danger-soft)] bg-[var(--clay-danger-soft)] px-5 py-3 text-sm font-semibold text-[var(--clay-danger)]"
