@@ -1,7 +1,7 @@
 {
 	"name": "glide-monorepo",
 	"private": true,
-	"packageManager": "pnpm@10.19.0",
+	"packageManager": "pnpm@10.33.4",
 	"scripts": {
 		"setup": "pnpm install",
 		"build": "turbo run build",
