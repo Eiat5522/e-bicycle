@@ -1,0 +1,3 @@
+## 2024-05-08 - Added confirmation for destructive actions
+**Learning:** Found a "Delete Bicycle" button in apps/web/src/components/bicycle-management.tsx that immediately submits a delete action without any confirmation. This is a common and critical UX/accessibility issue as it can lead to accidental data loss. Users benefit significantly from a confirmation dialog or a two-step process for destructive actions.
+**Action:** Always implement a confirmation step (e.g., using a native `window.confirm` or a custom modal) for actions that delete or permanently alter data, especially when the action is triggered by a single button click.
