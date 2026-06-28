@@ -1,8 +1,8 @@
-jest.mock("react", () => jest.requireActual("react"));
-
 import type { ReactNode } from "react";
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+
+import { SideDrawer } from "@/components/side-drawer";
 
 import {
   BicycleEditor,
@@ -10,6 +10,10 @@ import {
   type BikeRideHistoryEntry,
   type ManagedBike
 } from "./bicycle-management";
+
+const mockRouterBack = jest.fn();
+
+jest.mock("react", () => jest.requireActual("react"));
 
 jest.mock("next/link", () => {
   return function MockLink({
@@ -34,7 +38,7 @@ jest.mock("next/link", () => {
 
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
-    back: jest.fn()
+    back: mockRouterBack
   }))
 }));
 
@@ -184,6 +188,75 @@ describe("BicycleEditor", () => {
 
     expect(screen.getAllByRole("button", { name: "Cancel" })).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "Close bicycle editor" })).not.toBeInTheDocument();
+  });
+
+  it("requires confirmation before deleting a bicycle", async () => {
+    const onDeleteBike = jest.fn(async () => undefined);
+
+    render(
+      <BicycleEditor
+        action={jest.fn(async () => undefined)}
+        bike={bike}
+        deleteAction={onDeleteBike}
+        mode="edit"
+        rideHistory={rideHistory}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Bicycle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Bicycle" }));
+
+    expect(onDeleteBike).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog", { name: "Delete Glide Urban?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel deletion" })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel deletion" }));
+
+    expect(screen.queryByRole("alertdialog", { name: "Delete Glide Urban?" })).not.toBeInTheDocument();
+    expect(onDeleteBike).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Delete Bicycle" })).toHaveFocus();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Bicycle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Glide Urban" }));
+
+    await waitFor(() => expect(onDeleteBike).toHaveBeenCalledTimes(1));
+
+    const submittedCall = onDeleteBike.mock.calls[0] as [FormData] | undefined;
+    expect(submittedCall).toBeDefined();
+    expect(submittedCall![0].get("bikeId")).toBe(bike.id);
+  });
+
+  it("keeps delete confirmation escape handling inside the drawer", async () => {
+    render(
+      <SideDrawer ariaLabel={`Edit bicycle ${bike.model}`}>
+        <BicycleEditor
+          action={jest.fn(async () => undefined)}
+          bike={bike}
+          deleteAction={jest.fn(async () => undefined)}
+          mode="edit"
+          rideHistory={rideHistory}
+          variant="drawer"
+        />
+      </SideDrawer>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit Bicycle" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Bicycle" }));
+
+    const cancelDeletionButton = screen.getByRole("button", { name: "Cancel deletion" });
+    expect(cancelDeletionButton).toHaveFocus();
+
+    fireEvent.keyDown(cancelDeletionButton, { key: "Escape" });
+
+    expect(screen.queryByRole("alertdialog", { name: "Delete Glide Urban?" })).not.toBeInTheDocument();
+    expect(mockRouterBack).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Delete Bicycle" })).toHaveFocus();
+    });
   });
 
   it("expands a route map and lets admins inspect ride checkpoints", () => {

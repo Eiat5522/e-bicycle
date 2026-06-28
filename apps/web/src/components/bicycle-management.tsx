@@ -3,11 +3,12 @@
 import type { Coordinates, RideHistoryCheckpoint } from "@glide/shared";
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import type {
+  KeyboardEvent,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes
 } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import Image, { type ImageLoaderProps } from "next/image";
 import Link from "next/link";
@@ -767,7 +768,13 @@ export function BicycleEditor({
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [submitState, setSubmitState] = useState<BicycleEditorFormState>(initialBicycleEditorFormState);
   const [isPending, setIsPending] = useState(false);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
   const [expandedRideId, setExpandedRideId] = useState<string | null>(null);
+  const deleteConfirmationTitleId = useId();
+  const deleteConfirmationDescriptionId = useId();
+  const deleteConfirmationTriggerRef = useRef<HTMLButtonElement>(null);
+  const deleteConfirmationCancelRef = useRef<HTMLButtonElement>(null);
+  const previousDeleteFocusRef = useRef<HTMLElement | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -823,14 +830,50 @@ export function BicycleEditor({
   function handleCancelEditing() {
     formRef.current?.reset();
     setIsEditing(false);
+    setIsDeleteConfirmationOpen(false);
     setShowSubmitMessage(false);
     setSubmitState(initialBicycleEditorFormState);
   }
 
   function handleStartEditing() {
+    setIsDeleteConfirmationOpen(false);
     setShowSubmitMessage(false);
     setSubmitState(initialBicycleEditorFormState);
     setIsEditing(true);
+  }
+
+  function handleOpenDeleteConfirmation() {
+    previousDeleteFocusRef.current = deleteConfirmationTriggerRef.current;
+    setIsDeleteConfirmationOpen(true);
+  }
+
+  function handleCancelDeleteConfirmation() {
+    setIsDeleteConfirmationOpen(false);
+  }
+
+  useEffect(() => {
+    if (!isDeleteConfirmationOpen) {
+      previousDeleteFocusRef.current?.focus();
+      previousDeleteFocusRef.current = null;
+      return undefined;
+    }
+
+    previousDeleteFocusRef.current =
+      deleteConfirmationTriggerRef.current ??
+      (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    deleteConfirmationCancelRef.current?.focus();
+
+    return undefined;
+  }, [isDeleteConfirmationOpen]);
+
+  function handleDeleteConfirmationKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    handleCancelDeleteConfirmation();
   }
 
   return (
@@ -1083,17 +1126,63 @@ export function BicycleEditor({
         </form>
 
         {deleteAction && !isCreate && isEditing ? (
-          <form action={deleteAction} className="mt-6 flex justify-end">
-            <input name="bikeId" type="hidden" value={bike.id} />
+          <div className="mt-6 flex justify-end">
             <button
               className="clay-button inline-flex border-[var(--clay-danger-soft)] bg-[var(--clay-danger-soft)] px-5 py-3 text-sm font-semibold text-[var(--clay-danger)]"
               disabled={isPending}
-              type="submit">
+              onClick={handleOpenDeleteConfirmation}
+              ref={deleteConfirmationTriggerRef}
+              type="button">
               Delete Bicycle
             </button>
-          </form>
+          </div>
         ) : null}
       </div>
+
+      {deleteAction && isDeleteConfirmationOpen ? (
+        <div
+          aria-describedby={deleteConfirmationDescriptionId}
+          aria-labelledby={deleteConfirmationTitleId}
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4 backdrop-blur-[2px]"
+          onClick={handleCancelDeleteConfirmation}
+          onKeyDown={handleDeleteConfirmationKeyDown}
+          role="alertdialog">
+          <div className="clay-card-raised grid w-full max-w-md gap-5 p-6" onClick={(event) => event.stopPropagation()}>
+            <div className="grid gap-2">
+              <h3
+                className="text-2xl font-black tracking-[-0.03em] text-[var(--foreground)]"
+                id={deleteConfirmationTitleId}>
+                Delete {bike.model}?
+              </h3>
+              <p
+                className="text-sm leading-6 text-[var(--foreground-muted)]"
+                id={deleteConfirmationDescriptionId}>
+                This permanently removes bicycle {bike.id} from the fleet. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap justify-end gap-3">
+              <button
+                className="clay-button inline-flex px-5 py-3 text-sm font-semibold text-[var(--foreground)]"
+                ref={deleteConfirmationCancelRef}
+                onClick={handleCancelDeleteConfirmation}
+                type="button">
+                Cancel deletion
+              </button>
+              <form action={deleteAction}>
+                <input name="bikeId" type="hidden" value={bike.id} />
+                <button
+                  className="clay-button inline-flex border-[var(--clay-danger-soft)] bg-[var(--clay-danger-soft)] px-5 py-3 text-sm font-semibold text-[var(--clay-danger)]"
+                  disabled={isPending}
+                  type="submit">
+                  Delete {bike.model}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <aside className="flex flex-col gap-6">
         <section className="clay-card p-6">

@@ -469,8 +469,10 @@ export function OperationsDashboard({ data }: OperationsDashboardProps) {
           <div className="mt-6 grid gap-3">
             {data.watchlist.length > 0 ? (
               data.watchlist.map((bike, index) => (
-                <section
-                  className="dashboard-entrance-item dashboard-interactive-card rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-4"
+                <Link
+                  className="dashboard-entrance-item dashboard-interactive-card cursor-pointer rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-4 transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[var(--dashboard-accent-soft)] hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--dashboard-bg)]"
+                  aria-label={`Open bicycle ${bike.id}`}
+                  href={`/bicycles/${bike.id}`}
                   key={bike.id}
                   style={{ "--entry-delay": `${index * 35 + 420}ms` } as MotionStyle}>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -492,7 +494,7 @@ export function OperationsDashboard({ data }: OperationsDashboardProps) {
                       {formatDistanceKm(bike.estimatedRangeKm)}
                     </p>
                   </div>
-                </section>
+                </Link>
               ))
             ) : (
               <section className="rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-5">

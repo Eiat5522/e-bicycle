@@ -64,4 +64,61 @@ describe("OperationsDashboard", () => {
       "/dashboard/ride-replay/ride-1"
     );
   });
+
+  it("links the low-range watchlist cards to the bicycle detail flow", () => {
+    render(
+      <OperationsDashboard
+        data={selectOperationsDashboardViewModel({
+          ...emptyInput,
+          bikes: [
+            {
+              active_rider_id: null,
+              active_ride_start_location: null,
+              active_ride_started_at: null,
+              created_at: "2026-06-28T08:00:00Z",
+              estimated_range_km: 12,
+              id: "G-001",
+              image_url: null,
+              last_reported_at: "2026-06-28T08:50:00Z",
+              latitude: 13.7563,
+              location: "Siam Square",
+              longitude: 100.5018,
+              model: "Glide Mini",
+              pricing_label: "฿0.90 / 10 min",
+              rate_per_minute: 0.09,
+              ride_class: null,
+              status: "maintenance",
+              top_speed_kmh: 24,
+              updated_at: "2026-06-28T08:50:00Z"
+            },
+            {
+              active_rider_id: null,
+              active_ride_start_location: null,
+              active_ride_started_at: null,
+              created_at: "2026-06-28T08:10:00Z",
+              estimated_range_km: 28,
+              id: "G-002",
+              image_url: null,
+              last_reported_at: "2026-06-28T08:55:00Z",
+              latitude: 13.7262,
+              location: "Asok Interchange",
+              longitude: 100.5291,
+              model: "Glide City",
+              pricing_label: "฿1.20 / 10 min",
+              rate_per_minute: 0.12,
+              ride_class: null,
+              status: "available",
+              top_speed_kmh: 28,
+              updated_at: "2026-06-28T08:55:00Z"
+            }
+          ]
+        })}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Open bicycle G-001" })).toHaveAttribute(
+      "href",
+      "/bicycles/G-001"
+    );
+  });
 });
