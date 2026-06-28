@@ -1,17 +1,14 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import {
-  mockActiveRide,
-  mockAdminOverview,
-  mockBikes,
-  mockNearbyBikesResult,
-  mockRideHistory,
-  mockUser,
-  mockWallet
-} from "@glide/api";
-import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared";
+  formatCurrency,
+  formatDistanceKm,
+  formatDuration
+} from "@glide/shared";
+import Link from "next/link";
 
 import { formatAdminDate } from "@/lib/formatting";
+import type { OperationsDashboardViewModel } from "@/app/(admin)/dashboard/selectors";
 
 type DashboardTheme = CSSProperties & Record<`--${string}`, string>;
 type MotionStyle = CSSProperties & Partial<Record<"--entry-delay" | "--progress-scale", string>>;
@@ -35,138 +32,6 @@ const dashboardTheme: DashboardTheme = {
   "--dashboard-dark-border": "rgba(209, 193, 238, 0.55)",
   "--dashboard-dark-text": "var(--clay-text-primary)"
 };
-
-const fleetCounts = mockBikes.reduce<Record<string, number>>((counts, bike) => {
-  counts[bike.status] = (counts[bike.status] ?? 0) + 1;
-  return counts;
-}, {});
-
-const totalBikes = mockBikes.length;
-const availableBikes = fleetCounts.available ?? 0;
-const averageRangeKm =
-  mockBikes.reduce((totalRange, bike) => totalRange + bike.estimatedRangeKm, 0) / totalBikes;
-const averageRideDistanceKm =
-  mockRideHistory.reduce((totalDistance, ride) => totalDistance + ride.distanceKm, 0) /
-  mockRideHistory.length;
-const averageRideDurationSec =
-  mockRideHistory.reduce((totalDuration, ride) => totalDuration + ride.durationSec, 0) /
-  mockRideHistory.length;
-const completedRevenue = mockRideHistory.reduce((totalRevenue, ride) => totalRevenue + ride.totalCost, 0);
-const totalTrackedRevenue = completedRevenue + mockActiveRide.currentCost;
-const averageCompletedRideRevenue =
-  mockRideHistory.length === 0 ? 0 : completedRevenue / mockRideHistory.length;
-const activeRideBike = mockBikes.find((bike) => bike.id === mockActiveRide.bikeId);
-const activeRideRiderLabel =
-  activeRideBike?.activeRiderId === mockUser?.id
-    ? mockUser?.firstName ?? activeRideBike?.activeRiderId
-    : activeRideBike?.activeRiderId ?? null;
-
-const summaryMetrics = [
-  {
-    label: "Fleet availability",
-    value: `${availableBikes}/${totalBikes}`,
-    note: `${Math.round((availableBikes / totalBikes) * 100)}% dispatch-ready`
-  },
-  {
-    label: "Active rides",
-    value: mockAdminOverview.activeRides.toString(),
-    note: `${formatDistanceKm(mockActiveRide.distanceKm)} in motion${activeRideRiderLabel ? ` · in use by ${activeRideRiderLabel}` : ""}`
-  },
-  {
-    label: "Support load",
-    value: mockAdminOverview.openSupportSessions.toString(),
-    note: "Chatbot and live-agent queue open"
-  },
-  {
-    label: "Wallet float",
-    value: formatCurrency(mockAdminOverview.walletBalanceTotal),
-    note: `${formatCurrency(totalTrackedRevenue)} captured in tracked rides`
-  },
-  {
-    label: "Active rider",
-    value: activeRideRiderLabel ?? "Unknown",
-    note: `${mockActiveRide.bikeId} currently assigned`
-  }
-];
-
-const targetMetrics = [
-  {
-    label: "Fleet dispatch readiness",
-    currentValue: `${availableBikes} of ${totalBikes} bikes ready`,
-    helperText: "Target: every bike is available or freshly reassigned.",
-    progress: (availableBikes / totalBikes) * 100
-  },
-  {
-    label: "Wallet float target",
-    currentValue: formatCurrency(mockAdminOverview.walletBalanceTotal),
-    helperText: `Target: ${formatCurrency(1500)} available for active demand.`,
-    progress: (mockAdminOverview.walletBalanceTotal / 1500) * 100
-  },
-  {
-    label: "Average fleet range",
-    currentValue: formatDistanceKm(averageRangeKm),
-    helperText: "Target: 40 km average range before a swap cycle.",
-    progress: (averageRangeKm / 40) * 100
-  }
-];
-
-const fleetBreakdown = [
-  {
-    label: "Available",
-    count: fleetCounts.available ?? 0,
-    accent: "var(--dashboard-success)",
-    accentSoft: "var(--dashboard-success-soft)"
-  },
-  {
-    label: "In use",
-    count: fleetCounts.in_use ?? 0,
-    accent: "var(--dashboard-accent)",
-    accentSoft: "var(--dashboard-accent-soft)"
-  },
-  {
-    label: "Reserved",
-    count: fleetCounts.reserved ?? 0,
-    accent: "var(--dashboard-highlight)",
-    accentSoft: "var(--dashboard-highlight-soft)"
-  },
-  {
-    label: "Maintenance",
-    count: fleetCounts.maintenance ?? 0,
-    accent: "var(--dashboard-danger)",
-    accentSoft: "var(--dashboard-danger-soft)"
-  }
-];
-
-const recentRoutes = [...mockRideHistory]
-  .sort((left, right) => right.totalCost - left.totalCost)
-  .slice(0, 3);
-
-const watchlist = [...mockBikes]
-  .sort((left, right) => left.estimatedRangeKm - right.estimatedRangeKm)
-  .slice(0, 4);
-
-const activityFeed = [
-  {
-    title: "Telemetry sync completed",
-    detail: `${totalBikes} bikes checked in across the Bangkok network.`,
-    timestamp: formatAdminDate(mockNearbyBikesResult.serverTime)
-  },
-  {
-    title: "Ride still in progress",
-    detail: `${mockActiveRide.bikeId} is ${formatDistanceKm(mockActiveRide.distanceKm)} into the ${mockActiveRide.startLocation} route.`,
-    timestamp: "Live now"
-  },
-  {
-    title: "Latest wallet event",
-    detail: `${mockWallet.transactions[0]?.title ?? "Wallet update"} recorded for ${formatCurrency(Math.abs(mockWallet.transactions[0]?.amount ?? 0))}.`,
-    timestamp: mockWallet.transactions[0] ? formatAdminDate(mockWallet.transactions[0].timestamp) : "No recent event"
-  },
-  {
-    title: "Most valuable completed ride",
-    detail: `${recentRoutes[0]?.routeLabel ?? "No route"} closed at ${formatCurrency(recentRoutes[0]?.totalCost ?? 0)}.`,
-    timestamp: recentRoutes[0] ? formatAdminDate(recentRoutes[0].completedAt) : "No recent completion"
-  }
-];
 
 function clampProgress(progress: number) {
   return Math.min(100, Math.max(0, progress));
@@ -197,7 +62,11 @@ function StatusBadge({
   );
 }
 
-export function OperationsDashboard() {
+interface OperationsDashboardProps {
+  readonly data: OperationsDashboardViewModel;
+}
+
+export function OperationsDashboard({ data }: OperationsDashboardProps) {
   return (
     <section className="flex flex-col gap-6" style={dashboardTheme}>
       <section
@@ -216,7 +85,7 @@ export function OperationsDashboard() {
               <p className="max-w-2xl text-base leading-7 text-[var(--dashboard-ink-muted)]">
                 Monitor dispatch readiness, revenue capture, rider activity, and support pressure
                 from a single executive view. Every module below is grounded in the current shared
-                mock services, so the dashboard stays honest while the live backend catches up.
+                Supabase data, so the dashboard stays honest while the live backend catches up.
               </p>
             </div>
             <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -225,7 +94,7 @@ export function OperationsDashboard() {
                 style={{ "--entry-delay": "40ms" } as MotionStyle}>
                 <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Last sync</dt>
                 <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
-                  {formatAdminDate(mockNearbyBikesResult.serverTime)}
+                  {data.lastSyncLabel}
                 </dd>
               </div>
               <div
@@ -233,7 +102,7 @@ export function OperationsDashboard() {
                 style={{ "--entry-delay": "80ms" } as MotionStyle}>
                 <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Fleet range average</dt>
                 <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
-                  {formatDistanceKm(averageRangeKm)}
+                  {formatDistanceKm(data.averageFleetRangeKm)}
                 </dd>
               </div>
               <div
@@ -241,7 +110,7 @@ export function OperationsDashboard() {
                 style={{ "--entry-delay": "120ms" } as MotionStyle}>
                 <dt className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Completed ride average</dt>
                 <dd className="mt-2 text-lg font-semibold text-[var(--dashboard-ink)]">
-                  {formatDistanceKm(averageRideDistanceKm)}
+                  {formatDistanceKm(data.averageRideDistanceKm)}
                 </dd>
               </div>
             </dl>
@@ -255,18 +124,25 @@ export function OperationsDashboard() {
               <div>
                 <p className="text-sm text-[var(--dashboard-ink-muted)]">Ride in progress</p>
                 <p className="mt-2 text-3xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
-                  {mockActiveRide.bikeId}
+                  {data.activeRide?.bikeId ?? "No active ride"}
                 </p>
-                {activeRideRiderLabel ? (
+                {data.activeRide?.riderLabel ? (
                   <p className="mt-2 text-sm font-semibold text-[var(--dashboard-ink)]">
-                    Currently in use by {activeRideRiderLabel}
+                    Currently in use by {data.activeRide.riderLabel}
                   </p>
                 ) : null}
                 <p className="mt-2 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
-                  {formatDistanceKm(mockActiveRide.distanceKm)} covered with{" "}
-                  {mockActiveRide.nextDropoffZoneKm
-                    ? `${formatDistanceKm(mockActiveRide.nextDropoffZoneKm)} to next drop-off zone`
-                    : "drop-off zone status pending"}.
+                  {data.activeRide ? (
+                    <>
+                      {formatDistanceKm(data.activeRide.distanceKm)} covered with{" "}
+                      {data.activeRide.nextDropoffZoneKm !== null && data.activeRide.nextDropoffZoneKm !== undefined
+                        ? `${formatDistanceKm(data.activeRide.nextDropoffZoneKm)} to next drop-off zone`
+                        : "drop-off zone status pending"}
+                      .
+                    </>
+                  ) : (
+                    "No ride telemetry yet."
+                  )}
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -275,7 +151,7 @@ export function OperationsDashboard() {
                     Completed revenue
                   </p>
                   <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
-                    {formatCurrency(completedRevenue)}
+                    {formatCurrency(data.completedRevenue)}
                   </p>
                 </div>
                 <div className="clay-card dashboard-interactive-card min-w-0 p-4">
@@ -283,7 +159,7 @@ export function OperationsDashboard() {
                     Avg. ride duration
                   </p>
                   <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
-                    {formatDuration(averageRideDurationSec)}
+                    {formatDuration(data.averageRideDurationSec)}
                   </p>
                 </div>
               </div>
@@ -292,7 +168,7 @@ export function OperationsDashboard() {
         </div>
 
         <section className="grid gap-4 px-5 py-5 sm:px-6 sm:py-6 md:grid-cols-2 xl:grid-cols-4 lg:px-8">
-          {summaryMetrics.map((metric, index) => (
+          {data.summaryMetrics.map((metric, index) => (
             <article
               className="clay-card dashboard-entrance-item dashboard-interactive-card min-w-0 p-4 sm:p-5"
               key={metric.label}
@@ -325,7 +201,7 @@ export function OperationsDashboard() {
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {targetMetrics.map((metric, index) => {
+            {data.targetMetrics.map((metric, index) => {
               const progress = clampProgress(metric.progress);
 
               return (
@@ -373,8 +249,8 @@ export function OperationsDashboard() {
           </div>
 
           <div className="mt-6 grid gap-3">
-            {fleetBreakdown.map((status, index) => {
-              const share = totalBikes === 0 ? 0 : clampProgress((status.count / totalBikes) * 100);
+            {data.fleetBreakdown.map((status, index) => {
+              const share = data.totalBikes === 0 ? 0 : clampProgress((status.count / data.totalBikes) * 100);
 
               return (
                 <div
@@ -444,32 +320,49 @@ export function OperationsDashboard() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                {recentRoutes.map((ride, index) => (
-                  <tr
-                    className="dashboard-table-row border-t border-[var(--dashboard-line)]"
-                    key={ride.id}
-                    style={{ "--entry-delay": `${index * 35 + 320}ms` } as MotionStyle}>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex flex-col gap-1">
-                        <p className="font-semibold text-[var(--dashboard-ink)]">{ride.routeLabel}</p>
-                        <p className="text-sm text-[var(--dashboard-ink-muted)]">
-                          Completed {formatAdminDate(ride.completedAt)}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-sm font-medium text-[var(--dashboard-ink)]">
-                      {formatDistanceKm(ride.distanceKm)}
-                    </td>
-                    <td className="px-4 py-4 text-sm font-medium text-[var(--dashboard-ink)]">
-                      {formatDuration(ride.durationSec)}
-                    </td>
-                    <td className="px-4 py-4 font-mono text-sm font-semibold text-[var(--dashboard-ink)]">
-                      {formatCurrency(ride.totalCost)}
+              {data.recentRoutes.length > 0 ? (
+                <tbody>
+                  {data.recentRoutes.map((ride, index) => (
+                    <tr
+                      className="dashboard-table-row border-t border-[var(--dashboard-line)]"
+                      key={ride.id}
+                      style={{ "--entry-delay": `${index * 35 + 320}ms` } as MotionStyle}>
+                      <td className="px-4 py-4 align-top">
+                        <div className="flex flex-col gap-1">
+                          <p className="font-semibold text-[var(--dashboard-ink)]">{ride.routeLabel}</p>
+                          <p className="text-sm text-[var(--dashboard-ink-muted)]">
+                            Completed {formatAdminDate(ride.completedAt)}
+                          </p>
+                          <Link
+                            aria-label={`Replay ${ride.routeLabel}`}
+                            className="mt-2 inline-flex w-fit rounded-full bg-[var(--dashboard-accent-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--dashboard-accent)] transition hover:bg-[var(--dashboard-accent)] hover:text-white"
+                            href={`/dashboard/ride-replay/${ride.id}`}>
+                            Replay route
+                          </Link>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-[var(--dashboard-ink)]">
+                        {formatDistanceKm(ride.distanceKm)}
+                      </td>
+                      <td className="px-4 py-4 text-sm font-medium text-[var(--dashboard-ink)]">
+                        {formatDuration(ride.durationSec)}
+                      </td>
+                      <td className="px-4 py-4 font-mono text-sm font-semibold text-[var(--dashboard-ink)]">
+                        {formatCurrency(ride.totalCost)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              ) : (
+                <tbody>
+                  <tr>
+                    <td className="px-4 py-6 text-sm leading-6 text-[var(--dashboard-ink-muted)]" colSpan={4}>
+                      No completed rides have synced yet. Recent routes will appear here once
+                      Supabase returns bike ride history rows.
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                </tbody>
+              )}
             </table>
           </div>
         </article>
@@ -487,7 +380,7 @@ export function OperationsDashboard() {
           </div>
 
           <ol className="mt-6 grid gap-4">
-            {activityFeed.map((item, index) => (
+            {data.activityFeed.map((item, index) => (
               <li
                 className="dashboard-entrance-item dashboard-interactive-card rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-4"
                 key={item.title}
@@ -528,10 +421,10 @@ export function OperationsDashboard() {
                 Revenue per completed ride
               </p>
               <p className="mt-3 font-mono text-2xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
-                {formatCurrency(averageCompletedRideRevenue)}
+                {formatCurrency(data.averageCompletedRideRevenue)}
               </p>
               <p className="mt-3 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
-                Based on the current tracked ride history across the admin mock services.
+                Based on the current tracked ride history across Supabase.
               </p>
             </div>
 
@@ -540,10 +433,10 @@ export function OperationsDashboard() {
                 Active ride cost
               </p>
               <p className="mt-3 font-mono text-2xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
-                {formatCurrency(mockActiveRide.currentCost)}
+                {formatCurrency(data.activeRide?.currentCost ?? 0)}
               </p>
               <p className="mt-3 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
-                Current trip cost for {mockActiveRide.bikeId}, updated while the ride is open.
+                Current trip cost for {data.activeRide?.bikeId ?? "the active bike"}, updated while the ride is open.
               </p>
             </div>
 
@@ -552,10 +445,10 @@ export function OperationsDashboard() {
                 Payment methods in rotation
               </p>
               <p className="mt-3 font-mono text-2xl font-black tracking-[-0.04em] text-[var(--dashboard-ink)]">
-                {mockWallet.paymentMethods.length}
+                {data.paymentMethodsCount}
               </p>
               <p className="mt-3 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
-                Wallet funding rail currently mapped in the shared mock wallet.
+                Wallet funding rails currently mapped in Supabase wallet rows.
               </p>
             </div>
           </div>
@@ -574,32 +467,42 @@ export function OperationsDashboard() {
           </div>
 
           <div className="mt-6 grid gap-3">
-            {watchlist.map((bike, index) => (
-              <section
-                className="dashboard-entrance-item dashboard-interactive-card rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-4"
-                key={bike.id}
-                style={{ "--entry-delay": `${index * 35 + 420}ms` } as MotionStyle}>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-[var(--dashboard-ink)]">
-                      {bike.model} · {bike.id}
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
-                      {bike.location} · last reported {formatAdminDate(bike.lastReportedAt)}
+            {data.watchlist.length > 0 ? (
+              data.watchlist.map((bike, index) => (
+                <section
+                  className="dashboard-entrance-item dashboard-interactive-card rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-4"
+                  key={bike.id}
+                  style={{ "--entry-delay": `${index * 35 + 420}ms` } as MotionStyle}>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold text-[var(--dashboard-ink)]">
+                        {bike.model} · {bike.id}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
+                        {bike.location} · last reported {formatAdminDate(bike.lastReportedAt)}
+                      </p>
+                    </div>
+                    <span className="clay-badge px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
+                      {bike.status.replace("_", " ")}
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Estimated range</p>
+                    <p className="font-mono text-sm font-semibold text-[var(--dashboard-ink)]">
+                      {formatDistanceKm(bike.estimatedRangeKm)}
                     </p>
                   </div>
-                  <span className="clay-badge px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
-                    {bike.status.replace("_", " ")}
-                  </span>
-                </div>
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-[var(--dashboard-ink-muted)]">Estimated range</p>
-                  <p className="font-mono text-sm font-semibold text-[var(--dashboard-ink)]">
-                    {formatDistanceKm(bike.estimatedRangeKm)}
-                  </p>
-                </div>
+                </section>
+              ))
+            ) : (
+              <section className="rounded-[1.5rem] border border-[var(--dashboard-line)] bg-[var(--dashboard-panel-soft)] p-5">
+                <p className="text-sm font-semibold text-[var(--dashboard-ink)]">No bikes available</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--dashboard-ink-muted)]">
+                  The lowest-range watchlist will populate once bike rows are available from
+                  Supabase.
+                </p>
               </section>
-            ))}
+            )}
           </div>
         </article>
       </section>

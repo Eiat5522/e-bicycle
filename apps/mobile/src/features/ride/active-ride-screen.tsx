@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { mockActiveRide, mockBikes } from "@glide/api";
 import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared";
@@ -8,6 +9,8 @@ import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared"
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
+import { useAuth } from "@/features/auth/auth-provider";
+import { configuredBikeStatusService } from "@/lib/bike-status-service";
 import { findRecentRewardMilestone } from "@/lib/reward-milestones";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { hasSupabaseConfig } from "@/lib/supabase";
@@ -45,8 +48,34 @@ function getDropoffGuidanceCopy(
   };
 }
 
+async function reconcilePendingStatusSyncs(accessToken: string) {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const pendingKeys = keys.filter((key) => key.startsWith("pending_release_"));
+    for (const key of pendingKeys) {
+      try {
+        const value = await AsyncStorage.getItem(key);
+        if (value) {
+          const { bikeId } = JSON.parse(value);
+          await configuredBikeStatusService.updateBikeStatus({
+            bikeId,
+            status: "available",
+            accessToken
+          });
+          await AsyncStorage.removeItem(key);
+        }
+      } catch (err) {
+        console.error(`Failed to reconcile pending status sync for key ${key}:`, err);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to reconcile pending status syncs:", error);
+  }
+}
+
 export function ActiveRideScreen() {
   const router = useRouter();
+  const { session } = useAuth();
   const { setBikeRideState } = useRideSession();
   const params = useLocalSearchParams<{ bikeId?: string; entry?: string }>();
   const bikeId = params.bikeId ?? mockActiveRide.bikeId;
@@ -73,6 +102,14 @@ export function ActiveRideScreen() {
   const glowPulse = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(enteredFromUnlock && !isTestEnvironment ? 1 : 0)).current;
   const overlayScale = useRef(new Animated.Value(isTestEnvironment ? 1 : 0.96)).current;
+
+  useEffect(() => {
+    if (session?.access_token) {
+      reconcilePendingStatusSyncs(session.access_token).catch((err) => {
+        console.error("Reconciliation failed", err);
+      });
+    }
+  }, [session?.access_token]);
 
   useEffect(() => {
     if (isTestEnvironment) {
@@ -208,6 +245,48 @@ export function ActiveRideScreen() {
         checkpoints: snapshot.checkpoints
       });
 
+      if (!session?.access_token) {
+        try {
+          await AsyncStorage.setItem(`pending_release_${bikeId}`, JSON.stringify({
+            bikeId,
+            status: "available",
+            timestamp: new Date().toISOString()
+          }));
+        } catch (storageError) {
+          console.error("Failed to persist pending retry", storageError);
+        }
+        throw new Error("Session access token is missing. Saved pending status sync.");
+      }
+
+      try {
+        await configuredBikeStatusService.updateBikeStatus({
+          bikeId,
+          status: "available",
+          accessToken: session.access_token
+        });
+        
+        try {
+          await AsyncStorage.removeItem(`pending_release_${bikeId}`);
+        } catch {}
+
+        setBikeRideState(bikeId, {
+          status: "available",
+          activeRiderId: null
+        });
+      } catch (statusError) {
+        console.error("Failed to sync bike status", { bikeId, statusError });
+        try {
+          await AsyncStorage.setItem(`pending_release_${bikeId}`, JSON.stringify({
+            bikeId,
+            status: "available",
+            timestamp: new Date().toISOString()
+          }));
+        } catch (storageError) {
+          console.error("Failed to persist pending retry", storageError);
+        }
+        throw statusError;
+      }
+
       let milestone: string | undefined;
       try {
         const wallet = await configuredWalletService.getWallet();
@@ -220,10 +299,6 @@ export function ActiveRideScreen() {
         milestone = undefined;
       }
 
-      setBikeRideState(bikeId, {
-        status: "available",
-        activeRiderId: null
-      });
       router.push({
         pathname: "/ride/summary",
         params: milestone ? { id: ride.id, milestone } : { id: ride.id }

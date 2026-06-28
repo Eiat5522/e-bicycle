@@ -1,5 +1,7 @@
 # Glide Monorepo
 
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/Eiat5522/e-bicycle?utm_source=oss&utm_medium=github&utm_campaign=Eiat5522%2Fe-bicycle&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 Monorepo scaffold for the Glide e-bike rental platform.
 
 ## Workspaces
@@ -11,6 +13,7 @@ Monorepo scaffold for the Glide e-bike rental platform.
 
 ## Commands
 
+- `pnpm install`
 - `pnpm dev`
 - `pnpm build`
 - `pnpm lint`

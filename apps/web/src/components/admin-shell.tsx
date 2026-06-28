@@ -2,9 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useState } from "react";
-
-import { ExecutiveScorecard } from "./executive-scorecard";
-import { OperationsDashboard } from "./operations-dashboard";
+import type { ReactNode } from "react";
 
 type DashboardTheme = CSSProperties & Record<`--${string}`, string>;
 type DashboardTab = "executive" | "operations";
@@ -38,7 +36,12 @@ const tabs: readonly {
   { id: "operations", label: "Operations", panelId: "operations-dashboard-panel" }
 ];
 
-export function AdminShell() {
+interface AdminShellProps {
+  readonly executiveDashboard: ReactNode;
+  readonly operationsDashboard: ReactNode;
+}
+
+export function AdminShell({ executiveDashboard, operationsDashboard }: AdminShellProps) {
   const [activeTab, setActiveTab] = useState<DashboardTab>("executive");
 
   return (
@@ -77,7 +80,7 @@ export function AdminShell() {
           id="executive-scorecard-panel"
           role="tabpanel"
           tabIndex={0}>
-          <ExecutiveScorecard />
+          {executiveDashboard}
         </div>
       ) : (
         <div
@@ -85,7 +88,7 @@ export function AdminShell() {
           id="operations-dashboard-panel"
           role="tabpanel"
           tabIndex={0}>
-          <OperationsDashboard />
+          {operationsDashboard}
         </div>
       )}
     </section>

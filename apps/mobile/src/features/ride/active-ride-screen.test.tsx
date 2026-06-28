@@ -1,10 +1,17 @@
-import { act, fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
+import { useAuth } from "@/features/auth/auth-provider";
+import { configuredBikeStatusService } from "@/lib/bike-status-service";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
 import { configuredWalletService } from "@/lib/wallet-service";
 import { ActiveRideScreen } from "./active-ride-screen";
 import { useLiveRideTracker } from "./live-ride-tracker";
+import { useRideSession } from "./ride-session-context";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
@@ -15,6 +22,12 @@ jest.mock("@/lib/ride-history-service", () => ({
   configuredRideHistoryService: {
     completeRide: jest.fn(),
     completeDemoRide: jest.fn()
+  }
+}));
+
+jest.mock("@/lib/bike-status-service", () => ({
+  configuredBikeStatusService: {
+    updateBikeStatus: jest.fn()
   }
 }));
 
@@ -30,6 +43,14 @@ jest.mock("@/lib/supabase", () => ({
 
 jest.mock("./live-ride-tracker", () => ({
   useLiveRideTracker: jest.fn()
+}));
+
+jest.mock("./ride-session-context", () => ({
+  useRideSession: jest.fn()
+}));
+
+jest.mock("@/features/auth/auth-provider", () => ({
+  useAuth: jest.fn()
 }));
 
 function createMockSnapshot() {
@@ -69,10 +90,19 @@ function createMockSnapshot() {
 
 describe("ActiveRideScreen", () => {
   const push = jest.fn();
+  const setBikeRideState = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
+    jest.mocked(useRideSession).mockReturnValue({
+      bikeRideOverrides: {},
+      setBikeRideState
+    });
+    jest.mocked(useAuth).mockReturnValue({
+      session: { access_token: "session-token" },
+      user: { id: "user-1" }
+    } as ReturnType<typeof useAuth>);
     jest.mocked(useLiveRideTracker).mockReturnValue({
       trackingState: "mock",
       warningMessage: "Using simulated ride tracking for this environment.",
@@ -116,6 +146,7 @@ describe("ActiveRideScreen", () => {
       route: [],
       checkpoints: []
     });
+    jest.mocked(configuredBikeStatusService.updateBikeStatus).mockResolvedValue(undefined);
     jest.mocked(configuredWalletService.getWallet).mockResolvedValue({
       balance: 20,
       points: 150,
@@ -162,41 +193,89 @@ describe("ActiveRideScreen", () => {
 
     fireEvent.press(screen.getByText("End Ride"));
 
-    expect(await screen.findByText("End Ride")).toBeTruthy();
-    expect(configuredRideHistoryService.completeRide).toHaveBeenCalledWith({
-      bikeId: "G-205",
-      durationSec: 125,
-      distanceKm: 0.8,
-      totalCost: 0.55,
-      ratePerMinute: 0.1846,
-      routeLabel: "อโศก Interchange to Benjakitti Park",
-      endLocation: "Benjakitti Park",
-      co2SavedKg: 0.2,
-      route: [
-        { latitude: 13.7372, longitude: 100.5606 },
-        { latitude: 13.7319, longitude: 100.5459 }
-      ],
-      checkpoints: [
-        {
-          id: "G-205-unlock",
-          label: "Unlock",
-          description: "Bike unlocked and live ride tracking started.",
-          coordinates: { latitude: 13.7372, longitude: 100.5606 },
-          elapsedSec: 0
-        },
-        {
-          id: "G-205-dropoff",
-          label: "Drop-off",
-          description: "Nearest suggested drop-off is Benjakitti Park.",
-          coordinates: { latitude: 13.7319, longitude: 100.5459 },
-          elapsedSec: 125
-        }
-      ]
+    await waitFor(() => {
+      expect(configuredRideHistoryService.completeRide).toHaveBeenCalledWith({
+        bikeId: "G-205",
+        durationSec: 125,
+        distanceKm: 0.8,
+        totalCost: 0.55,
+        ratePerMinute: 0.1846,
+        routeLabel: "อโศก Interchange to Benjakitti Park",
+        endLocation: "Benjakitti Park",
+        co2SavedKg: 0.2,
+        route: [
+          { latitude: 13.7372, longitude: 100.5606 },
+          { latitude: 13.7319, longitude: 100.5459 }
+        ],
+        checkpoints: [
+          {
+            id: "G-205-unlock",
+            label: "Unlock",
+            description: "Bike unlocked and live ride tracking started.",
+            coordinates: { latitude: 13.7372, longitude: 100.5606 },
+            elapsedSec: 0
+          },
+          {
+            id: "G-205-dropoff",
+            label: "Drop-off",
+            description: "Nearest suggested drop-off is Benjakitti Park.",
+            coordinates: { latitude: 13.7319, longitude: 100.5459 },
+            elapsedSec: 125
+          }
+        ]
+      });
     });
-    expect(push).toHaveBeenCalledWith({
-      pathname: "/ride/summary",
-      params: { id: "ride-new", milestone: "first_ride" }
+
+    await waitFor(() => {
+      expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
+        bikeId: "G-205",
+        status: "available",
+        accessToken: "session-token"
+      });
     });
+
+    await waitFor(() => {
+      expect(setBikeRideState).toHaveBeenCalledWith("G-205", {
+        status: "available",
+        activeRiderId: null
+      });
+    });
+
+    await waitFor(() => {
+      expect(push).toHaveBeenCalledWith({
+        pathname: "/ride/summary",
+        params: { id: "ride-new", milestone: "first_ride" }
+      });
+    });
+  });
+
+  it("does not complete the ride when the bike status sync fails", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.mocked(useLocalSearchParams).mockReturnValue({});
+    jest
+      .mocked(configuredBikeStatusService.updateBikeStatus)
+      .mockRejectedValueOnce(new Error("EXPO_PUBLIC_API_BASE_URL is required to sync bike status changes."));
+
+    render(<ActiveRideScreen />);
+
+    fireEvent.press(screen.getByText("End Ride"));
+
+    await waitFor(() => {
+      expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
+        bikeId: "G-205",
+        status: "available",
+        accessToken: "session-token"
+      });
+    });
+
+    await waitFor(() => {
+      expect(setBikeRideState).not.toHaveBeenCalled();
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    expect(await screen.findByText("EXPO_PUBLIC_API_BASE_URL is required to sync bike status changes.")).toBeTruthy();
+
+    consoleError.mockRestore();
   });
 
   it("shows an inline error when completing the ride fails", async () => {
@@ -241,19 +320,19 @@ describe("ActiveRideScreen", () => {
     const rendered = render(<ActiveRideScreen />);
 
     expect(screen.getByText("You are inside the drop-off zone.")).toBeTruthy();
-    expect(screen.getByText("Ready to end ride")).toBeTruthy();
+    expect(screen.getByText("Park safely at Benjakitti Park, then end your ride when you are ready.")).toBeTruthy();
 
     act(() => {
       jest.advanceTimersByTime(2800);
     });
 
     expect(screen.queryByText("You are inside the drop-off zone.")).toBeNull();
-    expect(screen.queryByText("Ready to end ride")).toBeNull();
+    expect(screen.queryByText("Park safely at Benjakitti Park, then end your ride when you are ready.")).toBeNull();
 
     rendered.rerender(<ActiveRideScreen />);
 
     expect(screen.queryByText("You are inside the drop-off zone.")).toBeNull();
-    expect(screen.queryByText("Ready to end ride")).toBeNull();
+    expect(screen.queryByText("Park safely at Benjakitti Park, then end your ride when you are ready.")).toBeNull();
 
     jest.useRealTimers();
   });

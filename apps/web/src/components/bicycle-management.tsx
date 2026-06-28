@@ -179,7 +179,7 @@ function createMarkerIcon(
   });
 }
 
-function RideRouteMap({ ride }: { readonly ride: BikeRideHistoryEntry }) {
+export function RideRouteMap({ ride }: { readonly ride: BikeRideHistoryEntry }) {
   const checkpoints = useMemo(() => getSyntheticCheckpoints(ride), [ride]);
   const mapElementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
