@@ -1,0 +1,173 @@
+{"kind":"deck","id":"pr/tvjjzh","name":"Deck"}
+{"kind":"layout","layoutId":"dbd5e6f7-9f13-4d5c-a516-789a5ebf6867","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"96b8813e-0ea6-47c2-ab14-21e1257cfc0b","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/bhz7r4","slide":1,"title":"Lamphun Smart Green Mobility","textShapes":6}
+{"kind":"textbox","id":"sh/v6psfil0","slide":1,"text":"Lamphun Smart Green Mobility","textPreview":"Lamphun Smart Green Mobility","textChars":28,"textLines":1,"bbox":[56,70,980,80]}
+{"kind":"textbox","id":"sh/knih4byh","slide":1,"text":"Phase 1 and Phase 2 Delivery Timeline","textPreview":"Phase 1 and Phase 2 Delivery Timeline","textChars":37,"textLines":1,"bbox":[56,160,800,44]}
+{"kind":"shape","id":"sh/d8bat47y","slide":1,"bbox":[56,240,760,5]}
+{"kind":"textbox","id":"sh/29gr2p8n","slide":1,"text":"Phase 1 focuses on public launch readiness by 30 September 2026. Phase 2 adds customer, tourism, connected-fleet, dashboard, API, and optimization enhancements through March 2027.","textPreview":"Phase 1 focuses on public launch readiness by 30 September 2026. Phase 2 adds customer, tourism, connected-fleet, dashboard, API, and opt...","textChars":179,"textLines":1,"bbox":[56,288,770,120]}
+{"kind":"shape","id":"sh/vu9knih4","slide":1,"bbox":[890,74,290,470]}
+{"kind":"textbox","id":"sh/kf6dcbul","slide":1,"text":"Operating principle","textPreview":"Operating principle","textChars":19,"textLines":1,"bbox":[920,116,230,36]}
+{"kind":"textbox","id":"sh/d0z61032","slide":1,"text":"Operation First\nApp Ready\nNo Single Point of Failure","textPreview":"Operation First | App Ready | No Single Point of Failure","textChars":52,"textLines":3,"bbox":[920,178,230,210]}
+{"kind":"textbox","id":"sh/2x4nap4r","slide":1,"text":"Phase timeline deck / 01","textPreview":"Phase timeline deck / 01","textChars":24,"textLines":1,"bbox":[1030,668,190,24]}
+{"kind":"notes","id":"nt/bhz7r4","slide":1,"text":""}
+{"kind":"slide","id":"sl/2dmiyg","slide":2,"title":"Lamphun Smart Green Mobility","textShapes":10}
+{"kind":"textbox","id":"sh/25kb6xkf","slide":2,"text":"Lamphun Smart Green Mobility","textPreview":"Lamphun Smart Green Mobility","textChars":28,"textLines":1,"bbox":[56,34,420,26]}
+{"kind":"textbox","id":"sh/9w3m94fu","slide":2,"text":"Two-phase delivery at a glance","textPreview":"Two-phase delivery at a glance","textChars":30,"textLines":1,"bbox":[56,72,990,58]}
+{"kind":"shape","id":"sh/kb6xkf6d","slide":2,"bbox":[56,142,1168,1]}
+{"kind":"shape","id":"sh/re1w7mp0","slide":2,"bbox":[72,190,500,34]}
+{"kind":"textbox","id":"sh/2t83itgf","slide":2,"text":"Phase 1 - Must-have launch MVP","textPreview":"Phase 1 - Must-have launch MVP","textChars":30,"textLines":1,"bbox":[84,195,476,24]}
+{"kind":"textbox","id":"sh/9knih4by","slide":2,"text":"29 June-30 September 2026","textPreview":"29 June-30 September 2026","textChars":25,"textLines":1,"bbox":[72,240,500,42]}
+{"kind":"textbox","id":"sh/kzupwb2h","slide":2,"text":"Deliver the operational platform required to run 100 e-bikes with staff workflows, payment references, maintenance controls, reports, carbon estimates, and tested backup workflows.","textPreview":"Deliver the operational platform required to run 100 e-bikes with staff workflows, payment references, maintenance controls, reports, car...","textChars":180,"textLines":1,"bbox":[72,300,500,150]}
+{"kind":"shape","id":"sh/ra5gbq1o","slide":2,"bbox":[706,190,500,34]}
+{"kind":"textbox","id":"sh/2p8nqxs7","slide":2,"text":"Phase 2 - Enhancements + scale","textPreview":"Phase 2 - Enhancements + scale","textChars":30,"textLines":1,"bbox":[718,195,476,24]}
+{"kind":"textbox","id":"sh/gvy90je9","slide":2,"text":"1 October 2026-31 March 2027","textPreview":"1 October 2026-31 March 2027","textChars":28,"textLines":1,"bbox":[706,240,500,42]}
+{"kind":"textbox","id":"sh/9gr2p8nq","slide":2,"text":"Use live operating data to improve customer experience, integrate connected fleet data, expand tourism programs, build deeper dashboards, and introduce optimization support.","textPreview":"Use live operating data to improve customer experience, integrate connected fleet data, expand tourism programs, build deeper dashboards,...","textChars":173,"textLines":1,"bbox":[706,300,500,150]}
+{"kind":"shape","id":"sh/2p8nqxs7","slide":2,"bbox":[72,520,1134,72]}
+{"kind":"textbox","id":"sh/ra5gbq1o","slide":2,"text":"Gate between phases: Phase 2 should start only after rental, return, payment, maintenance, battery, incident, report, and fallback workflows are stable in live use.","textPreview":"Gate between phases: Phase 2 should start only after rental, return, payment, maintenance, battery, incident, report, and fallback workfl...","textChars":164,"textLines":1,"bbox":[98,540,1080,42]}
+{"kind":"textbox","id":"sh/kjm1cfa9","slide":2,"text":"Phase timeline deck / 02","textPreview":"Phase timeline deck / 02","textChars":24,"textLines":1,"bbox":[1030,668,190,24]}
+{"kind":"notes","id":"nt/2dmiyg","slide":2,"text":""}
+{"kind":"slide","id":"sl/dmtban","slide":3,"title":"Lamphun Smart Green Mobility","textShapes":22}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":3,"text":"Lamphun Smart Green Mobility","textPreview":"Lamphun Smart Green Mobility","textChars":28,"textLines":1,"bbox":[56,34,420,26]}
+{"kind":"textbox","id":"sh/vmtwra5g","slide":3,"text":"Phase 1 delivery timeline","textPreview":"Phase 1 delivery timeline","textChars":25,"textLines":1,"bbox":[56,72,990,58]}
+{"kind":"shape","id":"sh/61032lsz","slide":3,"bbox":[56,142,1168,1]}
+{"kind":"textbox","id":"sh/d4vmtwra","slide":3,"text":"Must-have features to launch real operations by 30 September 2026.","textPreview":"Must-have features to launch real operations by 30 September 2026.","textChars":66,"textLines":1,"bbox":[56,152,840,32]}
+{"kind":"shape","id":"sh/oj2t83it","slide":3,"bbox":[293,229,879,2]}
+{"kind":"shape","id":"sh/vy90je9c","slide":3,"bbox":[293,214,12,32]}
+{"kind":"textbox","id":"sh/6dcbulwv","slide":3,"text":"Weeks 1-2","textPreview":"Weeks 1-2","textChars":9,"textLines":1,"bbox":[72,200,205,28]}
+{"kind":"shape","id":"sh/d8v6psfi","slide":3,"bbox":[293,240,879,62]}
+{"kind":"textbox","id":"sh/onyd0z61","slide":3,"text":"Discovery + model lock","textPreview":"Discovery + model lock","textChars":22,"textLines":1,"bbox":[311,248,270,26]}
+{"kind":"textbox","id":"sh/epkzupwb","slide":3,"text":"Confirm station workflows, user roles, data model, report definitions, fallback forms, launch KPIs, and acceptance criteria.","textPreview":"Confirm station workflows, user roles, data model, report definitions, fallback forms, launch KPIs, and acceptance criteria.","textChars":124,"textLines":1,"bbox":[603,246,549,48]}
+{"kind":"shape","id":"sh/7adsji5s","slide":3,"bbox":[439.5,214,12,32]}
+{"kind":"textbox","id":"sh/wval87ed","slide":3,"text":"Weeks 3-5","textPreview":"Weeks 3-5","textChars":9,"textLines":1,"bbox":[72,272,205,28]}
+{"kind":"shape","id":"sh/pg3ex0nu","slide":3,"bbox":[293,312,879,62]}
+{"kind":"textbox","id":"sh/e1w7mp0b","slide":3,"text":"Core platform build","textPreview":"Core platform build","textChars":19,"textLines":1,"bbox":[311,320,270,26]}
+{"kind":"textbox","id":"sh/7mp0bi9s","slide":3,"text":"Build customer, fleet, rental, payment reference, staff permissions, and database foundations.","textPreview":"Build customer, fleet, rental, payment reference, staff permissions, and database foundations.","textChars":94,"textLines":1,"bbox":[603,318,549,48]}
+{"kind":"shape","id":"sh/w7mp0bi9","slide":3,"bbox":[586,214,12,32]}
+{"kind":"textbox","id":"sh/psfil0rq","slide":3,"text":"Weeks 6-7","textPreview":"Weeks 6-7","textChars":9,"textLines":1,"bbox":[72,344,205,28]}
+{"kind":"shape","id":"sh/ed8bat47","slide":3,"bbox":[293,384,879,62]}
+{"kind":"textbox","id":"sh/7u54zido","slide":3,"text":"Operations modules","textPreview":"Operations modules","textChars":18,"textLines":1,"bbox":[311,392,270,26]}
+{"kind":"textbox","id":"sh/vy90je9c","slide":3,"text":"Build maintenance, battery, incident, spare parts, QR labels, evidence capture, and fallback workflow links.","textPreview":"Build maintenance, battery, incident, spare parts, QR labels, evidence capture, and fallback workflow links.","textChars":108,"textLines":1,"bbox":[603,390,549,48]}
+{"kind":"shape","id":"sh/6dcbulwv","slide":3,"bbox":[732.5,214,12,32]}
+{"kind":"textbox","id":"sh/d4vmtwra","slide":3,"text":"Weeks 8-9","textPreview":"Weeks 8-9","textChars":9,"textLines":1,"bbox":[72,416,205,28]}
+{"kind":"shape","id":"sh/oj2t83it","slide":3,"bbox":[293,456,879,62]}
+{"kind":"textbox","id":"sh/vmtwra5g","slide":3,"text":"Dashboard + reports","textPreview":"Dashboard + reports","textChars":19,"textLines":1,"bbox":[311,464,270,26]}
+{"kind":"textbox","id":"sh/61032lsz","slide":3,"text":"Build daily/monthly reports, dashboard MVP, carbon estimate, revenue reconciliation, exports, and audit views.","textPreview":"Build daily/monthly reports, dashboard MVP, carbon estimate, revenue reconciliation, exports, and audit views.","textChars":110,"textLines":1,"bbox":[603,462,549,48]}
+{"kind":"shape","id":"sh/dsji5sne","slide":3,"bbox":[879,214,12,32]}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":3,"text":"Weeks 10-11","textPreview":"Weeks 10-11","textChars":11,"textLines":1,"bbox":[72,488,205,28]}
+{"kind":"shape","id":"sh/vahoza1g","slide":3,"bbox":[293,528,879,62]}
+{"kind":"textbox","id":"sh/6tovahoz","slide":3,"text":"Pilot + readiness","textPreview":"Pilot + readiness","textChars":17,"textLines":1,"bbox":[311,536,270,26]}
+{"kind":"textbox","id":"sh/gr2p8nqx","slide":3,"text":"Run station pilot, train administrators and technicians, test outage scenarios, and reconcile fallback records.","textPreview":"Run station pilot, train administrators and technicians, test outage scenarios, and reconcile fallback records.","textChars":111,"textLines":1,"bbox":[603,534,549,48]}
+{"kind":"shape","id":"sh/9cvixcze","slide":3,"bbox":[1025.5,214,12,32]}
+{"kind":"textbox","id":"sh/ylc7u54z","slide":3,"text":"Weeks 12-13","textPreview":"Weeks 12-13","textChars":11,"textLines":1,"bbox":[72,560,205,28]}
+{"kind":"shape","id":"sh/r65wjudg","slide":3,"bbox":[293,600,879,62]}
+{"kind":"textbox","id":"sh/g3ex0nux","slide":3,"text":"Launch hardening","textPreview":"Launch hardening","textChars":16,"textLines":1,"bbox":[311,608,270,26]}
+{"kind":"textbox","id":"sh/5o7qpg3e","slide":3,"text":"Fix pilot defects, complete security and data checks, finalize SOPs, freeze launch scope, and prepare go-live support.","textPreview":"Fix pilot defects, complete security and data checks, finalize SOPs, freeze launch scope, and prepare go-live support.","textChars":118,"textLines":1,"bbox":[603,606,549,48]}
+{"kind":"textbox","id":"sh/yxobm58z","slide":3,"text":"Phase timeline deck / 03","textPreview":"Phase timeline deck / 03","textChars":24,"textLines":1,"bbox":[1030,668,190,24]}
+{"kind":"notes","id":"nt/dmtban","slide":3,"text":""}
+{"kind":"slide","id":"sl/1mjwy7","slide":4,"title":"Lamphun Smart Green Mobility","textShapes":16}
+{"kind":"textbox","id":"sh/5gbq1ory","slide":4,"text":"Lamphun Smart Green Mobility","textPreview":"Lamphun Smart Green Mobility","textChars":28,"textLines":1,"bbox":[56,34,420,26]}
+{"kind":"textbox","id":"sh/upwb2hwf","slide":4,"text":"Phase 1 feature breakdown","textPreview":"Phase 1 feature breakdown","textChars":25,"textLines":1,"bbox":[56,72,990,58]}
+{"kind":"shape","id":"sh/nap4r65w","slide":4,"bbox":[56,142,1168,1]}
+{"kind":"textbox","id":"sh/cj6tovah","slide":4,"text":"These workstreams define the MVP scope. The common acceptance test is operational traceability: every rental, payment, asset, incident, maintenance, and fallback action must be reviewable.","textPreview":"These workstreams define the MVP scope. The common acceptance test is operational traceability: every rental, payment, asset, incident, m...","textChars":188,"textLines":1,"bbox":[56,154,1050,54]}
+{"kind":"shape","id":"sh/54zidony","slide":4,"bbox":[72,228,535,112]}
+{"kind":"textbox","id":"sh/udg7adsj","slide":4,"text":"Rental operations","textPreview":"Rental operations","textChars":17,"textLines":1,"bbox":[90,242,499,30]}
+{"kind":"textbox","id":"sh/nyd0z610","slide":4,"text":"Customer, fleet, QR asset control, check-out/check-in, battery state, photos, damage reports.","textPreview":"Customer, fleet, QR asset control, check-out/check-in, battery state, photos, damage reports.","textChars":93,"textLines":1,"bbox":[90,280,499,48]}
+{"kind":"shape","id":"sh/cfa9w3m9","slide":4,"bbox":[635,228,535,112]}
+{"kind":"textbox","id":"sh/1032lszq","slide":4,"text":"Financial traceability","textPreview":"Financial traceability","textChars":22,"textLines":1,"bbox":[653,242,499,30]}
+{"kind":"textbox","id":"sh/xs72x4na","slide":4,"text":"Thai QR / PromptPay, card/cash references, receipts, status verification, daily reconciliation.","textPreview":"Thai QR / PromptPay, card/cash references, receipts, status verification, daily reconciliation.","textChars":95,"textLines":1,"bbox":[653,280,499,48]}
+{"kind":"shape","id":"sh/87ed8bat","slide":4,"bbox":[72,358,535,112]}
+{"kind":"textbox","id":"sh/fmlkjm1c","slide":4,"text":"Asset reliability","textPreview":"Asset reliability","textChars":17,"textLines":1,"bbox":[90,372,499,30]}
+{"kind":"textbox","id":"sh/q1orytsv","slide":4,"text":"Battery ID, charging-room record, PM schedule, work orders, repair history, spare parts usage.","textPreview":"Battery ID, charging-room record, PM schedule, work orders, repair history, spare parts usage.","textChars":94,"textLines":1,"bbox":[90,410,499,48]}
+{"kind":"shape","id":"sh/1gvy90je","slide":4,"bbox":[635,358,535,112]}
+{"kind":"textbox","id":"sh/8z25kb6x","slide":4,"text":"Governance","textPreview":"Governance","textChars":10,"textLines":1,"bbox":[653,372,499,30]}
+{"kind":"textbox","id":"sh/je9cvixc","slide":4,"text":"Staff permissions, incident records, exports, audit trail, daily and monthly reports.","textPreview":"Staff permissions, incident records, exports, audit trail, daily and monthly reports.","textChars":85,"textLines":1,"bbox":[653,410,499,48]}
+{"kind":"shape","id":"sh/qtcj6tov","slide":4,"bbox":[72,488,535,112]}
+{"kind":"textbox","id":"sh/xczed8v6","slide":4,"text":"Carbon reporting","textPreview":"Carbon reporting","textChars":16,"textLines":1,"bbox":[90,502,499,30]}
+{"kind":"textbox","id":"sh/8v6psfil","slide":4,"text":"Distance accumulation, conservative carbon estimate, daily/monthly/yearly report exports.","textPreview":"Distance accumulation, conservative carbon estimate, daily/monthly/yearly report exports.","textChars":89,"textLines":1,"bbox":[90,540,499,48]}
+{"kind":"shape","id":"sh/47y1kre1","slide":4,"bbox":[635,488,535,112]}
+{"kind":"textbox","id":"sh/tsvu9kni","slide":4,"text":"Continuity workflow","textPreview":"Continuity workflow","textChars":19,"textLines":1,"bbox":[653,502,499,30]}
+{"kind":"textbox","id":"sh/m1cfa9w3","slide":4,"text":"Google Forms, Sheets, Drive evidence, and manual QR payment log for outage scenarios.","textPreview":"Google Forms, Sheets, Drive evidence, and manual QR payment log for outage scenarios.","textChars":85,"textLines":1,"bbox":[653,540,499,48]}
+{"kind":"textbox","id":"sh/bm58z25k","slide":4,"text":"Phase timeline deck / 04","textPreview":"Phase timeline deck / 04","textChars":24,"textLines":1,"bbox":[1030,668,190,24]}
+{"kind":"notes","id":"nt/1mjwy7","slide":4,"text":""}
+{"kind":"slide","id":"sl/ajme8b","slide":5,"title":"Lamphun Smart Green Mobility","textShapes":22}
+{"kind":"textbox","id":"sh/72x4nap4","slide":5,"text":"Lamphun Smart Green Mobility","textPreview":"Lamphun Smart Green Mobility","textChars":28,"textLines":1,"bbox":[56,34,420,26]}
+{"kind":"textbox","id":"sh/0nuxc3yl","slide":5,"text":"Phase 2 delivery timeline","textPreview":"Phase 2 delivery timeline","textChars":25,"textLines":1,"bbox":[56,72,990,58]}
+{"kind":"shape","id":"sh/p8nqxs72","slide":5,"bbox":[56,142,1168,1]}
+{"kind":"textbox","id":"sh/itgfmlkj","slide":5,"text":"Enhancements follow live evidence, API readiness, and staff capacity.","textPreview":"Enhancements follow live evidence, API readiness, and staff capacity.","textChars":69,"textLines":1,"bbox":[56,152,990,32]}
+{"kind":"shape","id":"sh/7ed8bat4","slide":5,"bbox":[293,229,879,2]}
+{"kind":"shape","id":"sh/0z61032l","slide":5,"bbox":[293,214,12,32]}
+{"kind":"textbox","id":"sh/pkzupwb2","slide":5,"text":"Oct-Nov 2026","textPreview":"Oct-Nov 2026","textChars":12,"textLines":1,"bbox":[72,200,205,28]}
+{"kind":"shape","id":"sh/i5sneloj","slide":5,"bbox":[293,240,879,62]}
+{"kind":"textbox","id":"sh/7qpg3ex0","slide":5,"text":"Customer app enhancements","textPreview":"Customer app enhancements","textChars":25,"textLines":1,"bbox":[311,248,270,26]}
+{"kind":"textbox","id":"sh/fu18jqh0","slide":5,"text":"Self-service booking, route map, notifications, rental reminders, feedback, and UX improvements.","textPreview":"Self-service booking, route map, notifications, rental reminders, feedback, and UX improvements.","textChars":96,"textLines":1,"bbox":[603,246,549,48]}
+{"kind":"shape","id":"sh/m94fu18j","slide":5,"bbox":[439.5,214,12,32]}
+{"kind":"textbox","id":"sh/x0nuxc3y","slide":5,"text":"Nov-Dec 2026","textPreview":"Nov-Dec 2026","textChars":12,"textLines":1,"bbox":[72,272,205,28]}
+{"kind":"shape","id":"sh/4fu18jqh","slide":5,"bbox":[293,312,879,62]}
+{"kind":"textbox","id":"sh/fil0rqd4","slide":5,"text":"Tourism promotion","textPreview":"Tourism promotion","textChars":17,"textLines":1,"bbox":[311,320,270,26]}
+{"kind":"textbox","id":"sh/qxs72x4n","slide":5,"text":"Green Passport, digital stamps, hotel voucher flow, partner routes, QR check-in, and route completion badges.","textPreview":"Green Passport, digital stamps, hotel voucher flow, partner routes, QR check-in, and route completion badges.","textChars":109,"textLines":1,"bbox":[603,318,549,48]}
+{"kind":"shape","id":"sh/xobm58z2","slide":5,"bbox":[586,214,12,32]}
+{"kind":"textbox","id":"sh/83itgfml","slide":5,"text":"Dec-Jan 2027","textPreview":"Dec-Jan 2027","textChars":12,"textLines":1,"bbox":[72,344,205,28]}
+{"kind":"shape","id":"sh/fepkzupw","slide":5,"bbox":[293,384,879,62]}
+{"kind":"textbox","id":"sh/mtwra5gb","slide":5,"text":"Connected fleet","textPreview":"Connected fleet","textChars":15,"textLines":1,"bbox":[311,392,270,26]}
+{"kind":"textbox","id":"sh/u18jqh0f","slide":5,"text":"GPS, trip history, smart lock or IoT, geofence alerts, and battery monitoring where vendor APIs are ready.","textPreview":"GPS, trip history, smart lock or IoT, geofence alerts, and battery monitoring where vendor APIs are ready.","textChars":106,"textLines":1,"bbox":[603,390,549,48]}
+{"kind":"shape","id":"sh/jm1cfa9w","slide":5,"bbox":[732.5,214,12,32]}
+{"kind":"textbox","id":"sh/c7u54zid","slide":5,"text":"Jan-Feb 2027","textPreview":"Jan-Feb 2027","textChars":12,"textLines":1,"bbox":[72,416,205,28]}
+{"kind":"shape","id":"sh/1orytsvu","slide":5,"bbox":[293,456,879,62]}
+{"kind":"textbox","id":"sh/u9knih4b","slide":5,"text":"Reliability analytics","textPreview":"Reliability analytics","textChars":21,"textLines":1,"bbox":[311,464,270,26]}
+{"kind":"textbox","id":"sh/judg7ads","slide":5,"text":"Maintenance alerts, repeat failure reports, technician performance, battery health, and rotation optimization.","textPreview":"Maintenance alerts, repeat failure reports, technician performance, battery health, and rotation optimization.","textChars":110,"textLines":1,"bbox":[603,462,549,48]}
+{"kind":"shape","id":"sh/cfa9w3m9","slide":5,"bbox":[879,214,12,32]}
+{"kind":"textbox","id":"sh/1032lszq","slide":5,"text":"Feb-Mar 2027","textPreview":"Feb-Mar 2027","textChars":12,"textLines":1,"bbox":[72,488,205,28]}
+{"kind":"shape","id":"sh/udg7adsj","slide":5,"bbox":[293,528,879,62]}
+{"kind":"textbox","id":"sh/nyd0z610","slide":5,"text":"Dashboards + APIs","textPreview":"Dashboards + APIs","textChars":17,"textLines":1,"bbox":[311,536,270,26]}
+{"kind":"textbox","id":"sh/94fu18jq","slide":5,"text":"Executive, operations, fleet, financial, tourism, carbon, smart-city dashboards, and partner / IoT / payment APIs.","textPreview":"Executive, operations, fleet, financial, tourism, carbon, smart-city dashboards, and partner / IoT / payment APIs.","textChars":114,"textLines":1,"bbox":[603,534,549,48]}
+{"kind":"shape","id":"sh/kjm1cfa9","slide":5,"bbox":[1025.5,214,12,32]}
+{"kind":"textbox","id":"sh/r2p8nqxs","slide":5,"text":"Mar 2027 onward","textPreview":"Mar 2027 onward","textChars":15,"textLines":1,"bbox":[72,560,205,28]}
+{"kind":"shape","id":"sh/2hwfyxob","slide":5,"bbox":[293,600,879,62]}
+{"kind":"textbox","id":"sh/9gr2p8nq","slide":5,"text":"Optimization layer","textPreview":"Optimization layer","textChars":18,"textLines":1,"bbox":[311,608,270,26]}
+{"kind":"textbox","id":"sh/gvy90je9","slide":5,"text":"Demand forecast, fleet rebalancing recommendation, predictive maintenance, dynamic staffing, and tourism recommendation.","textPreview":"Demand forecast, fleet rebalancing recommendation, predictive maintenance, dynamic staffing, and tourism recommendation.","textChars":120,"textLines":1,"bbox":[603,606,549,48]}
+{"kind":"textbox","id":"sh/ra5gbq1o","slide":5,"text":"Phase timeline deck / 05","textPreview":"Phase timeline deck / 05","textChars":24,"textLines":1,"bbox":[1030,668,190,24]}
+{"kind":"notes","id":"nt/ajme8b","slide":5,"text":""}
+{"kind":"slide","id":"sl/749e5r","slide":6,"title":"Lamphun Smart Green Mobility","textShapes":12}
+{"kind":"textbox","id":"sh/c3ylc7u5","slide":6,"text":"Lamphun Smart Green Mobility","textPreview":"Lamphun Smart Green Mobility","textChars":28,"textLines":1,"bbox":[56,34,420,26]}
+{"kind":"textbox","id":"sh/ji5snelo","slide":6,"text":"Phase 2 enhancement tracks","textPreview":"Phase 2 enhancement tracks","textChars":26,"textLines":1,"bbox":[56,72,990,58]}
+{"kind":"shape","id":"sh/uxc3ylc7","slide":6,"bbox":[56,142,1168,1]}
+{"kind":"shape","id":"sh/1cfa9w3m","slide":6,"bbox":[72,185,535,132]}
+{"kind":"textbox","id":"sh/crmhk3q5","slide":6,"text":"Tourism layer","textPreview":"Tourism layer","textChars":13,"textLines":1,"bbox":[90,199,499,30]}
+{"kind":"textbox","id":"sh/j6tovaho","slide":6,"text":"Green Passport, Green Stay, partner routes, QR check-ins, vouchers, and route badges.","textPreview":"Green Passport, Green Stay, partner routes, QR check-ins, vouchers, and route badges.","textChars":85,"textLines":1,"bbox":[90,237,499,68]}
+{"kind":"shape","id":"sh/ulwval87","slide":6,"bbox":[635,185,535,132]}
+{"kind":"textbox","id":"sh/18jqh0fe","slide":6,"text":"Connected fleet","textPreview":"Connected fleet","textChars":15,"textLines":1,"bbox":[653,199,499,30]}
+{"kind":"textbox","id":"sh/8nqxs72x","slide":6,"text":"GPS, smart lock, IoT, geofence, vehicle status, and battery monitoring integrations.","textPreview":"GPS, smart lock, IoT, geofence, vehicle status, and battery monitoring integrations.","textChars":84,"textLines":1,"bbox":[653,237,499,68]}
+{"kind":"shape","id":"sh/al87ed8b","slide":6,"bbox":[72,335,535,132]}
+{"kind":"textbox","id":"sh/z61032ls","slide":6,"text":"Dashboard suite","textPreview":"Dashboard suite","textChars":15,"textLines":1,"bbox":[90,349,499,30]}
+{"kind":"textbox","id":"sh/orytsvu9","slide":6,"text":"Executive, operations, fleet, maintenance, financial, tourism, carbon, and mobility dashboards.","textPreview":"Executive, operations, fleet, maintenance, financial, tourism, carbon, and mobility dashboards.","textChars":95,"textLines":1,"bbox":[90,387,499,68]}
+{"kind":"shape","id":"sh/hcrmhk3q","slide":6,"bbox":[635,335,535,132]}
+{"kind":"textbox","id":"sh/a9w3m94f","slide":6,"text":"Optimization","textPreview":"Optimization","textChars":12,"textLines":1,"bbox":[653,349,499,30]}
+{"kind":"textbox","id":"sh/zupwb2hw","slide":6,"text":"Demand forecast, rebalancing, predictive maintenance, battery rotation, and dynamic staffing.","textPreview":"Demand forecast, rebalancing, predictive maintenance, battery rotation, and dynamic staffing.","textChars":93,"textLines":1,"bbox":[653,387,499,68]}
+{"kind":"shape","id":"sh/sfil0rqd","slide":6,"bbox":[72,510,1134,74]}
+{"kind":"textbox","id":"sh/h0fepkzu","slide":6,"text":"Critical control: do not add GPS, IoT, AI, carbon claims, or public dashboards until the Phase 1 dataset is complete enough to support reliable decisions.","textPreview":"Critical control: do not add GPS, IoT, AI, carbon claims, or public dashboards until the Phase 1 dataset is complete enough to support re...","textChars":154,"textLines":1,"bbox":[98,531,1080,42]}
+{"kind":"textbox","id":"sh/65wjudg7","slide":6,"text":"Phase timeline deck / 06","textPreview":"Phase timeline deck / 06","textChars":24,"textLines":1,"bbox":[1030,668,190,24]}
+{"kind":"notes","id":"nt/749e5r","slide":6,"text":""}
+{"kind":"slide","id":"sl/ts8n51","slide":7,"title":"Lamphun Smart Green Mobility","textShapes":16}
+{"kind":"textbox","id":"sh/58z25kb6","slide":7,"text":"Lamphun Smart Green Mobility","textPreview":"Lamphun Smart Green Mobility","textChars":28,"textLines":1,"bbox":[56,34,420,26]}
+{"kind":"textbox","id":"sh/yhgn29gr","slide":7,"text":"Decision gates and launch readiness","textPreview":"Decision gates and launch readiness","textChars":35,"textLines":1,"bbox":[56,72,990,58]}
+{"kind":"shape","id":"sh/n29gr2p8","slide":7,"bbox":[56,142,1168,1]}
+{"kind":"shape","id":"sh/gbq1oryt","slide":7,"bbox":[86,208,238,292]}
+{"kind":"textbox","id":"sh/5wjudg7a","slide":7,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[106,232,70,48]}
+{"kind":"textbox","id":"sh/y90je9cv","slide":7,"text":"Launch MVP","textPreview":"Launch MVP","textChars":10,"textLines":1,"bbox":[106,298,196,48]}
+{"kind":"textbox","id":"sh/nuxc3ylc","slide":7,"text":"All 100 e-bikes and batteries registered; staff can run rental, return, payment reference, maintenance, battery, incident, and reports.","textPreview":"All 100 e-bikes and batteries registered; staff can run rental, return, payment reference, maintenance, battery, incident, and reports.","textChars":135,"textLines":1,"bbox":[106,365,196,104]}
+{"kind":"shape","id":"sh/cbulwval","slide":7,"bbox":[371,208,238,292]}
+{"kind":"textbox","id":"sh/5sneloj2","slide":7,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[391,232,70,48]}
+{"kind":"textbox","id":"sh/tcj6tova","slide":7,"text":"Continuity proven","textPreview":"Continuity proven","textChars":17,"textLines":1,"bbox":[391,298,196,48]}
+{"kind":"textbox","id":"sh/0rqd4vmt","slide":7,"text":"Backup Google Forms, Sheets, Drive evidence, and manual QR payment record are tested through an outage simulation.","textPreview":"Backup Google Forms, Sheets, Drive evidence, and manual QR payment record are tested through an outage simulation.","textChars":114,"textLines":1,"bbox":[391,365,196,104]}
+{"kind":"shape","id":"sh/b6xkf6dc","slide":7,"bbox":[656,208,238,292]}
+{"kind":"textbox","id":"sh/il0rqd4v","slide":7,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[676,232,70,48]}
+{"kind":"textbox","id":"sh/t47y1kre","slide":7,"text":"Phase 2 start","textPreview":"Phase 2 start","textChars":13,"textLines":1,"bbox":[676,298,196,48]}
+{"kind":"textbox","id":"sh/0je9cvix","slide":7,"text":"Data completeness, workflow stability, staff readiness, and vendor API access are confirmed.","textPreview":"Data completeness, workflow stability, staff readiness, and vendor API access are confirmed.","textChars":92,"textLines":1,"bbox":[676,365,196,104]}
+{"kind":"shape","id":"sh/byhgn29g","slide":7,"bbox":[941,208,238,292]}
+{"kind":"textbox","id":"sh/idonyd0z","slide":7,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[961,232,70,48]}
+{"kind":"textbox","id":"sh/p0bi9s36","slide":7,"text":"Scale + optimize","textPreview":"Scale + optimize","textChars":16,"textLines":1,"bbox":[961,298,196,48]}
+{"kind":"textbox","id":"sh/0fepkzup","slide":7,"text":"Dashboards are used in real decisions; carbon claims are evidence-based; connected fleet data improves operations.","textPreview":"Dashboards are used in real decisions; carbon claims are evidence-based; connected fleet data improves operations.","textChars":114,"textLines":1,"bbox":[961,365,196,104]}
+{"kind":"textbox","id":"sh/cbulwval","slide":7,"text":"The timeline is intentionally phased: stabilize operations first, then add richer customer, tourism, connected-fleet, and analytics layers.","textPreview":"The timeline is intentionally phased: stabilize operations first, then add richer customer, tourism, connected-fleet, and analytics layers.","textChars":139,"textLines":1,"bbox":[112,552,1030,48]}
+{"kind":"textbox","id":"sh/5sneloj2","slide":7,"text":"Phase timeline deck / 07","textPreview":"Phase timeline deck / 07","textChars":24,"textLines":1,"bbox":[1030,668,190,24]}
+{"kind":"notes","id":"nt/ts8n51","slide":7,"text":""}

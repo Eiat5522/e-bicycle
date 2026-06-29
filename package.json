@@ -7,7 +7,13 @@
 		"build": "turbo run build",
 		"dev": "turbo run dev --parallel",
 		"lint": "turbo run lint",
+		"lint:mobile": "pnpm --filter @glide/mobile lint",
+		"lint:web": "pnpm --filter @glide/web lint",
 		"test": "turbo run test",
+		"test:mobile": "pnpm --filter @glide/mobile test",
+		"test:web": "pnpm --filter @glide/web test",
+		"mobile": "pnpm --filter @glide/mobile dev",
+		"web": "pnpm --filter @glide/web dev",
 		"typecheck": "turbo run typecheck"
 	},
 	"devDependencies": {

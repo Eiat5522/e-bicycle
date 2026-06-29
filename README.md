@@ -15,7 +15,13 @@ Monorepo scaffold for the Glide e-bike rental platform.
 
 - `pnpm install`
 - `pnpm dev`
+- `pnpm mobile`
+- `pnpm web`
 - `pnpm build`
 - `pnpm lint`
+- `pnpm lint:mobile`
+- `pnpm lint:web`
 - `pnpm test`
+- `pnpm test:mobile`
+- `pnpm test:web`
 - `pnpm typecheck`
