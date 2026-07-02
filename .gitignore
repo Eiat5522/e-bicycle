@@ -25,3 +25,5 @@ apps/mobile/android/
 
 docs/documentation
 tmp/*
+!docs/documentation/database/*
+!docs/documentation/transcription_Architecting_Resilient_E-Bike_Systems_for_Lamphun.csv

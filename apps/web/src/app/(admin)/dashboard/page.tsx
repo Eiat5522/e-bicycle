@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 
-import { AdminShell } from "@/components/admin-shell";
-import { ExecutiveScorecard } from "@/components/executive-scorecard";
-import { OperationsDashboard } from "@/components/operations-dashboard";
+import { AdminDashboard } from "@/components/admin-dashboard";
 
 import { loadDashboardViewModels } from "./data";
 
@@ -14,10 +12,5 @@ export const metadata: Metadata = {
 export default async function DashboardPage() {
   const data = await loadDashboardViewModels();
 
-  return (
-    <AdminShell
-      executiveDashboard={<ExecutiveScorecard data={data.executive} />}
-      operationsDashboard={<OperationsDashboard data={data.operations} />}
-    />
-  );
+  return <AdminDashboard data={data} />;
 }

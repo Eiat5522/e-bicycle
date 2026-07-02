@@ -1,9 +1,29 @@
-import type { BikeStatus } from "@glide/shared";
+import Constants from "expo-constants";
 
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+import type { BikeStatus } from "@glide/shared";
 
 export interface BikeStatusService {
   updateBikeStatus(input: { bikeId: string; status: BikeStatus; accessToken: string }): Promise<void>;
+}
+
+function getDevelopmentApiBaseUrl() {
+  const hostUri = Constants.expoConfig?.hostUri?.trim();
+
+  if (!hostUri) {
+    return null;
+  }
+
+  try {
+    const hostUrl = hostUri.includes("://") ? new URL(hostUri) : new URL(`http://${hostUri}`);
+
+    return `http://${hostUrl.hostname}:3000/api`;
+  } catch {
+    return null;
+  }
+}
+
+function getBikeStatusApiBaseUrl() {
+  return process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ?? getDevelopmentApiBaseUrl();
 }
 
 function createHttpBikeStatusService(baseUrl: string): BikeStatusService {
@@ -60,6 +80,8 @@ function createHttpBikeStatusService(baseUrl: string): BikeStatusService {
 }
 
 function createBikeStatusService(): BikeStatusService {
+  const apiBaseUrl = getBikeStatusApiBaseUrl();
+
   if (apiBaseUrl) {
     return createHttpBikeStatusService(apiBaseUrl);
   }

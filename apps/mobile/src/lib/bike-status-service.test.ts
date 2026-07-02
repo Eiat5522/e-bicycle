@@ -1,6 +1,18 @@
+const mockExpoConstants = {
+  expoConfig: {
+    hostUri: undefined as string | undefined
+  }
+};
+
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: mockExpoConstants
+}));
+
 describe("configuredBikeStatusService", () => {
   beforeEach(() => {
     jest.resetModules();
+    mockExpoConstants.expoConfig.hostUri = undefined;
   });
 
   it("updates bike status through the API base URL", async () => {
@@ -40,6 +52,45 @@ describe("configuredBikeStatusService", () => {
     });
   });
 
+  it("uses the Expo dev host when the API base URL is not configured", async () => {
+    const fetchSpy = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200
+    });
+
+    mockExpoConstants.expoConfig.hostUri = "exp://192.168.1.5:8081";
+
+    const env = (
+      globalThis as typeof globalThis & {
+        process?: { env?: Record<string, string | undefined> };
+      }
+    ).process?.env;
+
+    if (env) {
+      delete env.EXPO_PUBLIC_API_BASE_URL;
+    }
+
+    globalThis.fetch = fetchSpy as typeof globalThis.fetch;
+
+    const { configuredBikeStatusService } = jest.requireActual("./bike-status-service") as typeof import("./bike-status-service");
+
+    await configuredBikeStatusService.updateBikeStatus({
+      bikeId: "G-205",
+      status: "available",
+      accessToken: "session-token"
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith("http://192.168.1.5:3000/api/bikes/G-205/status", {
+      body: JSON.stringify({ status: "available" }),
+      headers: {
+        Authorization: "Bearer session-token",
+        "Content-Type": "application/json"
+      },
+      method: "PATCH",
+      signal: expect.any(AbortSignal)
+    });
+  });
+
   it("aborts the request after the timeout and surfaces a friendly error", async () => {
     jest.useFakeTimers();
     try {
@@ -60,6 +111,8 @@ describe("configuredBikeStatusService", () => {
       if (env) {
         env.EXPO_PUBLIC_API_BASE_URL = "https://api.example.com";
       }
+
+      mockExpoConstants.expoConfig.hostUri = undefined;
 
       globalThis.fetch = fetchSpy as typeof globalThis.fetch;
 
@@ -84,6 +137,8 @@ describe("configuredBikeStatusService", () => {
   });
 
   it("fails fast when the API base URL is not configured", async () => {
+    mockExpoConstants.expoConfig.hostUri = undefined;
+
     const env = (
       globalThis as typeof globalThis & {
         process?: { env?: Record<string, string | undefined> };
