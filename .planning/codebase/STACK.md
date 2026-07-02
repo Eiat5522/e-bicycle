@@ -1,29 +1,14 @@
 # STACK.md
-- Languages: TypeScript, JavaScript
-- Frameworks: Next.js, Expo
-- Dependencies: pnpm, Turbo, Jest
-Dummy content line 1
-Dummy content line 2
-Dummy content line 3
-Dummy content line 4
-Dummy content line 5
-Dummy content line 6
-Dummy content line 7
-Dummy content line 8
-Dummy content line 9
-Dummy content line 10
-Dummy content line 11
-Dummy content line 12
-Dummy content line 13
-Dummy content line 14
-Dummy content line 15
-Dummy content line 16
-Dummy content line 17
-Dummy content line 18
-Dummy content line 19
-Dummy content line 20
-Dummy content line 21
-Dummy content line 22
-Dummy content line 23
-Dummy content line 24
-Dummy content line 25
+
+Current stack snapshot:
+
+- Language: TypeScript across the monorepo, with some JavaScript config files
+- Package manager: pnpm `10.33.4`
+- Orchestration: Turbo `2.9.4`
+- Testing: Jest in all workspaces, Testing Library in app workspaces, Playwright in the web app
+- Mobile app: Expo `54`, React Native `0.81.5`, Expo Router `6.0.23`
+- Web app: Next.js `16.2.3`, React `19.2.4`, Tailwind CSS `4`
+- Shared backend client: `@supabase/supabase-js` `2.103.0`
+- Web visualization/runtime libraries: `@react-three/fiber`, `three`, `leaflet`, `remotion`
+
+Workspace scripts live in each package's `package.json`, while root scripts fan out through Turbo.

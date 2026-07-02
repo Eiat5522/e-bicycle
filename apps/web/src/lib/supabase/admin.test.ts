@@ -11,6 +11,7 @@ describe("createAdminClient", () => {
       ...originalEnv,
       SUPABASE_SERVICE_ROLE_KEY: "service-role-key"
     };
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     const { createAdminClient } = await import("./admin");
 

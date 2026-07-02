@@ -1,28 +1,11 @@
 # INTEGRATIONS.md
-- Supabase (Database, Auth)
-- Expo Router
-Dummy content line 1
-Dummy content line 2
-Dummy content line 3
-Dummy content line 4
-Dummy content line 5
-Dummy content line 6
-Dummy content line 7
-Dummy content line 8
-Dummy content line 9
-Dummy content line 10
-Dummy content line 11
-Dummy content line 12
-Dummy content line 13
-Dummy content line 14
-Dummy content line 15
-Dummy content line 16
-Dummy content line 17
-Dummy content line 18
-Dummy content line 19
-Dummy content line 20
-Dummy content line 21
-Dummy content line 22
-Dummy content line 23
-Dummy content line 24
-Dummy content line 25
+
+Core integration boundaries in this repo:
+
+- Supabase powers auth, database reads/writes, and the admin API routes.
+- Mobile uses `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Web uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for browser and server helpers.
+- The admin service role key stays server-only and is used by web API routes and admin helpers.
+- Expo Router owns the customer app navigation tree in `apps/mobile/app/`.
+- Next.js App Router owns the admin shell and API routes in `apps/web/src/app/`.
+- Playwright integration and E2E tests run against the web app's local server.

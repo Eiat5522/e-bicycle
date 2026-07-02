@@ -1,30 +1,28 @@
 # STRUCTURE.md
-- apps/mobile: Expo customer app
-- apps/web: Admin shell
-- packages/api: Shared contracts
-- packages/shared: Domain models
-Dummy content line 1
-Dummy content line 2
-Dummy content line 3
-Dummy content line 4
-Dummy content line 5
-Dummy content line 6
-Dummy content line 7
-Dummy content line 8
-Dummy content line 9
-Dummy content line 10
-Dummy content line 11
-Dummy content line 12
-Dummy content line 13
-Dummy content line 14
-Dummy content line 15
-Dummy content line 16
-Dummy content line 17
-Dummy content line 18
-Dummy content line 19
-Dummy content line 20
-Dummy content line 21
-Dummy content line 22
-Dummy content line 23
-Dummy content line 24
-Dummy content line 25
+
+Top-level layout:
+
+- `apps/mobile`: Expo Router customer app
+- `apps/web`: Next.js admin app
+- `packages/api`: typed service contracts and mock API helpers
+- `packages/shared`: shared domain models and utility functions
+- `.planning/codebase`: hand-maintained repo guidance and notes
+
+Mobile app layout:
+
+- `apps/mobile/app/`: route segments and screen entry points
+- `apps/mobile/src/features/`: feature-level UI and logic
+- `apps/mobile/src/lib/`: shared client-side helpers
+- `apps/mobile/assets/images/`: static image assets
+
+Web app layout:
+
+- `apps/web/src/app/`: App Router pages, layouts, and API routes
+- `apps/web/src/components/`: shared admin UI components
+- `apps/web/src/lib/`: server and client helpers, including Supabase helpers
+- `apps/web/public/`: public assets
+
+Shared code layout:
+
+- `packages/api/src/`: service contracts and mock backend helpers
+- `packages/shared/src/`: domain entities and shared formatting utilities

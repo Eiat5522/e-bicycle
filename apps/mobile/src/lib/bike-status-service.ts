@@ -23,7 +23,9 @@ function getDevelopmentApiBaseUrl() {
 }
 
 function getBikeStatusApiBaseUrl() {
-  return process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ?? getDevelopmentApiBaseUrl();
+  const configuredBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
+
+  return configuredBaseUrl ? configuredBaseUrl : getDevelopmentApiBaseUrl();
 }
 
 function createHttpBikeStatusService(baseUrl: string): BikeStatusService {

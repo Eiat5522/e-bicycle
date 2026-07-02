@@ -1,27 +1,24 @@
 # TESTING.md
-- Jest, Testing Library
-Dummy content line 1
-Dummy content line 2
-Dummy content line 3
-Dummy content line 4
-Dummy content line 5
-Dummy content line 6
-Dummy content line 7
-Dummy content line 8
-Dummy content line 9
-Dummy content line 10
-Dummy content line 11
-Dummy content line 12
-Dummy content line 13
-Dummy content line 14
-Dummy content line 15
-Dummy content line 16
-Dummy content line 17
-Dummy content line 18
-Dummy content line 19
-Dummy content line 20
-Dummy content line 21
-Dummy content line 22
-Dummy content line 23
-Dummy content line 24
-Dummy content line 25
+
+Testing matrix:
+
+- Unit tests: Jest in each workspace, colocated next to the code they cover
+- Component tests: Testing Library for React Native and React
+- Integration tests: Playwright for the web app's public routing and admin flows
+- Type checks: workspace-local `tsc --noEmit` scripts, or the root `pnpm typecheck`
+
+Common commands:
+
+- `pnpm test`
+- `pnpm test:mobile`
+- `pnpm test:web`
+- `pnpm --filter @glide/web test:integration`
+- `pnpm --filter @glide/web test:e2e`
+- `pnpm lint`
+- `pnpm typecheck`
+
+Notes:
+
+- Web Playwright tests expect Chromium to be installed locally before first run.
+- Tests that depend on environment variables should set or delete those variables explicitly inside the test case.
+- Keep new tests close to the code they verify, usually in the same directory with a `.test.ts` or `.test.tsx` suffix.

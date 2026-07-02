@@ -1,28 +1,20 @@
 # ARCHITECTURE.md
-- App Router for Next.js, Expo Router for mobile
-- Monorepo (pnpm workspaces, apps/, packages/)
-Dummy content line 1
-Dummy content line 2
-Dummy content line 3
-Dummy content line 4
-Dummy content line 5
-Dummy content line 6
-Dummy content line 7
-Dummy content line 8
-Dummy content line 9
-Dummy content line 10
-Dummy content line 11
-Dummy content line 12
-Dummy content line 13
-Dummy content line 14
-Dummy content line 15
-Dummy content line 16
-Dummy content line 17
-Dummy content line 18
-Dummy content line 19
-Dummy content line 20
-Dummy content line 21
-Dummy content line 22
-Dummy content line 23
-Dummy content line 24
-Dummy content line 25
+
+This repo is a pnpm monorepo organized around two app surfaces and two shared packages.
+
+- `apps/mobile`: Expo Router customer app
+- `apps/web`: Next.js 16 admin shell
+- `packages/api`: typed mock services and contracts shared by both apps
+- `packages/shared`: domain models and formatting helpers shared by both apps
+
+Routing and UI shape:
+
+- Mobile route files live in `apps/mobile/app/`
+- Web App Router files live in `apps/web/src/app/`
+- Shared components and feature code live under each app's `src/` tree
+
+Repository shape:
+
+- Keep workspace-level code inside `apps/` or `packages/`
+- Keep generated or app-specific assets inside the owning workspace
+- Keep top-level docs and planning notes focused on repo-wide guidance
