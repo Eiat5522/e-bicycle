@@ -92,6 +92,29 @@ describe("getBikeDetail", () => {
       ],
       error: null
     }));
+    const orderStatusHistory = jest.fn(async () => ({
+      data: [
+        {
+          id: "event-1",
+          bike_id: "G-205",
+          actor_id: "user-1",
+          from_status: "available",
+          to_status: "in_use",
+          transition_kind: "ride_start",
+          context: {
+            active_ride_start_location: null,
+            active_ride_started_at: null,
+            active_rider_id_after: "user-1",
+            active_rider_id_before: null,
+            bike_location: "Asok Interchange",
+            requested_status: "in_use",
+            source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
+          },
+          created_at: "2026-04-22T02:15:00.000Z"
+        }
+      ],
+      error: null
+    }));
     const maybeSingleProfile = jest.fn(async () => ({
       data: { id: "user-1", first_name: "Mali" },
       error: null
@@ -117,6 +140,16 @@ describe("getBikeDetail", () => {
           return { select: jest.fn(() => rideHistoryQuery) };
         }
 
+        if (table === "bike_status_events") {
+          return {
+            select: jest.fn(() => ({
+              eq: jest.fn(() => ({
+                order: orderStatusHistory
+              }))
+            }))
+          };
+        }
+
         if (table === "profiles") {
           return { select: jest.fn(() => profileQuery) };
         }
@@ -137,7 +170,9 @@ describe("getBikeDetail", () => {
     const { client } = createBikeDetailClient();
     createClientMock.mockResolvedValue(client as never);
 
-    await expect(getBikeDetail("G-205")).resolves.toEqual({
+    const result = await getBikeDetail("G-205");
+
+    expect(result).toMatchObject({
       bike: expect.objectContaining({
         id: "G-205",
         activeRiderId: "user-1",
@@ -156,6 +191,14 @@ describe("getBikeDetail", () => {
           walletTransactionId: "txn-ride-1"
         })
       ]
+    });
+
+    expect(result.statusHistory[0]).toMatchObject({
+      actorId: "user-1",
+      bikeId: "G-205",
+      fromStatus: "available",
+      toStatus: "in_use",
+      transitionKind: "ride_start"
     });
   });
 });

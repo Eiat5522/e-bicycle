@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import {
   type BikeRideHistoryEntry,
+  type BikeStatusEventEntry,
   type ManagedBike
 } from "@/components/bicycle-management";
 import { requireAdmin } from "@/lib/auth";
@@ -97,11 +98,57 @@ function mapRideHistory(row: {
   };
 }
 
+function mapStatusHistory(row: {
+  readonly actor_id: string;
+  readonly bike_id: string;
+  readonly context: unknown;
+  readonly created_at: string;
+  readonly from_status: ManagedBike["status"];
+  readonly id: string;
+  readonly to_status: ManagedBike["status"];
+  readonly transition_kind: string;
+}): BikeStatusEventEntry {
+  const context = row.context as
+    | {
+        readonly active_ride_start_location: string | null;
+        readonly active_ride_started_at: string | null;
+        readonly active_rider_id_after: string | null;
+        readonly active_rider_id_before: string | null;
+        readonly bike_location: string;
+        readonly requested_status: ManagedBike["status"] | string;
+        readonly source: string;
+      }
+    | null;
+
+  return {
+    actorId: row.actor_id,
+    bikeId: row.bike_id,
+    context: {
+      activeRideStartLocation: context?.active_ride_start_location ?? null,
+      activeRideStartedAt: context?.active_ride_started_at ?? null,
+      activeRiderIdAfter: context?.active_rider_id_after ?? null,
+      activeRiderIdBefore: context?.active_rider_id_before ?? null,
+      bikeLocation: context?.bike_location ?? "",
+      requestedStatus: context?.requested_status ?? row.to_status,
+      source: context?.source ?? ""
+    },
+    createdAt: row.created_at,
+    fromStatus: row.from_status,
+    id: row.id,
+    toStatus: row.to_status,
+    transitionKind: row.transition_kind
+  };
+}
+
 export async function getBikeDetail(bikeId: string) {
   await requireAdmin();
 
   const supabase = await createClient();
-  const [{ data: bike, error: bikeError }, { data: rideHistory, error: rideHistoryError }] =
+  const [
+    { data: bike, error: bikeError },
+    { data: rideHistory, error: rideHistoryError },
+    { data: statusHistory, error: statusHistoryError }
+  ] =
     await Promise.all([
       supabase
         .from("bikes")
@@ -116,7 +163,14 @@ export async function getBikeDetail(bikeId: string) {
           "id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
         )
         .eq("bike_id", bikeId)
-        .order("completed_at", { ascending: false })
+        .order("completed_at", { ascending: false }),
+      supabase
+        .from("bike_status_events")
+        .select(
+          "id, bike_id, actor_id, from_status, to_status, transition_kind, context, created_at"
+        )
+        .eq("bike_id", bikeId)
+        .order("created_at", { ascending: false })
     ]);
 
   if (bikeError) {
@@ -125,6 +179,10 @@ export async function getBikeDetail(bikeId: string) {
 
   if (rideHistoryError) {
     throw new Error(rideHistoryError.message);
+  }
+
+  if (statusHistoryError) {
+    throw new Error(statusHistoryError.message);
   }
 
   if (!bike) {
@@ -154,6 +212,7 @@ export async function getBikeDetail(bikeId: string) {
       ...mapBike(bike),
       activeRiderLabel: mapActiveRiderLabel(bike.active_rider_id, rider ? { [rider.id]: rider.first_name } : {})
     },
-    rideHistory: rideHistory.map(mapRideHistory)
+    rideHistory: rideHistory.map(mapRideHistory),
+    statusHistory: statusHistory.map(mapStatusHistory)
   };
 }

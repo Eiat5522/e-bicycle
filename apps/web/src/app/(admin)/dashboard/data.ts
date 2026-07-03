@@ -10,7 +10,8 @@ import {
 } from "./selectors";
 
 type BikeRow = Database["public"]["Tables"]["bikes"]["Row"];
-type BikeRideHistoryRow = Database["public"]["Tables"]["bike_ride_history"]["Row"];
+type RentalTransactionRow = Database["public"]["Tables"]["rental_transactions"]["Row"];
+type BikeStatusEventRow = Database["public"]["Tables"]["bike_status_events"]["Row"];
 type WalletRow = Database["public"]["Tables"]["wallets"]["Row"];
 type WalletTransactionRow = Database["public"]["Tables"]["wallet_transactions"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -39,7 +40,7 @@ export async function loadDashboardViewModels(): Promise<DashboardViewModels> {
       )
       .order("updated_at", { ascending: false }),
     supabase
-      .from("bike_ride_history")
+      .from("rental_transactions")
       .select(
         "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
       )
@@ -75,19 +76,40 @@ export async function loadDashboardViewModels(): Promise<DashboardViewModels> {
   const activeRiderIds = (bikes ?? [])
     .map((bike) => bike.active_rider_id)
     .filter((activeRiderId): activeRiderId is string => Boolean(activeRiderId));
+  const activeBikeIds = (bikes ?? [])
+    .filter((bike) => bike.status === "in_use")
+    .map((bike) => bike.id);
 
-  const { data: profiles, error: profilesError } = activeRiderIds.length
-    ? await supabase.from("profiles").select("id, first_name, is_admin, created_at, updated_at").in("id", activeRiderIds)
-    : { data: [] as ProfileRow[], error: null };
+  const [{ data: profiles, error: profilesError }, { data: bikeStatusEvents, error: bikeStatusEventsError }] =
+    await Promise.all([
+      activeRiderIds.length
+        ? supabase.from("profiles").select("id, first_name, is_admin, created_at, updated_at").in("id", activeRiderIds)
+        : Promise.resolve({ data: [] as ProfileRow[], error: null }),
+      activeBikeIds.length
+        ? supabase
+            .from("bike_status_events")
+            .select("id, bike_id, actor_id, from_status, to_status, transition_kind, context, created_at")
+            .in("bike_id", activeBikeIds)
+            .eq("transition_kind", "ride_start")
+            .gte("created_at", sevenDaysAgoIso)
+            .order("created_at", { ascending: false })
+            .limit(50)
+        : Promise.resolve({ data: [] as BikeStatusEventRow[], error: null })
+    ]);
 
   if (profilesError) {
     throw new Error(profilesError.message);
   }
 
+  if (bikeStatusEventsError) {
+    throw new Error(bikeStatusEventsError.message);
+  }
+
   const input: DashboardInput = {
     bikes: (bikes ?? []) as BikeRow[],
+    bikeStatusEvents: (bikeStatusEvents ?? []) as BikeStatusEventRow[],
     profiles: profiles ?? [],
-    rideHistory: (rideHistory ?? []) as BikeRideHistoryRow[],
+    rideHistory: (rideHistory ?? []) as RentalTransactionRow[],
     serverTime: new Date().toISOString(),
     walletTransactions: (walletTransactions ?? []) as WalletTransactionRow[],
     wallets: (wallets ?? []) as WalletRow[]

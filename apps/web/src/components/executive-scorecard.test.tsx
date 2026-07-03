@@ -16,6 +16,7 @@ import {
 
 const emptyInput: DashboardInput = {
   bikes: [],
+  bikeStatusEvents: [],
   profiles: [],
   rideHistory: [],
   serverTime: "2026-06-28T09:30:00Z",

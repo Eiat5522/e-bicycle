@@ -58,6 +58,25 @@ export interface BikeRideHistoryEntry {
   readonly checkpoints: readonly RideHistoryCheckpoint[];
 }
 
+export interface BikeStatusEventEntry {
+  readonly id: string;
+  readonly actorId: string;
+  readonly bikeId: string;
+  readonly fromStatus: ManagedBike["status"];
+  readonly toStatus: ManagedBike["status"];
+  readonly transitionKind: string;
+  readonly createdAt: string;
+  readonly context: {
+    readonly activeRideStartLocation: string | null;
+    readonly activeRideStartedAt: string | null;
+    readonly activeRiderIdAfter: string | null;
+    readonly activeRiderIdBefore: string | null;
+    readonly bikeLocation: string;
+    readonly requestedStatus: ManagedBike["status"] | string;
+    readonly source: string;
+  };
+}
+
 const statusClasses: Record<ManagedBike["status"], string> = {
   available: "bg-[var(--clay-success-soft)] text-[var(--clay-success)]",
   reserved: "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]",
@@ -457,7 +476,7 @@ function BikeStatusBadge({ status }: { readonly status: ManagedBike["status"] })
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${statusClasses[status]}`}>
-      {status.replace("_", " ")}
+      {status.replaceAll("_", " ")}
     </span>
   );
 }
@@ -752,6 +771,7 @@ export function BicycleEditor({
   deleteAction,
   mode,
   rideHistory,
+  statusHistory,
   variant = "page"
 }: {
   readonly action: (formData: FormData) => void | Promise<void>;
@@ -759,6 +779,7 @@ export function BicycleEditor({
   readonly deleteAction?: (formData: FormData) => void | Promise<void>;
   readonly mode: "create" | "edit";
   readonly rideHistory: readonly BikeRideHistoryEntry[];
+  readonly statusHistory: readonly BikeStatusEventEntry[];
   readonly variant?: "page" | "drawer";
 }) {
   const isCreate = mode === "create";
@@ -1185,6 +1206,58 @@ export function BicycleEditor({
       ) : null}
 
       <aside className="flex flex-col gap-6">
+        <section className="clay-card p-6">
+          <div className="flex flex-col gap-2">
+            <h3 className="text-2xl font-black tracking-[-0.03em] text-[var(--foreground)]">
+              Status History
+            </h3>
+            <p className="text-sm leading-6 text-[var(--foreground-muted)]">
+              Recent status transitions recorded by the operational audit trail.
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-3">
+            {statusHistory.length === 0 ? (
+              <div className="clay-inset px-5 py-6 text-sm text-[var(--foreground-muted)]">
+                No status transitions have been recorded for this bicycle yet.
+              </div>
+            ) : (
+              statusHistory.map((event) => (
+                <article className="clay-inset px-5 py-4" key={event.id}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-1">
+                      <h4 className="text-base font-semibold text-[var(--foreground)]">
+                        {event.fromStatus.replaceAll("_", " ")} to {event.toStatus.replaceAll("_", " ")}
+                      </h4>
+                      <p className="text-sm text-[var(--foreground-muted)]">
+                        {event.transitionKind.replaceAll("_", " ")} by {event.actorId}
+                      </p>
+                    </div>
+                    <p className="text-right text-sm text-[var(--foreground-muted)]">
+                      {formatAdminDate(event.createdAt)}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 text-sm text-[var(--foreground-muted)]">
+                    <p>
+                      Location: <span className="font-medium text-[var(--foreground)]">{event.context.bikeLocation}</span>
+                    </p>
+                    <p>
+                      Rider:{" "}
+                      <span className="font-medium text-[var(--foreground)]">
+                        {event.context.activeRiderIdAfter ?? "none"}
+                      </span>
+                    </p>
+                    <p className="break-all">
+                      Source: <span className="font-medium text-[var(--foreground)]">{event.context.source}</span>
+                    </p>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
         <section className="clay-card p-6">
           <div className="flex flex-col gap-2">
             <h3 className="text-2xl font-black tracking-[-0.03em] text-[var(--foreground)]">

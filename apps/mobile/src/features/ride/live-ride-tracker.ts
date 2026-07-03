@@ -23,6 +23,8 @@ export type LiveRideTrackingState = "starting" | "live" | "mock" | "permission_d
 export interface LiveRideTrackerOptions {
   readonly bikeId: string;
   readonly startCoordinates?: Coordinates;
+  readonly initialRoute?: readonly Coordinates[];
+  readonly startedAtMs?: number;
   readonly ratePerMinute?: number;
   readonly startLocation?: string;
 }
@@ -235,6 +237,8 @@ export function createLiveRideSnapshot({
 export function useLiveRideTracker({
   bikeId,
   startCoordinates = DEFAULT_LIVE_RIDE_START_COORDINATES,
+  initialRoute,
+  startedAtMs,
   ratePerMinute = DEFAULT_RATE_PER_MINUTE,
   startLocation = "อโศก Interchange"
 }: LiveRideTrackerOptions) {
@@ -247,9 +251,13 @@ export function useLiveRideTracker({
     }),
     [startLatitude, startLongitude]
   );
-  const startedAtMsRef = useRef(Date.now());
+  const resolvedInitialRoute = useMemo(
+    () => (initialRoute && initialRoute.length > 0 ? initialRoute : [stableStartCoordinates]),
+    [initialRoute, stableStartCoordinates]
+  );
+  const startedAtMsRef = useRef(startedAtMs ?? Date.now());
   const [nowMs, setNowMs] = useState(startedAtMsRef.current);
-  const [route, setRoute] = useState<readonly Coordinates[]>([stableStartCoordinates]);
+  const [route, setRoute] = useState<readonly Coordinates[]>(resolvedInitialRoute);
   const [trackingState, setTrackingState] = useState<LiveRideTrackingState>("starting");
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const mockStepRef = useRef(0);
@@ -260,13 +268,15 @@ export function useLiveRideTracker({
   }, []);
 
   useEffect(() => {
-    setRoute([stableStartCoordinates]);
+    const nextStartedAtMs = startedAtMs ?? Date.now();
+
+    setRoute(resolvedInitialRoute);
     setTrackingState("starting");
     setWarningMessage(null);
     mockStepRef.current = 0;
-    startedAtMsRef.current = Date.now();
+    startedAtMsRef.current = nextStartedAtMs;
     setNowMs(startedAtMsRef.current);
-  }, [bikeId, stableStartCoordinates]);
+  }, [bikeId, resolvedInitialRoute, startedAtMs, stableStartCoordinates]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {

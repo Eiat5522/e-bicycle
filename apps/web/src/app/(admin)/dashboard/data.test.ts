@@ -24,12 +24,36 @@ describe("loadDashboardViewModels", () => {
         data: [
           {
             active_rider_id: "profile-1",
-            id: "G-205"
+            id: "G-205",
+            status: "in_use"
           }
         ],
         error: null
       },
-      bike_ride_history: { data: [], error: null },
+      bike_status_events: {
+        data: [
+          {
+            actor_id: "profile-1",
+            bike_id: "G-205",
+            context: {
+              active_ride_start_location: "Siam Square",
+              active_ride_started_at: "2026-06-28T08:00:00Z",
+              active_rider_id_after: "profile-1",
+              active_rider_id_before: null,
+              bike_location: "Siam Square",
+              requested_status: "in_use",
+              source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
+            },
+            created_at: "2026-06-28T08:00:00Z",
+            from_status: "available",
+            id: "bike-status-event-1",
+            to_status: "in_use",
+            transition_kind: "ride_start"
+          }
+        ],
+        error: null
+      },
+      rental_transactions: { data: [], error: null },
       wallets: { data: [], error: null },
       wallet_transactions: { data: [], error: null },
       profiles: {
@@ -55,10 +79,20 @@ describe("loadDashboardViewModels", () => {
             };
           }
 
-          if (table === "bike_ride_history") {
+          if (table === "rental_transactions") {
             return {
               gte: jest.fn(() => ({
-                order: jest.fn(async () => tables.bike_ride_history)
+                order: jest.fn(async () => tables.rental_transactions)
+              }))
+            };
+          }
+
+          if (table === "bike_status_events") {
+            return {
+              in: jest.fn(() => ({
+                eq: jest.fn(() => ({
+                  order: jest.fn(async () => tables.bike_status_events)
+                }))
               }))
             };
           }
@@ -76,5 +110,14 @@ describe("loadDashboardViewModels", () => {
     createClientMock.mockResolvedValue(client as never);
 
     await expect(loadDashboardViewModels()).rejects.toThrow("profiles blocked by RLS");
+  });
+
+  it("loads active ride start events for live ride summaries", async () => {
+    const client = createDashboardClient();
+    createClientMock.mockResolvedValue(client as never);
+
+    await loadDashboardViewModels();
+
+    expect(client.from).toHaveBeenCalledWith("bike_status_events");
   });
 });

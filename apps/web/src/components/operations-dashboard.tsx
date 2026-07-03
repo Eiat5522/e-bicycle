@@ -136,7 +136,7 @@ export function OperationsDashboard({ data }: OperationsDashboardProps) {
                     <>
                       {formatDistanceKm(data.activeRide.distanceKm)} covered with{" "}
                       {data.activeRide.nextDropoffZoneKm !== null && data.activeRide.nextDropoffZoneKm !== undefined
-                        ? `${formatDistanceKm(data.activeRide.nextDropoffZoneKm)} to next drop-off zone`
+                        ? `${formatDistanceKm(data.activeRide.nextDropoffZoneKm)} to next drop-off zone · ${data.activeRide.dropoffState.replace("_", " ")}`
                         : "drop-off zone status pending"}
                       .
                     </>

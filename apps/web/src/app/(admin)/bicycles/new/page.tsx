@@ -29,6 +29,7 @@ export default async function NewBicyclePage() {
       }}
       mode="create"
       rideHistory={[]}
+      statusHistory={[]}
     />
   );
 }

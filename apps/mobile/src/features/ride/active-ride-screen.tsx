@@ -3,13 +3,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { mockActiveRide, mockBikes } from "@glide/api";
+import type { Bike, Coordinates } from "@glide/shared";
 import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
 import { ScreenShell } from "@/components/screen-shell";
 import { SurfaceCard } from "@/components/surface-card";
 import { useAuth } from "@/features/auth/auth-provider";
+import { configuredBikeService } from "@/lib/bike-service";
 import { configuredBikeStatusService } from "@/lib/bike-status-service";
 import { findRecentRewardMilestone } from "@/lib/reward-milestones";
 import { configuredRideHistoryService } from "@/lib/ride-history-service";
@@ -17,12 +18,30 @@ import { hasSupabaseConfig } from "@/lib/supabase";
 import { configuredWalletService } from "@/lib/wallet-service";
 import { colors, radii, spacing } from "@/theme/tokens";
 import { LiveRideRoutePreview } from "./live-ride-route-preview";
+import { type ActiveRideBikeSnapshot, clearActiveRideSession, loadActiveRideSession, saveActiveRideSession } from "./active-ride-session";
 import { useLiveRideTracker } from "./live-ride-tracker";
 import { useRideSession } from "./ride-session-context";
 
 const isTestEnvironment = process.env.NODE_ENV === "test";
 const ARRIVAL_OVERLAY_MS = 1600;
 const DROPOFF_BANNER_MS = 2800;
+
+type ActiveRideSessionState =
+  | {
+      readonly status: "loading";
+    }
+  | {
+      readonly status: "missing";
+      readonly message: string;
+    }
+  | {
+      readonly status: "ready";
+      readonly bikeId: string;
+      readonly bike: ActiveRideBikeSnapshot;
+      readonly startedAtMs: number;
+      readonly initialRoute: readonly Coordinates[];
+      readonly metadataWarning?: string;
+    };
 
 function getDropoffGuidanceCopy(
   state: "en_route" | "approaching" | "arrived",
@@ -46,6 +65,32 @@ function getDropoffGuidanceCopy(
     eyebrow: "Recommended drop-off",
     body: `Head to ${label} to end your ride smoothly.`
   };
+}
+
+function mapBikeToSessionBike(bike: Bike): ActiveRideBikeSnapshot {
+  return {
+    id: bike.id,
+    model: bike.model,
+    location: bike.location,
+    coordinates: bike.coordinates,
+    ratePerMinute: bike.ratePerMinute,
+    ...(bike.imageUrl ? { imageUrl: bike.imageUrl } : {}),
+    ...(bike.rideClass ? { rideClass: bike.rideClass } : {}),
+    ...(bike.estimatedRangeKm !== undefined ? { estimatedRangeKm: bike.estimatedRangeKm } : {}),
+    ...(bike.topSpeedKmh !== undefined ? { topSpeedKmh: bike.topSpeedKmh } : {}),
+    ...(bike.pricingLabel ? { pricingLabel: bike.pricingLabel } : {}),
+    ...(bike.status ? { status: bike.status } : {}),
+    ...(bike.activeRiderId !== undefined ? { activeRiderId: bike.activeRiderId } : {}),
+    ...(bike.lastReportedAt ? { lastReportedAt: bike.lastReportedAt } : {})
+  };
+}
+
+function getBikeRefreshWarning(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Could not refresh bike details.";
 }
 
 async function reconcilePendingStatusSyncs(accessToken: string) {
@@ -73,25 +118,60 @@ async function reconcilePendingStatusSyncs(accessToken: string) {
   }
 }
 
-export function ActiveRideScreen() {
+function LoadingActiveRideScreen() {
+  return (
+    <ScreenShell
+      title="Glide Ride Dashboard"
+      description="Restoring your live ride session.">
+      <SurfaceCard tone="accent">
+        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+          Restoring active ride
+        </Text>
+        <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+          Glide is reloading your saved ride session and bike details.
+        </Text>
+      </SurfaceCard>
+    </ScreenShell>
+  );
+}
+
+function MissingActiveRideScreen({ onGoHome, message }: { readonly onGoHome: () => void; readonly message?: string }) {
+  return (
+    <ScreenShell
+      title="Glide Ride Dashboard"
+      description="No active ride session was found.">
+      <SurfaceCard tone="muted">
+        <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+          No active ride session
+        </Text>
+        <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+          {message ?? "We could not find a saved ride session to restore. Start a new ride from the map."}
+        </Text>
+      </SurfaceCard>
+
+      <PrimaryButton label="Go to map" onPress={onGoHome} />
+    </ScreenShell>
+  );
+}
+
+function ActiveRideDashboard({
+  bikeId,
+  bike,
+  startedAtMs,
+  initialRoute,
+  enteredFromUnlock,
+  metadataWarning
+}: {
+  readonly bikeId: string;
+  readonly bike: ActiveRideBikeSnapshot;
+  readonly startedAtMs: number;
+  readonly initialRoute: readonly Coordinates[];
+  readonly enteredFromUnlock: boolean;
+  readonly metadataWarning?: string;
+}) {
   const router = useRouter();
   const { session } = useAuth();
   const { setBikeRideState } = useRideSession();
-  const params = useLocalSearchParams<{ bikeId?: string; entry?: string }>();
-  const bikeId = params.bikeId ?? mockActiveRide.bikeId;
-  const bike = useMemo(() => mockBikes.find((mockBike) => mockBike.id === bikeId), [bikeId]);
-  const trackerOptions = useMemo(
-    () => ({
-      bikeId,
-      ...(bike?.coordinates ? { startCoordinates: bike.coordinates } : {}),
-      ...(bike?.ratePerMinute !== undefined ? { ratePerMinute: bike.ratePerMinute } : {}),
-      startLocation: bike?.location ?? mockActiveRide.startLocation
-    }),
-    [bike?.coordinates, bike?.location, bike?.ratePerMinute, bikeId]
-  );
-  const { dropoffGuidance, snapshot, trackingState, warningMessage } =
-    useLiveRideTracker(trackerOptions);
-  const enteredFromUnlock = params.entry === "unlock";
   const [showArrivalOverlay, setShowArrivalOverlay] = useState(enteredFromUnlock);
   const [showDropoffArrivalBanner, setShowDropoffArrivalBanner] = useState(false);
   const [endRideError, setEndRideError] = useState<string | null>(null);
@@ -102,6 +182,15 @@ export function ActiveRideScreen() {
   const glowPulse = useRef(new Animated.Value(0)).current;
   const overlayOpacity = useRef(new Animated.Value(enteredFromUnlock && !isTestEnvironment ? 1 : 0)).current;
   const overlayScale = useRef(new Animated.Value(isTestEnvironment ? 1 : 0.96)).current;
+
+  const { dropoffGuidance, snapshot, trackingState, warningMessage } = useLiveRideTracker({
+    bikeId,
+    startCoordinates: bike.coordinates,
+    initialRoute,
+    startedAtMs,
+    ratePerMinute: bike.ratePerMinute,
+    startLocation: bike.location
+  });
 
   useEffect(() => {
     if (session?.access_token) {
@@ -222,6 +311,15 @@ export function ActiveRideScreen() {
     };
   }, [dropoffGuidance.state]);
 
+  useEffect(() => {
+    void saveActiveRideSession({
+      bikeId,
+      startedAtMs,
+      route: snapshot.route,
+      bike
+    });
+  }, [bike, bikeId, snapshot.route, startedAtMs]);
+
   async function handleEndRide() {
     if (!hasSupabaseConfig) {
       router.push("/ride/summary");
@@ -247,11 +345,14 @@ export function ActiveRideScreen() {
 
       if (!session?.access_token) {
         try {
-          await AsyncStorage.setItem(`pending_release_${bikeId}`, JSON.stringify({
-            bikeId,
-            status: "available",
-            timestamp: new Date().toISOString()
-          }));
+          await AsyncStorage.setItem(
+            `pending_release_${bikeId}`,
+            JSON.stringify({
+              bikeId,
+              status: "available",
+              timestamp: new Date().toISOString()
+            })
+          );
         } catch (storageError) {
           console.error("Failed to persist pending retry", storageError);
         }
@@ -264,23 +365,30 @@ export function ActiveRideScreen() {
           status: "available",
           accessToken: session.access_token
         });
-        
+
         try {
           await AsyncStorage.removeItem(`pending_release_${bikeId}`);
-        } catch {}
+        } catch {
+          // Ignore cleanup failures.
+        }
 
         setBikeRideState(bikeId, {
           status: "available",
           activeRiderId: null
         });
+
+        await clearActiveRideSession();
       } catch (statusError) {
         console.error("Failed to sync bike status", { bikeId, statusError });
         try {
-          await AsyncStorage.setItem(`pending_release_${bikeId}`, JSON.stringify({
-            bikeId,
-            status: "available",
-            timestamp: new Date().toISOString()
-          }));
+          await AsyncStorage.setItem(
+            `pending_release_${bikeId}`,
+            JSON.stringify({
+              bikeId,
+              status: "available",
+              timestamp: new Date().toISOString()
+            })
+          );
         } catch (storageError) {
           console.error("Failed to persist pending retry", storageError);
         }
@@ -290,11 +398,12 @@ export function ActiveRideScreen() {
       let milestone: string | undefined;
       try {
         const wallet = await configuredWalletService.getWallet();
-        milestone = findRecentRewardMilestone(wallet.transactions, [
-          "first_ride",
-          "five_rides",
-          "ten_rides"
-        ]) ?? undefined;
+        milestone =
+          findRecentRewardMilestone(wallet.transactions, [
+            "first_ride",
+            "five_rides",
+            "ten_rides"
+          ]) ?? undefined;
       } catch {
         milestone = undefined;
       }
@@ -392,6 +501,15 @@ export function ActiveRideScreen() {
                   lineHeight: 22
                 }}>
                 Live Ride Companion is recording your route, estimating fare, and watching the next clean drop-off.
+              </Text>
+              <Text
+                selectable
+                style={{
+                  color: "rgba(255, 255, 255, 0.88)",
+                  fontSize: 16,
+                  fontWeight: "700"
+                }}>
+                {bike.model}
               </Text>
             </View>
 
@@ -509,6 +627,17 @@ export function ActiveRideScreen() {
                 Current fare estimate: {formatCurrency(snapshot.currentCost)}
               </Text>
             </SurfaceCard>
+
+            {metadataWarning ? (
+              <SurfaceCard tone="muted">
+                <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+                  Ride details restored
+                </Text>
+                <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+                  {metadataWarning}
+                </Text>
+              </SurfaceCard>
+            ) : null}
 
             {warningMessage ? (
               <SurfaceCard tone="muted">
@@ -639,5 +768,116 @@ export function ActiveRideScreen() {
         </Animated.View>
       ) : null}
     </>
+  );
+}
+
+export function ActiveRideScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ bikeId?: string; entry?: string }>();
+  const enteredFromUnlock = params.entry === "unlock";
+  const requestedBikeId = typeof params.bikeId === "string" ? params.bikeId : undefined;
+  const [sessionState, setSessionState] = useState<ActiveRideSessionState>({ status: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateRideSession() {
+      const storedSession = await loadActiveRideSession();
+
+      if (cancelled) {
+        return;
+      }
+
+      const resolvedBikeId = requestedBikeId ?? storedSession?.bikeId;
+
+      if (!resolvedBikeId) {
+        setSessionState({
+          status: "missing",
+          message: "No active ride session was found."
+        });
+        return;
+      }
+
+      const persistedSession =
+        storedSession && storedSession.bikeId === resolvedBikeId ? storedSession : null;
+
+      let sessionBike = persistedSession?.bike ?? null;
+      let metadataWarning: string | undefined;
+
+      try {
+        const fetchedBike = await configuredBikeService.getById(resolvedBikeId);
+        if (cancelled) return;
+        if (fetchedBike) {
+          sessionBike = mapBikeToSessionBike(fetchedBike);
+        } else if (!sessionBike) {
+          setSessionState({
+            status: "missing",
+            message: `Bike ${resolvedBikeId} could not be loaded.`
+          });
+          return;
+        }
+      } catch (error) {
+        if (cancelled) return;
+        metadataWarning = getBikeRefreshWarning(error);
+        if (!sessionBike) {
+          setSessionState({
+            status: "missing",
+            message: `Bike ${resolvedBikeId} could not be loaded.`
+          });
+          return;
+        }
+      }
+
+      if (!sessionBike) {
+        setSessionState({
+          status: "missing",
+          message: `Bike ${resolvedBikeId} could not be loaded.`
+        });
+        return;
+      }
+
+      setSessionState({
+        status: "ready",
+        bikeId: resolvedBikeId,
+        bike: sessionBike,
+        startedAtMs: persistedSession?.startedAtMs ?? Date.now(),
+        initialRoute: persistedSession?.route ?? [sessionBike.coordinates],
+        ...(metadataWarning ? { metadataWarning } : {})
+      });
+    }
+
+    void hydrateRideSession().catch((error) => {
+      console.error("Failed to hydrate active ride session", error);
+      if (!cancelled) {
+        setSessionState({
+          status: "missing",
+          message: "No active ride session was found."
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedBikeId]);
+
+  if (sessionState.status === "loading") {
+    return <LoadingActiveRideScreen />;
+  }
+
+  if (sessionState.status === "missing") {
+    return <MissingActiveRideScreen onGoHome={() => router.push("/map")} message={sessionState.message} />;
+  }
+
+  return (
+    <ActiveRideDashboard
+      key={sessionState.bikeId}
+      bikeId={sessionState.bikeId}
+      bike={sessionState.bike}
+      startedAtMs={sessionState.startedAtMs}
+      initialRoute={sessionState.initialRoute}
+      enteredFromUnlock={enteredFromUnlock}
+      metadataWarning={sessionState.metadataWarning}
+    />
   );
 }

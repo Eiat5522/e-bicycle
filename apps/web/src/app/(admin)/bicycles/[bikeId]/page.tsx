@@ -9,7 +9,7 @@ export default async function BicycleDetailPage({
   readonly params: Promise<{ bikeId: string }>;
 }) {
   const { bikeId } = await params;
-  const { bike, rideHistory } = await getBikeDetail(bikeId);
+  const { bike, rideHistory, statusHistory } = await getBikeDetail(bikeId);
 
   return (
     <BicycleEditor
@@ -18,6 +18,7 @@ export default async function BicycleDetailPage({
       deleteAction={deleteBikeAction}
       mode="edit"
       rideHistory={rideHistory}
+      statusHistory={statusHistory}
     />
   );
 }

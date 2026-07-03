@@ -1,5 +1,6 @@
 import type {
   BikeRow,
+  BikeStatusEventRow,
   BikeRideHistoryRow,
   Database,
   ProfileRow
@@ -60,6 +61,28 @@ function makeRideHistoryRow(overrides: Partial<BikeRideHistoryRow> = {}): BikeRi
     start_location: "Siam Square",
     total_cost: 1.62,
     wallet_transaction_id: "txn-1",
+    ...overrides
+  };
+}
+
+function makeBikeStatusEventRow(overrides: Partial<BikeStatusEventRow> = {}): BikeStatusEventRow {
+  return {
+    actor_id: "profile-1",
+    bike_id: "G-001",
+    context: {
+      active_ride_start_location: "Siam Square",
+      active_ride_started_at: "2026-06-28T08:00:00Z",
+      active_rider_id_after: "profile-1",
+      active_rider_id_before: null,
+      bike_location: "Siam Square",
+      requested_status: "in_use",
+      source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
+    },
+    created_at: "2026-06-28T08:00:00Z",
+    from_status: "available",
+    id: "bike-status-event-1",
+    to_status: "in_use",
+    transition_kind: "ride_start",
     ...overrides
   };
 }
@@ -126,6 +149,7 @@ describe("dashboard selectors", () => {
           status: "maintenance"
         })
       ],
+      bikeStatusEvents: [makeBikeStatusEventRow({ bike_id: "G-002" })],
       profiles: [makeProfileRow()],
       rideHistory: [
         makeRideHistoryRow(),
@@ -168,6 +192,7 @@ describe("dashboard selectors", () => {
   it("returns empty view models when Supabase has not returned live rows yet", () => {
     const emptyInput = {
       bikes: [],
+      bikeStatusEvents: [],
       profiles: [],
       rideHistory: [],
       serverTime: "2026-06-28T09:30:00Z",
@@ -184,5 +209,58 @@ describe("dashboard selectors", () => {
     expect(operations.activeRide).toBeNull();
     expect(operations.recentRoutes).toHaveLength(0);
     expect(operations.watchlist).toHaveLength(0);
+  });
+
+  it("uses persisted ride start events and live bike coordinates for the active ride summary", () => {
+    const activeInput = {
+      bikes: [
+        makeBikeRow({
+          id: "G-001",
+          location: "Siam Square",
+          latitude: 13.7563,
+          longitude: 100.5018,
+          status: "available"
+        }),
+        makeBikeRow({
+          active_rider_id: "profile-1",
+          active_ride_start_location: "Siam Square",
+          active_ride_started_at: "2026-06-28T08:00:00Z",
+          id: "G-002",
+          latitude: 13.7372,
+          longitude: 100.5606,
+          last_reported_at: "2026-06-28T08:50:00Z",
+          location: "Asok Interchange",
+          status: "in_use"
+        })
+      ],
+      bikeStatusEvents: [
+        makeBikeStatusEventRow({
+          bike_id: "G-002",
+          context: {
+            active_ride_start_location: "Siam Square",
+            active_ride_started_at: "2026-06-28T08:00:00Z",
+            active_rider_id_after: "profile-1",
+            active_rider_id_before: null,
+            bike_location: "Siam Square",
+            requested_status: "in_use",
+            source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
+          }
+        })
+      ],
+      profiles: [makeProfileRow()],
+      rideHistory: [],
+      serverTime: "2026-06-28T09:30:00Z",
+      walletTransactions: [],
+      wallets: []
+    };
+
+    const operations = selectOperationsDashboardViewModel(activeInput);
+
+    expect(operations.activeRide?.bikeId).toBe("G-002");
+    expect(operations.activeRide?.currentCost).toBeGreaterThan(0);
+    expect(operations.activeRide?.distanceKm).toBeGreaterThan(0);
+    expect(operations.activeRide?.dropoffState).toBe("en_route");
+    expect(operations.activeRide?.nextDropoffZoneKm).toBeGreaterThan(0);
+    expect(operations.summaryMetrics[1]?.note).toContain("en route");
   });
 });

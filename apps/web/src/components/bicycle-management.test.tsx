@@ -122,6 +122,7 @@ describe("BicycleEditor", () => {
         }}
         mode="edit"
         rideHistory={rideHistory}
+        statusHistory={[]}
       />
     );
 
@@ -140,6 +141,7 @@ describe("BicycleEditor", () => {
         bike={bike}
         mode="edit"
         rideHistory={rideHistory}
+        statusHistory={[]}
       />
     );
 
@@ -178,6 +180,7 @@ describe("BicycleEditor", () => {
         bike={bike}
         mode="edit"
         rideHistory={rideHistory}
+        statusHistory={[]}
         variant="drawer"
       />
     );
@@ -200,6 +203,7 @@ describe("BicycleEditor", () => {
         deleteAction={onDeleteBike}
         mode="edit"
         rideHistory={rideHistory}
+        statusHistory={[]}
       />
     );
 
@@ -238,6 +242,7 @@ describe("BicycleEditor", () => {
           deleteAction={jest.fn(async () => undefined)}
           mode="edit"
           rideHistory={rideHistory}
+          statusHistory={[]}
           variant="drawer"
         />
       </SideDrawer>
@@ -266,6 +271,7 @@ describe("BicycleEditor", () => {
         bike={bike}
         mode="edit"
         rideHistory={[rideWithRoute]}
+        statusHistory={[]}
       />
     );
 
@@ -297,6 +303,7 @@ describe("BicycleEditor", () => {
         bike={bike}
         mode="edit"
         rideHistory={[rideWithRoute, secondRide]}
+        statusHistory={[]}
       />
     );
 
@@ -316,6 +323,7 @@ describe("BicycleEditor", () => {
         bike={bike}
         mode="edit"
         rideHistory={[rideWithoutRoute]}
+        statusHistory={[]}
       />
     );
 

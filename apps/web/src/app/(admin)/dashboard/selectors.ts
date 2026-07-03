@@ -3,6 +3,7 @@ import { calculateRideRevenue, formatCurrency, formatDistanceKm } from "@glide/s
 import { formatAdminDate } from "@/lib/formatting";
 import type {
   BikeRow,
+  BikeStatusEventRow,
   BikeRideHistoryRow,
   Database,
   ProfileRow
@@ -13,6 +14,7 @@ type WalletTransactionRow = Database["public"]["Tables"]["wallet_transactions"][
 
 export interface DashboardInput {
   readonly bikes: readonly BikeRow[];
+  readonly bikeStatusEvents: readonly BikeStatusEventRow[];
   readonly rideHistory: readonly BikeRideHistoryRow[];
   readonly wallets: readonly WalletRow[];
   readonly walletTransactions: readonly WalletTransactionRow[];
@@ -24,6 +26,7 @@ interface ActiveRideSummary {
   readonly bikeId: string;
   readonly currentCost: number;
   readonly distanceKm: number;
+  readonly dropoffState: "en_route" | "approaching" | "arrived";
   readonly nextDropoffZoneKm: number | null;
   readonly riderLabel: string | null;
   readonly startLocation: string;
@@ -72,6 +75,32 @@ interface WatchlistBike {
   readonly estimatedRangeKm: number;
   readonly status: BikeRow["status"];
 }
+
+interface Coordinates {
+  readonly latitude: number;
+  readonly longitude: number;
+}
+
+const APPROACHING_DROPOFF_THRESHOLD_KM = 0.25;
+const ARRIVED_DROPOFF_THRESHOLD_KM = 0.05;
+
+const DROPOFF_ZONES = [
+  {
+    id: "benjakitti",
+    label: "Benjakitti Park",
+    coordinates: { latitude: 13.7319, longitude: 100.5459 }
+  },
+  {
+    id: "lumphini-west",
+    label: "Lumphini Park West Gate",
+    coordinates: { latitude: 13.7305, longitude: 100.5418 }
+  },
+  {
+    id: "silom-complex",
+    label: "Silom Complex",
+    coordinates: { latitude: 13.7286, longitude: 100.5345 }
+  }
+] as const;
 
 export interface ExecutiveScorecardViewModel {
   readonly refreshedAtLabel: string;
@@ -130,11 +159,79 @@ function clampPercent(value: number) {
   return Math.min(100, Math.max(0, value));
 }
 
+function roundMetric(value: number, digits = 1) {
+  const factor = 10 ** digits;
+
+  return Math.round(value * factor) / factor;
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function calculateDistanceKm(from: Coordinates, to: Coordinates) {
+  const earthRadiusKm = 6371;
+  const latitudeDelta = toRadians(to.latitude - from.latitude);
+  const longitudeDelta = toRadians(to.longitude - from.longitude);
+  const fromLatitude = toRadians(from.latitude);
+  const toLatitude = toRadians(to.latitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) * Math.sin(latitudeDelta / 2) +
+    Math.cos(fromLatitude) *
+      Math.cos(toLatitude) *
+      Math.sin(longitudeDelta / 2) *
+      Math.sin(longitudeDelta / 2);
+
+  return 2 * earthRadiusKm * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
 function getRiderLabels(profiles: readonly ProfileRow[]) {
   return Object.fromEntries(profiles.map((profile) => [profile.id, profile.first_name]));
 }
 
-function getActiveRide(bikes: readonly BikeRow[], profiles: readonly ProfileRow[], serverTime: string) {
+function getLocationCoordinatesMap(bikes: readonly BikeRow[]) {
+  return new Map<string, Coordinates>(
+    bikes.map((bike) => [
+      bike.location,
+      {
+        latitude: bike.latitude,
+        longitude: bike.longitude
+      }
+    ])
+  );
+}
+
+function getNearestDropoffZone(coordinates: Coordinates) {
+  const nearestZone = [...DROPOFF_ZONES]
+    .map((zone) => ({
+      ...zone,
+      distanceKm: calculateDistanceKm(coordinates, zone.coordinates)
+    }))
+    .sort((leftZone, rightZone) => leftZone.distanceKm - rightZone.distanceKm)[0];
+
+  if (!nearestZone) {
+    return null;
+  }
+
+  const dropoffState: ActiveRideSummary["dropoffState"] =
+    nearestZone.distanceKm <= ARRIVED_DROPOFF_THRESHOLD_KM
+      ? "arrived"
+      : nearestZone.distanceKm <= APPROACHING_DROPOFF_THRESHOLD_KM
+        ? "approaching"
+        : "en_route";
+
+  return {
+    ...nearestZone,
+    dropoffState
+  };
+}
+
+function getActiveRide(
+  bikes: readonly BikeRow[],
+  bikeStatusEvents: readonly BikeStatusEventRow[],
+  profiles: readonly ProfileRow[],
+  serverTime: string
+) {
   const activeBike = bikes.find((bike) => bike.status === "in_use");
 
   if (!activeBike) {
@@ -142,7 +239,25 @@ function getActiveRide(bikes: readonly BikeRow[], profiles: readonly ProfileRow[
   }
 
   const riderLabels = getRiderLabels(profiles);
-  const startTimestamp = activeBike.active_ride_started_at ?? activeBike.last_reported_at;
+  const rideStartEvent = [...bikeStatusEvents]
+    .filter(
+      (event) =>
+        event.bike_id === activeBike.id &&
+        event.transition_kind === "ride_start" &&
+        event.to_status === "in_use"
+    )
+    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())[0];
+  const rideStartContext = rideStartEvent?.context as
+    | {
+        readonly active_ride_start_location: string | null;
+        readonly active_ride_started_at: string | null;
+      }
+    | null;
+  const startTimestamp =
+    rideStartContext?.active_ride_started_at ??
+    activeBike.active_ride_started_at ??
+    rideStartEvent?.created_at ??
+    activeBike.last_reported_at;
   const startedAt = Date.parse(startTimestamp);
   const now = Date.parse(serverTime);
   const durationSec =
@@ -151,15 +266,26 @@ function getActiveRide(bikes: readonly BikeRow[], profiles: readonly ProfileRow[
     durationSec,
     ratePerMinute: Number(activeBike.rate_per_minute)
   });
-  const estimatedDistanceKm = Math.round((durationSec / 3600) * activeBike.top_speed_kmh * 0.35 * 10) / 10;
+  const locationCoordinatesMap = getLocationCoordinatesMap(bikes);
+  const startLocation =
+    rideStartContext?.active_ride_start_location ?? activeBike.active_ride_start_location ?? activeBike.location;
+  const startCoordinates = locationCoordinatesMap.get(startLocation);
+  const currentCoordinates: Coordinates = {
+    latitude: activeBike.latitude,
+    longitude: activeBike.longitude
+  };
+  const estimatedDistanceKm = startCoordinates ? roundMetric(calculateDistanceKm(startCoordinates, currentCoordinates)) : 0;
+  const nearestDropoffZone = getNearestDropoffZone(currentCoordinates);
+  const dropoffState: ActiveRideSummary["dropoffState"] = nearestDropoffZone?.dropoffState ?? "en_route";
 
   return {
     bikeId: activeBike.id,
     currentCost,
     distanceKm: estimatedDistanceKm,
-    nextDropoffZoneKm: Math.max(0, Number(activeBike.estimated_range_km) - estimatedDistanceKm),
+    dropoffState,
+    nextDropoffZoneKm: nearestDropoffZone ? roundMetric(nearestDropoffZone.distanceKm) : null,
     riderLabel: activeBike.active_rider_id ? riderLabels[activeBike.active_rider_id] ?? activeBike.active_rider_id : null,
-    startLocation: activeBike.active_ride_start_location ?? activeBike.location
+    startLocation
   };
 }
 
@@ -303,8 +429,15 @@ function getAverage(values: readonly number[]) {
 
 function getActivityFeed(input: DashboardInput, activeRide: ActiveRideSummary | null, recentRoutes: readonly RouteSummary[]) {
   const latestWalletTransaction = input.walletTransactions[0];
+  const dropoffStateLabel = activeRide
+    ? activeRide.dropoffState === "arrived"
+      ? "ready to end"
+      : activeRide.dropoffState === "approaching"
+        ? "approaching the drop-off zone"
+        : "en route"
+    : null;
   const activeRideMessage = activeRide
-    ? `${activeRide.bikeId} is ${formatDistanceKm(activeRide.distanceKm)} into the ${activeRide.startLocation} route.`
+    ? `${activeRide.bikeId} is ${formatDistanceKm(activeRide.distanceKm)} into the ${activeRide.startLocation} route${dropoffStateLabel ? ` and ${dropoffStateLabel}` : ""}.`
     : "No active ride is currently assigned.";
   const activeRideTimestamp = activeRide ? "Live now" : "No active ride";
   const mostValuableRide = getMostValuableCompletedRide(input.rideHistory);
@@ -348,7 +481,7 @@ export function selectExecutiveScorecardViewModel(input: DashboardInput): Execut
   const maintenanceCount = input.bikes.filter((bike) => bike.status === "maintenance").length;
   const walletBalanceTotal = input.wallets.reduce((totalBalance, wallet) => totalBalance + Number(wallet.balance), 0);
   const completedRevenue = getCompletedRevenue(input.rideHistory);
-  const activeRide = getActiveRide(input.bikes, input.profiles, input.serverTime);
+  const activeRide = getActiveRide(input.bikes, input.bikeStatusEvents, input.profiles, input.serverTime);
   const trackedRevenue = completedRevenue + (activeRide?.currentCost ?? 0);
   const utilizationPercent = formatPercent(activeRideCount + reservedBikesCount, totalBikes);
   const trendPoints = totalBikes === 0 && input.rideHistory.length === 0 ? [] : getDailyTrendPoints(input.rideHistory, totalBikes, maintenanceCount, input.serverTime);
@@ -452,7 +585,7 @@ export function selectOperationsDashboardViewModel(input: DashboardInput): Opera
   const averageCompletedRideRevenue = input.rideHistory.length === 0 ? 0 : completedRevenue / input.rideHistory.length;
   const walletBalanceTotal = input.wallets.reduce((totalBalance, wallet) => totalBalance + Number(wallet.balance), 0);
   const paymentMethodsCount = new Set(input.wallets.flatMap((wallet) => wallet.payment_methods)).size;
-  const activeRide = getActiveRide(input.bikes, input.profiles, input.serverTime);
+  const activeRide = getActiveRide(input.bikes, input.bikeStatusEvents, input.profiles, input.serverTime);
   const recentRoutes = getRideSummaryRows(input.rideHistory);
   const watchlist = getWatchlist(input.bikes);
   const fleetBreakdown = getFleetBreakdown(input.bikes);
@@ -470,7 +603,7 @@ export function selectOperationsDashboardViewModel(input: DashboardInput): Opera
       {
         label: "Active rides",
         value: activeRideCount.toString(),
-        note: `${activeRide ? formatDistanceKm(activeRide.distanceKm) : "0.0 km"} in motion${activeRide?.riderLabel ? ` · in use by ${activeRide.riderLabel}` : ""}`
+        note: `${activeRide ? formatDistanceKm(activeRide.distanceKm) : "0.0 km"} in motion${activeRide?.dropoffState ? ` · ${activeRide.dropoffState.replace("_", " ")}` : ""}${activeRide?.riderLabel ? ` · in use by ${activeRide.riderLabel}` : ""}`
       },
       {
         label: "Support load",

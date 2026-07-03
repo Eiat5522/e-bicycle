@@ -9,6 +9,7 @@ import { OperationsDashboard } from "./operations-dashboard";
 
 const emptyInput: DashboardInput = {
   bikes: [],
+  bikeStatusEvents: [],
   profiles: [],
   rideHistory: [],
   serverTime: "2026-06-28T09:30:00Z",
@@ -28,7 +29,7 @@ describe("OperationsDashboard", () => {
   it("links completed rides to the operations replay drill-down", () => {
     render(
       <OperationsDashboard
-        data={selectOperationsDashboardViewModel({
+      data={selectOperationsDashboardViewModel({
           ...emptyInput,
           rideHistory: [
             {
@@ -54,6 +55,26 @@ describe("OperationsDashboard", () => {
               route: [],
               checkpoints: []
             }
+          ],
+          bikeStatusEvents: [
+            {
+              actor_id: "profile-1",
+              bike_id: "G-205",
+              context: {
+                active_ride_start_location: "Asok Interchange",
+                active_ride_started_at: "2026-04-22T02:30:00.000Z",
+                active_rider_id_after: "profile-1",
+                active_rider_id_before: null,
+                bike_location: "Asok Interchange",
+                requested_status: "in_use",
+                source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
+              },
+              created_at: "2026-04-22T02:30:00.000Z",
+              from_status: "available",
+              id: "event-ride-start",
+              to_status: "in_use",
+              transition_kind: "ride_start"
+            }
           ]
         })}
       />
@@ -70,6 +91,7 @@ describe("OperationsDashboard", () => {
       <OperationsDashboard
         data={selectOperationsDashboardViewModel({
           ...emptyInput,
+          bikeStatusEvents: [],
           bikes: [
             {
               active_rider_id: null,

@@ -94,7 +94,7 @@ export async function PATCH(
 
   const { data: currentBike, error: currentBikeError } = await supabase
     .from("bikes")
-    .select("id, status, active_rider_id, location")
+    .select("id, status, active_rider_id, location, active_ride_started_at, active_ride_start_location")
     .eq("id", bikeId)
     .maybeSingle();
 
@@ -141,6 +141,13 @@ export async function PATCH(
     );
   }
 
+  if (currentBike.status === payload.status) {
+    return NextResponse.json({
+      data: currentBike,
+      message: "Bike is already in the requested status",
+    });
+  }
+
   const reportedAt = new Date().toISOString();
   const updateValues: Database["public"]["Tables"]["bikes"]["Update"] = {
     status: payload.status as BikeStatus,
@@ -173,6 +180,35 @@ export async function PATCH(
       { message: "Bike state changed. Please retry." },
       { status: 409 }
     );
+  }
+
+  const transitionKind = isStartingRide
+    ? "ride_start"
+    : isEndingRide
+      ? "ride_end"
+      : isReserving
+        ? "reserve"
+        : "maintenance";
+
+  const { error: bikeEventError } = await supabase.from("bike_status_events").insert({
+    actor_id: currentUserId,
+    bike_id: bikeId,
+    context: {
+      active_ride_start_location: currentBike.active_ride_start_location ?? null,
+      active_ride_started_at: currentBike.active_ride_started_at ?? null,
+      active_rider_id_after: data.active_rider_id,
+      active_rider_id_before: currentBike.active_rider_id,
+      bike_location: currentBike.location,
+      requested_status: payload.status,
+      source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
+    },
+    from_status: currentBike.status,
+    to_status: data.status,
+    transition_kind: transitionKind
+  } satisfies Database["public"]["Tables"]["bike_status_events"]["Insert"]);
+
+  if (bikeEventError) {
+    console.error("Failed to insert bike status event:", bikeEventError);
   }
 
   return NextResponse.json({

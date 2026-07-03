@@ -99,6 +99,141 @@ export interface Database {
           }
         ];
       };
+      rental_transactions: {
+        Row: {
+          bike_id: string;
+          billable_minutes: number;
+          checkpoints: Json;
+          co2_saved_kg: number;
+          completed_at: string;
+          created_at: string;
+          currency_code: string;
+          distance_km: number;
+          duration_sec: number;
+          end_location: string;
+          fare_calculation_method: string;
+          id: string;
+          payment_label: string;
+          profile_id: string | null;
+          rate_per_minute: number;
+          route: Json;
+          route_label: string;
+          start_location: string;
+          started_at: string;
+          total_cost: number;
+          wallet_transaction_id: string | null;
+        };
+        Insert: {
+          bike_id: string;
+          billable_minutes?: number;
+          checkpoints?: Json;
+          co2_saved_kg?: number;
+          completed_at: string;
+          created_at?: string;
+          currency_code?: string;
+          distance_km: number;
+          duration_sec: number;
+          end_location: string;
+          fare_calculation_method?: string;
+          id?: string;
+          payment_label: string;
+          profile_id?: string | null;
+          rate_per_minute?: number;
+          route?: Json;
+          route_label: string;
+          start_location: string;
+          started_at: string;
+          total_cost: number;
+          wallet_transaction_id?: string | null;
+        };
+        Update: {
+          bike_id?: string;
+          billable_minutes?: number;
+          checkpoints?: Json;
+          co2_saved_kg?: number;
+          completed_at?: string;
+          created_at?: string;
+          currency_code?: string;
+          distance_km?: number;
+          duration_sec?: number;
+          end_location?: string;
+          fare_calculation_method?: string;
+          id?: string;
+          payment_label?: string;
+          profile_id?: string | null;
+          rate_per_minute?: number;
+          route?: Json;
+          route_label?: string;
+          start_location?: string;
+          started_at?: string;
+          total_cost?: number;
+          wallet_transaction_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "rental_transactions_bike_id_fkey";
+            columns: ["bike_id"];
+            isOneToOne: false;
+            referencedRelation: "bikes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "rental_transactions_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      bike_status_events: {
+        Row: {
+          actor_id: string;
+          bike_id: string;
+          context: Json;
+          created_at: string;
+          from_status: Database["public"]["Enums"]["bike_status"];
+          id: string;
+          to_status: Database["public"]["Enums"]["bike_status"];
+          transition_kind: string;
+        };
+        Insert: {
+          actor_id: string;
+          bike_id: string;
+          context?: Json;
+          created_at?: string;
+          from_status: Database["public"]["Enums"]["bike_status"];
+          id?: string;
+          to_status: Database["public"]["Enums"]["bike_status"];
+          transition_kind: string;
+        };
+        Update: {
+          actor_id?: string;
+          bike_id?: string;
+          context?: Json;
+          created_at?: string;
+          from_status?: Database["public"]["Enums"]["bike_status"];
+          id?: string;
+          to_status?: Database["public"]["Enums"]["bike_status"];
+          transition_kind?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bike_status_events_actor_id_fkey";
+            columns: ["actor_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bike_status_events_bike_id_fkey";
+            columns: ["bike_id"];
+            isOneToOne: false;
+            referencedRelation: "bikes";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       bikes: {
         Row: {
           active_rider_id: string | null;
@@ -387,6 +522,7 @@ export type Enums<
 
 export type BikeRow = Database["public"]["Tables"]["bikes"]["Row"];
 export type BikeRideHistoryRow = Database["public"]["Tables"]["bike_ride_history"]["Row"];
+export type BikeStatusEventRow = Database["public"]["Tables"]["bike_status_events"]["Row"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export const Constants = {

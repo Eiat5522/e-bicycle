@@ -10,7 +10,7 @@ export default async function BicycleDrawerPage({
   readonly params: Promise<{ bikeId: string }>;
 }) {
   const { bikeId } = await params;
-  const { bike, rideHistory } = await getBikeDetail(bikeId);
+  const { bike, rideHistory, statusHistory } = await getBikeDetail(bikeId);
 
   return (
     <SideDrawer ariaLabel={`Edit bicycle ${bike.model}`}>
@@ -20,6 +20,7 @@ export default async function BicycleDrawerPage({
         deleteAction={deleteBikeAction}
         mode="edit"
         rideHistory={rideHistory}
+        statusHistory={statusHistory}
         variant="drawer"
       />
     </SideDrawer>
