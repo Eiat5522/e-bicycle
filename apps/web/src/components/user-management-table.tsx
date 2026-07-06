@@ -12,6 +12,7 @@ import {
   type UserUpdateFormState
 } from "@/app/(admin)/user-update-form-state";
 import { formatAdminDate } from "@/lib/formatting";
+import type { Database } from "@/lib/supabase/database.types";
 import { StatusToast } from "@/components/status-toast";
 
 export interface ManagedUser {
@@ -26,7 +27,7 @@ export interface ManagedUser {
 
 export interface UserTransaction {
   readonly id: string;
-  readonly type: "ride" | "top_up" | "reward";
+  readonly type: Database["public"]["Tables"]["wallet_transactions"]["Row"]["type"];
   readonly title: string;
   readonly subtitle: string;
   readonly amount: number;

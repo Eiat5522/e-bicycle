@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
 import { requireAdmin } from "@/lib/auth";
 
-type BikeRideHistoryWithBike = Pick<
-  Database["public"]["Tables"]["bike_ride_history"]["Row"],
+type RentalTransactionWithBike = Pick<
+  Database["public"]["Tables"]["rental_transactions"]["Row"],
   | "id"
   | "bike_id"
   | "profile_id"
@@ -32,7 +32,7 @@ type BikeRideHistoryWithBike = Pick<
   readonly bike: Pick<Database["public"]["Tables"]["bikes"]["Row"], "model"> | null;
 };
 
-function mapRideHistory(row: BikeRideHistoryWithBike): RideHistoryItem {
+function mapRideHistory(row: RentalTransactionWithBike): RideHistoryItem {
   return {
     id: row.id,
     bikeId: row.bike_id,
@@ -76,7 +76,7 @@ export default async function UsersPage() {
         .select("id, wallet_id, type, title, subtitle, amount, created_at")
         .order("created_at", { ascending: false }),
       supabase
-        .from("bike_ride_history")
+        .from("rental_transactions")
         .select(
           "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints, bike:bikes(model)"
         )
@@ -111,7 +111,7 @@ export default async function UsersPage() {
       }
 
       const list = accumulator[ride.profile_id] ?? [];
-      accumulator[ride.profile_id] = [...list, mapRideHistory(ride as BikeRideHistoryWithBike)];
+      accumulator[ride.profile_id] = [...list, mapRideHistory(ride as RentalTransactionWithBike)];
 
       return accumulator;
     },
@@ -131,7 +131,7 @@ export default async function UsersPage() {
         rideHistory: rideHistoryByUserId[profile.id] ?? [],
         transactions: (transactionsByUserId[profile.id] ?? []).map((transaction) => ({
           id: transaction.id,
-          type: transaction.type as Database["public"]["Tables"]["wallet_transactions"]["Row"]["type"],
+          type: transaction.type,
           title: transaction.title,
           subtitle: transaction.subtitle,
           amount: Number(transaction.amount),

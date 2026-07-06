@@ -68,7 +68,7 @@ export default async function BicyclesPage() {
           "id, model, ride_class, top_speed_kmh, pricing_label, rate_per_minute, status, active_rider_id, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
         )
         .order("updated_at", { ascending: false }),
-      supabase.from("bike_ride_history").select("bike_id")
+      supabase.from("rental_transactions").select("bike_id")
     ]);
 
   if (bikesError) {

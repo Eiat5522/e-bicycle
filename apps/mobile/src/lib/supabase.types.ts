@@ -33,6 +33,78 @@ export interface Database {
       };
     };
     Tables: {
+      rental_transactions: {
+        Row: {
+          bike_id: string;
+          billable_minutes: number;
+          checkpoints: Json;
+          co2_saved_kg: number;
+          completed_at: string;
+          created_at: string;
+          currency_code: string;
+          distance_km: number;
+          duration_sec: number;
+          end_location: string;
+          fare_calculation_method: string;
+          id: string;
+          payment_label: string;
+          profile_id: string | null;
+          rate_per_minute: number;
+          route: Json;
+          route_label: string;
+          start_location: string;
+          started_at: string;
+          total_cost: number;
+          wallet_transaction_id: string | null;
+        };
+        Insert: {
+          bike_id: string;
+          billable_minutes?: number;
+          checkpoints?: Json;
+          co2_saved_kg?: number;
+          completed_at: string;
+          created_at?: string;
+          currency_code?: string;
+          distance_km: number;
+          duration_sec: number;
+          end_location: string;
+          fare_calculation_method?: string;
+          id?: string;
+          payment_label: string;
+          profile_id?: string | null;
+          rate_per_minute?: number;
+          route?: Json;
+          route_label: string;
+          start_location: string;
+          started_at: string;
+          total_cost: number;
+          wallet_transaction_id?: string | null;
+        };
+        Update: {
+          bike_id?: string;
+          billable_minutes?: number;
+          checkpoints?: Json;
+          co2_saved_kg?: number;
+          completed_at?: string;
+          created_at?: string;
+          currency_code?: string;
+          distance_km?: number;
+          duration_sec?: number;
+          end_location?: string;
+          fare_calculation_method?: string;
+          id?: string;
+          payment_label?: string;
+          profile_id?: string | null;
+          rate_per_minute?: number;
+          route?: Json;
+          route_label?: string;
+          start_location?: string;
+          started_at?: string;
+          total_cost?: number;
+          wallet_transaction_id?: string | null;
+        };
+        Relationships: [];
+      };
       bike_ride_history: {
         Row: {
           id: string;
@@ -194,7 +266,7 @@ export interface Database {
         Row: {
           id: string;
           wallet_id: string;
-          type: "ride" | "top_up" | "reward";
+          type: string;
           title: string;
           subtitle: string;
           amount: number;
@@ -203,14 +275,14 @@ export interface Database {
         Insert: {
           id?: string;
           wallet_id: string;
-          type: "ride" | "top_up" | "reward";
+          type: string;
           title: string;
           subtitle: string;
           amount: number;
           created_at?: string;
         };
         Update: {
-          type?: "ride" | "top_up" | "reward";
+          type?: string;
           title?: string;
           subtitle?: string;
           amount?: number;

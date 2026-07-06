@@ -120,7 +120,7 @@ export interface RideHistoryItem {
 
 export interface WalletTransaction {
   readonly id: string;
-  readonly type: "ride" | "top_up" | "reward";
+  readonly type: string;
   readonly title: string;
   readonly subtitle: string;
   readonly amount: number;

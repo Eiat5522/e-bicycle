@@ -16,8 +16,8 @@ import {
 import { hasSupabaseConfig, supabase } from "./supabase";
 import type { Database } from "./supabase.types";
 
-type BikeRideHistoryRow = Database["public"]["Tables"]["bike_ride_history"]["Row"];
-type BikeRideHistoryInsert = Database["public"]["Tables"]["bike_ride_history"]["Insert"];
+type RentalTransactionRow = Database["public"]["Tables"]["rental_transactions"]["Row"];
+type RentalTransactionInsert = Database["public"]["Tables"]["rental_transactions"]["Insert"];
 
 export interface ConfiguredRideHistoryService {
   getRideHistory(): Promise<readonly RideHistoryItem[]>;
@@ -63,7 +63,7 @@ async function getBikeModelMap(bikeIds: readonly string[]) {
 
 function mapRideHistoryRow(
   row: Pick<
-    BikeRideHistoryRow,
+    RentalTransactionRow,
     | "id"
     | "bike_id"
     | "started_at"
@@ -120,7 +120,7 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
       }
 
       const { data, error } = await supabase
-        .from("bike_ride_history")
+        .from("rental_transactions")
         .select(
           "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
         )
@@ -144,7 +144,7 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
       }
 
       const { data, error } = await supabase
-        .from("bike_ride_history")
+        .from("rental_transactions")
         .select(
           "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
         )
@@ -173,10 +173,10 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
       }
 
       const route = (input.route ?? mockRideHistory[0]?.route ?? []) as unknown as NonNullable<
-        BikeRideHistoryInsert["route"]
+        RentalTransactionInsert["route"]
       >;
       const checkpoints = (input.checkpoints ?? mockRideHistory[0]?.checkpoints ?? []) as unknown as NonNullable<
-        BikeRideHistoryInsert["checkpoints"]
+        RentalTransactionInsert["checkpoints"]
       >;
 
       const { data, error } = await supabase.rpc("complete_ride", {

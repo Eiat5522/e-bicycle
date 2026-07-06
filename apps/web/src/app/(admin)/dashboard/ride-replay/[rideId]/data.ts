@@ -68,7 +68,7 @@ export async function getRideReplayDetail(rideId: string): Promise<RideReplayDet
 
   const supabase = await createClient();
   const { data: ride, error: rideError } = await supabase
-    .from("bike_ride_history")
+    .from("rental_transactions")
     .select(
       "id, bike_id, profile_id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
     )

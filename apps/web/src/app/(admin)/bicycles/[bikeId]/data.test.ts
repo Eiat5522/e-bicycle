@@ -136,7 +136,7 @@ describe("getBikeDetail", () => {
           return { select: jest.fn(() => bikeQuery) };
         }
 
-        if (table === "bike_ride_history") {
+        if (table === "rental_transactions") {
           return { select: jest.fn(() => rideHistoryQuery) };
         }
 

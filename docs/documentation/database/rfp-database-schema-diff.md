@@ -6,9 +6,8 @@ Generated: 2026-07-02
 
 ### New/RFP requirement sources
 
-- `docs/documentation/database/E-Bike Operation Database Tables.xlsx`
-  - Sheet `index`: 18 required logical tables.
-  - Per-table sheets: required fields and target data types.
+- `docs/documentation/database/E-Bike Operation Database Tables.xlsx.md`
+  - Markdown extraction of the workbook's `index` sheet and per-table sheet requirements.
 - `docs/documentation/E-Bike Rental MVP Phase Systems and Features.xlsx`
   - MVP feature requirements that drive the database model.
 - `output/markdown/Lamphun_Smart_Green_Mobility_Software_Feature_Outline.md`

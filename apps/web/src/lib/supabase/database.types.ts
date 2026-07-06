@@ -96,6 +96,13 @@ export interface Database {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "bike_ride_history_wallet_transaction_id_fkey";
+            columns: ["wallet_transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "wallet_transactions";
+            referencedColumns: ["id"];
           }
         ];
       };
@@ -182,6 +189,13 @@ export interface Database {
             columns: ["profile_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "rental_transactions_wallet_transaction_id_fkey";
+            columns: ["wallet_transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "wallet_transactions";
             referencedColumns: ["id"];
           }
         ];
@@ -295,7 +309,15 @@ export interface Database {
           top_speed_kmh?: number;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "bikes_active_rider_id_fkey";
+            columns: ["active_rider_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       profiles: {
         Row: {
@@ -328,7 +350,7 @@ export interface Database {
           id: string;
           subtitle: string;
           title: string;
-          type: "ride" | "top_up" | "reward";
+          type: string;
           wallet_id: string;
         };
         Insert: {
@@ -337,7 +359,7 @@ export interface Database {
           id?: string;
           subtitle: string;
           title: string;
-          type: "ride" | "top_up" | "reward";
+          type: string;
           wallet_id: string;
         };
         Update: {
@@ -346,7 +368,7 @@ export interface Database {
           id?: string;
           subtitle?: string;
           title?: string;
-          type?: "ride" | "top_up" | "reward";
+          type?: string;
           wallet_id?: string;
         };
         Relationships: [

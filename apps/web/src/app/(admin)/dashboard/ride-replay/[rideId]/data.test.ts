@@ -108,7 +108,7 @@ describe("getRideReplayDetail", () => {
 
     const client = {
       from: jest.fn((table: string) => {
-        if (table === "bike_ride_history") {
+        if (table === "rental_transactions") {
           return { select: jest.fn(() => rideQuery) };
         }
 
