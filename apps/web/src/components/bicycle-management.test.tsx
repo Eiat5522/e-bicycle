@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import { SideDrawer } from "@/components/side-drawer";
 
@@ -340,6 +340,35 @@ describe("BicycleManagementList", () => {
 
     expect(screen.getByRole("heading", { name: "No bicycles yet" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Add Bicycle" })).toHaveAttribute("href", "/bicycles/new");
+  });
+
+  it("renders ride counts for each bicycle card", () => {
+    const secondBike: ManagedBike = {
+      ...bike,
+      id: "G-412",
+      model: "Glide Cargo",
+      status: "maintenance",
+      location: "Sathon Depot"
+    };
+
+    render(
+      <BicycleManagementList
+        bikes={[bike, secondBike]}
+        rideCounts={{
+          [bike.id]: 7
+        }}
+      />
+    );
+
+    const firstCard = screen.getByRole("heading", { name: bike.model }).closest("article");
+    const secondCard = screen.getByRole("heading", { name: secondBike.model }).closest("article");
+
+    expect(firstCard).not.toBeNull();
+    expect(secondCard).not.toBeNull();
+    expect(within(firstCard!).getByText("7")).toBeInTheDocument();
+    expect(within(firstCard!).getByText("Ride history records")).toBeInTheDocument();
+    expect(within(secondCard!).getByText("0")).toBeInTheDocument();
+    expect(within(secondCard!).getByText("Ride history records")).toBeInTheDocument();
   });
 
   it("falls back when a bicycle card image fails to load", () => {

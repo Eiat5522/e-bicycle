@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
-import type { RideHistoryItem } from "@glide/shared";
+import { getWalletTransactionPresentation, type RideHistoryItem } from "@glide/shared";
 import {
   initialUserCreateFormState,
   type UserCreateFormState
@@ -252,7 +252,7 @@ export function UserDetailDrawerContent({
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex flex-col gap-1">
                           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--clay-accent)]">
-                            {transaction.type}
+                            {getWalletTransactionPresentation(transaction.type).label}
                           </p>
                           <h5 className="text-base font-semibold text-[var(--clay-text-primary)]">
                             {transaction.title}

@@ -34,6 +34,14 @@ describe("WalletScreen", () => {
         timestamp: "2023-10-24T12:00:00Z"
       },
       {
+        id: "txn-1b",
+        type: "ride_charge",
+        title: "Ride charge",
+        subtitle: "Oct 24, 2023 • Shared ride fee",
+        amount: -1.5,
+        timestamp: "2023-10-24T12:10:00Z"
+      },
+      {
         id: "txn-2",
         type: "reward",
         title: "Ride refund",
@@ -197,7 +205,16 @@ describe("WalletScreen", () => {
     await screen.findByText("Ride refund");
 
     expect(screen.getByText("+฿2.10")).toBeTruthy();
+    expect(screen.getByText("-฿1.50")).toBeTruthy();
     expect(screen.getByText("-฿4.20")).toBeTruthy();
+  });
+
+  it("renders a sensible label for live ride charge transactions", async () => {
+    const screen = render(<WalletScreen />);
+
+    await screen.findByText("Ride charge");
+
+    expect(screen.getByText("Ride charge")).toBeTruthy();
   });
 
   it("shows a wallet error state when loading fails", async () => {

@@ -11,7 +11,7 @@ import {
   View
 } from "react-native";
 
-import { formatCurrency } from "@glide/shared";
+import { formatCurrency, getWalletTransactionPresentation } from "@glide/shared";
 import type { Wallet } from "@glide/shared";
 
 import { PrimaryButton } from "@/components/primary-button";
@@ -637,14 +637,7 @@ function CardVisual({
 }
 
 function TransactionIcon({ type }: { readonly type: string }) {
-  const iconName =
-    type === "top_up"
-      ? "wallet-plus-outline"
-      : type === "ride"
-        ? "bike-fast"
-        : type === "refund"
-          ? "backup-restore"
-          : "star-four-points-outline";
+  const presentation = getWalletTransactionPresentation(type);
 
   return (
     <View
@@ -658,7 +651,7 @@ function TransactionIcon({ type }: { readonly type: string }) {
         justifyContent: "center",
         width: 40
       }}>
-      <MaterialCommunityIcons color={colors.text} name={iconName} size={20} />
+      <MaterialCommunityIcons color={colors.text} name={presentation.iconName} size={20} />
     </View>
   );
 }

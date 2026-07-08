@@ -16,11 +16,19 @@ const user = {
   transactions: [
     {
       id: "txn-1",
-      type: "top_up" as const,
-      title: "Wallet Top-Up",
-      subtitle: "Visa **** 4242",
-      amount: 20,
+      type: "ride_charge" as const,
+      title: "Shared ride fee",
+      subtitle: "Glide Urban",
+      amount: -4.2,
       timestamp: "2026-04-13T09:30:00.000Z"
+    },
+    {
+      id: "txn-2",
+      type: "voucher_credit" as const,
+      title: "Launch voucher",
+      subtitle: "Campaign credit",
+      amount: 20,
+      timestamp: "2026-04-13T09:35:00.000Z"
     }
   ],
   rideHistory: [
@@ -67,7 +75,11 @@ describe("UserDetailDrawerContent", () => {
         name: "Transaction History"
       })
     ).toBeInTheDocument();
-    expect(screen.getByText("Wallet Top-Up")).toBeInTheDocument();
+    expect(screen.getByText("Ride charge")).toBeInTheDocument();
+    expect(screen.getByText("Shared ride fee")).toBeInTheDocument();
+    expect(screen.getByText("Voucher credit")).toBeInTheDocument();
+    expect(screen.getByText("Launch voucher")).toBeInTheDocument();
+    expect(screen.getByText("-฿4.20")).toBeInTheDocument();
     expect(screen.getByText("+฿20.00")).toBeInTheDocument();
   });
 
