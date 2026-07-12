@@ -1,10 +1,19 @@
+const fs = require("node:fs");
+const path = require("node:path");
 const nextJest = require("next/jest");
+
+const localTmpDir = path.join(__dirname, ".jest-tmp");
+fs.mkdirSync(localTmpDir, { recursive: true });
+process.env.TMPDIR = localTmpDir;
+process.env.TMP = localTmpDir;
+process.env.TEMP = localTmpDir;
 
 const createJestConfig = nextJest({
   dir: "./"
 });
 
 const customJestConfig = {
+  cacheDirectory: "<rootDir>/.jest-cache",
   watchman: false,
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",

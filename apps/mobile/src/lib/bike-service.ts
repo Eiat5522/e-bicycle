@@ -15,7 +15,27 @@ const bikeDataSource = process.env.EXPO_PUBLIC_BIKE_DATA_SOURCE?.trim()?.toLower
 const recoverableNetworkMessagePattern =
   /network request timed out|network request failed|failed to fetch|fetch failed|timed out/i;
 
-type BikeRow = Database["public"]["Tables"]["bikes"]["Row"];
+type BikeRow = Pick<
+  Database["public"]["Tables"]["bikes"]["Row"],
+  | "active_rider_id"
+  | "active_ride_start_location"
+  | "active_ride_started_at"
+  | "created_at"
+  | "estimated_range_km"
+  | "id"
+  | "image_url"
+  | "last_reported_at"
+  | "latitude"
+  | "location"
+  | "longitude"
+  | "model"
+  | "pricing_label"
+  | "rate_per_minute"
+  | "ride_class"
+  | "status"
+  | "top_speed_kmh"
+  | "updated_at"
+>;
 
 function toRadians(value: number) {
   return (value * Math.PI) / 180;

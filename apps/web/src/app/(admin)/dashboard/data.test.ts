@@ -91,7 +91,11 @@ describe("loadDashboardViewModels", () => {
             return {
               in: jest.fn(() => ({
                 eq: jest.fn(() => ({
-                  order: jest.fn(async () => tables.bike_status_events)
+                  gte: jest.fn(() => ({
+                    order: jest.fn(() => ({
+                      limit: jest.fn(async () => tables.bike_status_events)
+                    }))
+                  }))
                 }))
               }))
             };

@@ -108,7 +108,7 @@ export async function loadDashboardViewModels(): Promise<DashboardViewModels> {
   const input: DashboardInput = {
     bikes: (bikes ?? []) as BikeRow[],
     bikeStatusEvents: (bikeStatusEvents ?? []) as BikeStatusEventRow[],
-    profiles: profiles ?? [],
+    profiles: (profiles ?? []) as ProfileRow[],
     rideHistory: (rideHistory ?? []) as RentalTransactionRow[],
     serverTime: new Date().toISOString(),
     walletTransactions: (walletTransactions ?? []) as WalletTransactionRow[],

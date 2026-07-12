@@ -26,7 +26,7 @@ export interface AdminContext extends AuthContext {
   readonly profile: AdminProfile;
 }
 
-function mapProfile(row: ProfileRow): AdminProfile {
+function mapProfile(row: Pick<ProfileRow, "id" | "first_name" | "is_admin" | "created_at" | "updated_at">): AdminProfile {
   return {
     id: row.id,
     firstName: row.first_name,

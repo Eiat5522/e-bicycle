@@ -73,7 +73,7 @@ function mapBikeToSessionBike(bike: Bike): ActiveRideBikeSnapshot {
     model: bike.model,
     location: bike.location,
     coordinates: bike.coordinates,
-    ratePerMinute: bike.ratePerMinute,
+    ...(bike.ratePerMinute !== undefined ? { ratePerMinute: bike.ratePerMinute } : {}),
     ...(bike.imageUrl ? { imageUrl: bike.imageUrl } : {}),
     ...(bike.rideClass ? { rideClass: bike.rideClass } : {}),
     ...(bike.estimatedRangeKm !== undefined ? { estimatedRangeKm: bike.estimatedRangeKm } : {}),
@@ -188,7 +188,7 @@ function ActiveRideDashboard({
     startCoordinates: bike.coordinates,
     initialRoute,
     startedAtMs,
-    ratePerMinute: bike.ratePerMinute,
+    ...(bike.ratePerMinute !== undefined ? { ratePerMinute: bike.ratePerMinute } : {}),
     startLocation: bike.location
   });
 
@@ -866,7 +866,7 @@ export function ActiveRideScreen() {
   }
 
   if (sessionState.status === "missing") {
-    return <MissingActiveRideScreen onGoHome={() => router.push("/map")} message={sessionState.message} />;
+    return <MissingActiveRideScreen onGoHome={() => router.push("/")} message={sessionState.message} />;
   }
 
   return (
@@ -877,7 +877,7 @@ export function ActiveRideScreen() {
       startedAtMs={sessionState.startedAtMs}
       initialRoute={sessionState.initialRoute}
       enteredFromUnlock={enteredFromUnlock}
-      metadataWarning={sessionState.metadataWarning}
+      {...(sessionState.metadataWarning ? { metadataWarning: sessionState.metadataWarning } : {})}
     />
   );
 }

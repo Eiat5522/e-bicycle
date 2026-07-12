@@ -44,7 +44,10 @@ const missingConfigMessage =
   "Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ProfileRow = Pick<
+  Database["public"]["Tables"]["profiles"]["Row"],
+  "id" | "first_name" | "created_at" | "updated_at"
+>;
 
 const nativeEmailRedirectPath = "callback";
 const bootstrapTimeoutMs = 5000;
