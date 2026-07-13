@@ -18,10 +18,10 @@ describe("database schema contract", () => {
       payment_status: "pending"
     };
     const attachment: Tables["attachments"]["Insert"] = {
-      entity_table: "payments",
-      entity_id: "22222222-2222-2222-2222-222222222222",
-      attachment_type: "payment_slip",
-      file_url: "https://storage.example/slip.jpg"
+      entity_table: "bikes",
+      entity_id: "G-104",
+      attachment_type: "photo_evidence",
+      file_url: "https://storage.example/bike-photo.jpg"
     };
     const bike: Tables["bikes"]["Update"] = {
       qr_code: "G-104",
@@ -38,7 +38,7 @@ describe("database schema contract", () => {
     expect(station.station_type).toBe("hub");
     expect(battery.status).toBe("available");
     expect(payment.payment_method).toBe("promptpay");
-    expect(attachment.attachment_type).toBe("payment_slip");
+    expect(attachment.entity_id).toBe("G-104");
     expect(bike.qr_code).toBe("G-104");
     expect(rental.rental_status).toBe("completed");
   });

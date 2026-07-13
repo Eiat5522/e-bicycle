@@ -184,7 +184,7 @@ create table if not exists public.attachments (
   id uuid primary key default extensions.gen_random_uuid(),
   entity_table text not null
     check (entity_table in ('rental_transactions', 'payments', 'maintenance_logs', 'incidents', 'audit_logs', 'batteries', 'bikes', 'stations')),
-  entity_id uuid not null,
+  entity_id text not null,
   attachment_type text not null
     check (attachment_type in ('photo_evidence', 'payment_slip', 'document', 'inspection_photo', 'damage_photo', 'other')),
   file_url text not null,
@@ -293,7 +293,7 @@ create table if not exists public.audit_logs (
   user_role text,
   action_performed text not null,
   entity_table text,
-  entity_id uuid,
+  entity_id text,
   data_changed jsonb not null default '{}'::jsonb,
   device_location text,
   kpi_achievement numeric(5, 2),

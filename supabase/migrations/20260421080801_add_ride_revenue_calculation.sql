@@ -41,24 +41,68 @@ set
   currency_code = coalesce(nullif(currency_code, ''), 'THB'),
   fare_calculation_method = coalesce(nullif(fare_calculation_method, ''), 'ceil_minutes_v1');
 
+with ranked_existing_assignments as (
+  select
+    ride.id,
+    row_number() over (
+      partition by ride.wallet_transaction_id
+      order by
+        abs(extract(epoch from transaction.created_at - ride.completed_at)),
+        ride.id
+    ) as assignment_rank
+  from public.bike_ride_history as ride
+  join public.wallet_transactions as transaction
+    on transaction.id = ride.wallet_transaction_id
+  where ride.wallet_transaction_id is not null
+)
 update public.bike_ride_history as ride
-set wallet_transaction_id = matched.id
-from (
-  select distinct on (r.id) r.id as ride_id, t.id
-  from public.bike_ride_history r
-  join public.wallet_transactions t
-    on r.profile_id = t.wallet_id
-   and t.type = 'ride'
-   and t.amount = -r.total_cost
-   and abs(extract(epoch from t.created_at - r.completed_at)) <= 60
-  where r.wallet_transaction_id is null
-  order by r.id, abs(extract(epoch from t.created_at - r.completed_at))
-) as matched
-where ride.wallet_transaction_id is null
-  and ride.id = matched.ride_id;
+set wallet_transaction_id = null
+from ranked_existing_assignments as ranked
+where ride.id = ranked.id
+  and ranked.assignment_rank > 1;
+
+with candidate_matches as (
+  select
+    ride.id as ride_id,
+    transaction.id as transaction_id,
+    row_number() over (
+      partition by ride.id
+      order by
+        abs(extract(epoch from transaction.created_at - ride.completed_at)),
+        transaction.id
+    ) as ride_rank,
+    row_number() over (
+      partition by transaction.id
+      order by
+        abs(extract(epoch from transaction.created_at - ride.completed_at)),
+        ride.id
+    ) as transaction_rank
+  from public.bike_ride_history as ride
+  join public.wallet_transactions as transaction
+    on ride.profile_id = transaction.wallet_id
+   and transaction.type = 'ride'
+   and transaction.amount = -ride.total_cost
+   and abs(extract(epoch from transaction.created_at - ride.completed_at)) <= 60
+  where ride.wallet_transaction_id is null
+    and not exists (
+      select 1
+      from public.bike_ride_history as assigned
+      where assigned.wallet_transaction_id = transaction.id
+    )
+)
+update public.bike_ride_history as ride
+set wallet_transaction_id = candidate.transaction_id
+from candidate_matches as candidate
+where ride.id = candidate.ride_id
+  and candidate.ride_rank = 1
+  and candidate.transaction_rank = 1;
 
 create index if not exists bike_ride_history_wallet_transaction_id_idx
   on public.bike_ride_history (wallet_transaction_id);
+
+create unique index if not exists bike_ride_history_wallet_transaction_id_unique_idx
+  on public.bike_ride_history (wallet_transaction_id)
+  where wallet_transaction_id is not null;
 
 create index if not exists bike_ride_history_completed_at_total_cost_idx
   on public.bike_ride_history (completed_at desc, total_cost desc);

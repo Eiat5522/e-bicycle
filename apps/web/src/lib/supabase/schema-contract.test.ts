@@ -23,10 +23,10 @@ describe("database schema contract", () => {
       payment_status: "pending"
     };
     const attachment: Tables["attachments"]["Insert"] = {
-      entity_table: "payments",
-      entity_id: "22222222-2222-2222-2222-222222222222",
-      attachment_type: "payment_slip",
-      file_url: "https://storage.example/slip.jpg"
+      entity_table: "bikes",
+      entity_id: "G-104",
+      attachment_type: "photo_evidence",
+      file_url: "https://storage.example/bike-photo.jpg"
     };
     const maintenanceLog: Tables["maintenance_logs"]["Insert"] = {
       bike_id: "G-104",
@@ -42,7 +42,9 @@ describe("database schema contract", () => {
       status: "open"
     };
     const auditLog: Tables["audit_logs"]["Insert"] = {
-      action_performed: "payment.created"
+      action_performed: "bike.updated",
+      entity_table: "bikes",
+      entity_id: "G-104"
     };
     const bike: Tables["bikes"]["Update"] = {
       qr_code: "G-104",
@@ -61,11 +63,11 @@ describe("database schema contract", () => {
     expect(staffProfile.role).toBe("station_admin");
     expect(battery.status).toBe("available");
     expect(payment.payment_method).toBe("promptpay");
-    expect(attachment.attachment_type).toBe("payment_slip");
+    expect(attachment.entity_id).toBe("G-104");
     expect(maintenanceLog.repair_type).toBe("pm");
     expect(asset.quantity).toBe(10);
     expect(incident.incident_type).toBe("damage");
-    expect(auditLog.action_performed).toBe("payment.created");
+    expect(auditLog.entity_id).toBe("G-104");
     expect(bike.qr_code).toBe("G-104");
     expect(rental.rental_status).toBe("completed");
   });

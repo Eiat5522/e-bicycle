@@ -1,0 +1,10 @@
+{
+  "hosts": {
+    "wsl-ubuntu": {
+      "host": "wsl-ubuntu",
+      "username": "eiat",
+      "port": 2222,
+      "keyPath": "/home/eiat/.ssh/id_ed25519.pub"
+    }
+  }
+}

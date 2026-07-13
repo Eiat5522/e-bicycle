@@ -3,6 +3,7 @@ node_modules/
 .turbo/
 coverage/
 dist/
+output/playwright/
 
 .DS_Store
 *.log
@@ -14,9 +15,12 @@ apps/mobile/dist/
 apps/mobile/web-build/
 
 apps/web/.next/
+apps/web/.jest-cache/
+apps/web/.jest-tmp/
 apps/web/out/
 
 supabase/.temp/
+.supabase-backups/
 
 ios/
 android/
