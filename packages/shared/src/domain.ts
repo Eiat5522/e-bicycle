@@ -57,15 +57,24 @@ export interface UnlockPhase {
   readonly description: string;
 }
 
-export interface UnlockResult {
+interface BaseUnlockResult {
   readonly bikeId: string;
   readonly method: UnlockMethod;
   readonly attempt: number;
   readonly phases: readonly UnlockPhase[];
-  readonly finalStatus: Extract<UnlockStatus, "success" | "failed">;
-  readonly successMessage: string;
-  readonly failureMessage?: string;
 }
+
+export type UnlockResult =
+  | (BaseUnlockResult & {
+      readonly finalStatus: "success";
+      readonly successMessage: string;
+      readonly failureMessage?: never;
+    })
+  | (BaseUnlockResult & {
+      readonly finalStatus: "failed";
+      readonly failureMessage: string;
+      readonly successMessage?: never;
+    });
 
 export interface Ride {
   readonly id: string;

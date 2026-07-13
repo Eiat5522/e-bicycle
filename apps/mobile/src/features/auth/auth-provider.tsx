@@ -5,6 +5,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type ReactNode
 } from "react";
@@ -13,7 +14,7 @@ import { Platform } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
 
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
-import type { Database, Profile } from "@/lib/supabase.types";
+import type { Database } from "@/lib/supabase.types";
 
 export type AuthStatus =
   | "loading"
@@ -23,6 +24,13 @@ export type AuthStatus =
 
 export interface SignUpResult {
   readonly status: "signed_in" | "awaiting_email_confirmation";
+}
+
+interface Profile {
+  readonly createdAt: string;
+  readonly firstName: string | null;
+  readonly id: string;
+  readonly updatedAt: string;
 }
 
 interface AuthContextValue {
@@ -169,13 +177,17 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const authStateGenerationRef = useRef(0);
+  const profileRequestIdRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
+    const bootstrapGeneration = authStateGenerationRef.current + 1;
+    authStateGenerationRef.current = bootstrapGeneration;
 
     async function bootstrap() {
       if (!hasSupabaseConfig) {
-        if (!isMounted) {
+        if (!isMounted || authStateGenerationRef.current !== bootstrapGeneration) {
           return;
         }
 
@@ -212,6 +224,10 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
               nextProfile = await waitForProfile(currentSession.user.id);
             } catch (error) {
               if (error instanceof MissingProfileError) {
+                if (authStateGenerationRef.current !== bootstrapGeneration) {
+                  return { currentSession, nextProfile: null };
+                }
+
                 const { error: signOutError } = await supabase.auth.signOut();
 
                 if (signOutError) {
@@ -222,22 +238,22 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
               }
 
               console.warn("Failed to reconcile Supabase profile during bootstrap", error);
-              // Consider surfacing this error to the user
-              // nextProfile remains null, user will be authenticated but profile unavailable
             }
           }
 
-          return {
-            currentSession,
-            nextProfile
-          };
+          return { currentSession, nextProfile };
         };
+
+        interface BootstrapResult {
+          readonly currentSession: Session | null;
+          readonly nextProfile: Profile | null;
+        }
 
         let bootstrapTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
-        const { currentSession, nextProfile } = await Promise.race([
-          bootstrapSession(),
-          new Promise<never>((_, reject) => {
+        const settled = (await Promise.race([
+          bootstrapSession() as Promise<BootstrapResult>,
+          new Promise<BootstrapResult>((_, reject) => {
             bootstrapTimeoutId = setTimeout(() => {
               reject(new Error("Auth bootstrap timed out."));
             }, bootstrapTimeoutMs);
@@ -246,9 +262,14 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
           if (bootstrapTimeoutId) {
             clearTimeout(bootstrapTimeoutId);
           }
-        });
+        })) as BootstrapResult;
 
-        if (!isMounted) {
+        const { currentSession, nextProfile } = settled;
+
+        if (
+          !isMounted ||
+          authStateGenerationRef.current !== bootstrapGeneration
+        ) {
           return;
         }
 
@@ -258,7 +279,7 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         setProfile(nextProfile);
         setAuthStatus(currentSession?.user ? "authenticated" : "unauthenticated");
       } catch (error) {
-        if (!isMounted) {
+        if (!isMounted || authStateGenerationRef.current !== bootstrapGeneration) {
           return;
         }
 
@@ -280,6 +301,8 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      authStateGenerationRef.current += 1;
+
       if (nextSession?.user) {
         setAuthError(null);
       }
@@ -289,13 +312,17 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
       setUser(nextSession?.user ?? null);
 
       if (!nextSession?.user) {
+        profileRequestIdRef.current += 1;
         setProfile(null);
         return;
       }
 
+      const profileRequestId = profileRequestIdRef.current + 1;
+      profileRequestIdRef.current = profileRequestId;
+
       void waitForProfile(nextSession.user.id)
         .then((nextProfile) => {
-          if (isMounted) {
+          if (isMounted && profileRequestIdRef.current === profileRequestId) {
             setProfile(nextProfile);
             setAuthStatus("authenticated");
           }
@@ -303,7 +330,7 @@ export function AuthProvider({ children }: { readonly children: ReactNode }) {
         .catch((error) => {
           console.warn("Failed to refresh Supabase profile", error);
 
-          if (isMounted) {
+          if (isMounted && profileRequestIdRef.current === profileRequestId) {
             const nextError =
               error instanceof Error ? error.message : "Unable to refresh your rider profile.";
 

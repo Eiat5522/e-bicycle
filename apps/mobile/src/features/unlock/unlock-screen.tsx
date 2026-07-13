@@ -51,6 +51,13 @@ type TransactionState =
       readonly errorDetails?: string;
     }
   | {
+      readonly status: "reconciling";
+      readonly method: UnlockMethod;
+      readonly result: Extract<UnlockResult, { readonly finalStatus: "success" }>;
+      readonly phaseIndex?: undefined;
+      readonly errorDetails: string;
+    }
+  | {
       readonly status: "success";
       readonly method: UnlockMethod;
       readonly result: UnlockResult;
@@ -178,7 +185,6 @@ function createUnlockFailureResult({
     attempt,
     phases: [],
     finalStatus: "failed",
-    successMessage: "",
     failureMessage
   };
 }
@@ -458,6 +464,82 @@ export function UnlockScreen() {
     ]).start();
   }, [modalOpacity, modalScale, prepState.modalVisible]);
 
+  async function reconcileUnlockedBike(
+    result: Extract<UnlockResult, { readonly finalStatus: "success" }>,
+    runId: number
+  ) {
+    if (!session?.access_token || !user?.id) {
+      if (isMountedRef.current && runIdRef.current === runId) {
+        setTransaction({
+          status: "reconciling",
+          method: result.method,
+          result,
+          errorDetails: "Missing Supabase session or user during bike status handoff."
+        });
+      }
+      return;
+    }
+
+    try {
+      await configuredBikeStatusService.updateBikeStatus({
+        bikeId,
+        status: "in_use",
+        accessToken: session.access_token
+      });
+    } catch (statusError) {
+      console.error("Failed to sync bike status", { bikeId, statusError });
+
+      if (isMountedRef.current && runIdRef.current === runId) {
+        setTransaction({
+          status: "reconciling",
+          method: result.method,
+          result,
+          errorDetails:
+            statusError instanceof Error ? `${statusError.name}: ${statusError.message}` : "Bike status sync failed."
+        });
+      }
+      return;
+    }
+
+    if (!isMountedRef.current || runIdRef.current !== runId) {
+      return;
+    }
+
+    setBikeRideState(bikeId, {
+      status: "in_use",
+      activeRiderId: user.id
+    });
+    setTransaction({
+      status: "success",
+      method: result.method,
+      result
+    });
+
+    await wait(REDIRECT_DELAY_MS);
+
+    if (!isMountedRef.current || runIdRef.current !== runId) {
+      return;
+    }
+
+    router.push({
+      pathname: "/ride/active",
+      params: {
+        bikeId,
+        entry: "unlock"
+      }
+    });
+  }
+
+  async function retryBikeStatusSync() {
+    if (transaction.status !== "reconciling") {
+      return;
+    }
+
+    const runId = runIdRef.current + 1;
+    runIdRef.current = runId;
+    await reconcileUnlockedBike(transaction.result, runId);
+  }
+
   async function beginUnlock(method: UnlockMethod) {
     const nextAttempt = attemptCounts[method] + 1;
     const runId = runIdRef.current + 1;
@@ -514,45 +596,7 @@ export function UnlockScreen() {
       }
 
       if (result.finalStatus === "success") {
-        if (!session?.access_token || !user?.id) {
-          // Log warning but proceed - bike is already unlocked
-          console.warn("Session missing during status update", { bikeId });
-        } else {
-          try {
-            await configuredBikeStatusService.updateBikeStatus({
-              bikeId,
-              status: "in_use",
-              accessToken: session.access_token
-            });
-            setBikeRideState(bikeId, {
-              status: "in_use",
-              activeRiderId: user.id
-            });
-          } catch (statusError) {
-            // Log but don't block - bike is already unlocked
-            console.error("Failed to sync bike status", { bikeId, statusError });
-          }
-        }
-
-        setTransaction({
-          status: "success",
-          method,
-          result
-        });
-
-        await wait(REDIRECT_DELAY_MS);
-
-        if (!isMountedRef.current || runIdRef.current !== runId) {
-          return;
-        }
-
-        router.push({
-          pathname: "/ride/active",
-          params: {
-            bikeId,
-            entry: "unlock"
-          }
-        });
+        await reconcileUnlockedBike(result, runId);
         return;
       }
 
@@ -702,7 +746,8 @@ export function UnlockScreen() {
   const activeMethod = transaction.method;
   const showMethodActions =
     transaction.status === "idle" || transaction.status === "failed" || transaction.status === "success";
-  const isBusy = transaction.status === "running" || prepState.status === "previewing";
+  const isBusy =
+    transaction.status === "running" || transaction.status === "reconciling" || prepState.status === "previewing";
   const selectedMethodDetails = activeMethod ? getMethodIntro(activeMethod, bikeId) : undefined;
   const activePhase =
     transaction.status === "running" ? transaction.result.phases[transaction.phaseIndex] : undefined;
@@ -874,6 +919,21 @@ export function UnlockScreen() {
                 {transaction.errorDetails}
               </Text>
             ) : null}
+          </SurfaceCard>
+        ) : null}
+
+        {transaction.status === "reconciling" ? (
+          <SurfaceCard tone="accent">
+            <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
+              Bike unlocked — status sync required
+            </Text>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
+              The unlock completed, but we have not confirmed the bike’s ride status. Do not attempt another unlock.
+            </Text>
+            <Text selectable style={{ color: colors.textMuted, fontSize: 13, lineHeight: 20 }}>
+              {transaction.errorDetails}
+            </Text>
+            <PrimaryButton label="Retry status sync" onPress={() => void retryBikeStatusSync()} />
           </SurfaceCard>
         ) : null}
 

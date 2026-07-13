@@ -42,58 +42,62 @@ describe("UnlockScreen", () => {
     attempt: number,
     finalStatus: "success" | "failed"
   ): UnlockResult {
-    const result: UnlockResult = {
-      bikeId: "G-205",
-      method,
-      attempt,
-      phases:
-        method === "qr"
-          ? [
-              {
-                status: "scanning",
-                label: "Align QR code",
-                description: "Point your camera at the bike code."
-              },
-              {
-                status: "authorizing",
-                label: "Authorizing unlock",
-                description: "Checking your rental session."
-              },
-              {
-                status: "unlocking",
-                label: "Releasing lock",
-                description: "Sending the unlock command."
-              }
-            ]
-          : [
-              {
-                status: "connecting",
-                label: "Searching for bike",
-                description: "Looking for the bike over Bluetooth."
-              },
-              {
-                status: "authorizing",
-                label: "Pairing securely",
-                description: "Creating a secure Bluetooth session."
-              },
-              {
-                status: "unlocking",
-                label: "Releasing lock",
-                description: "Sending the unlock command."
-              }
-            ],
-      finalStatus,
-      successMessage: "Bike unlocked."
-    };
+    const phases: UnlockResult["phases"] =
+      method === "qr"
+        ? [
+            {
+              status: "scanning",
+              label: "Align QR code",
+              description: "Point your camera at the bike code."
+            },
+            {
+              status: "authorizing",
+              label: "Authorizing unlock",
+              description: "Checking your rental session."
+            },
+            {
+              status: "unlocking",
+              label: "Releasing lock",
+              description: "Sending the unlock command."
+            }
+          ]
+        : [
+            {
+              status: "connecting",
+              label: "Searching for bike",
+              description: "Looking for the bike over Bluetooth."
+            },
+            {
+              status: "authorizing",
+              label: "Pairing securely",
+              description: "Creating a secure Bluetooth session."
+            },
+            {
+              status: "unlocking",
+              label: "Releasing lock",
+              description: "Sending the unlock command."
+            }
+          ];
 
     if (finalStatus === "failed") {
       return {
-        ...result,
+        bikeId: "G-205",
+        method,
+        attempt,
+        phases,
+        finalStatus: "failed",
         failureMessage: "Unlock could not be completed."
       };
     }
 
-    return result;
+    return {
+      bikeId: "G-205",
+      method,
+      attempt,
+      phases,
+      finalStatus: "success",
+      successMessage: "Bike unlocked."
+    };
   }
 
   beforeEach(() => {
@@ -213,6 +217,37 @@ describe("UnlockScreen", () => {
         entry: "unlock"
       }
     });
+  });
+
+  it("retries status synchronization without sending a second unlock command", async () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    startUnlock.mockResolvedValueOnce(createResult("qr", 1, "success"));
+    updateBikeStatus.mockRejectedValueOnce(new Error("Network unavailable.")).mockResolvedValueOnce(undefined);
+
+    render(<UnlockScreen />);
+
+    fireEvent.press(screen.getByLabelText("Choose QR unlock"));
+    fireEvent.press(screen.getByText("Generate ride QR pass"));
+    await flushTimers(900);
+    fireEvent.press(screen.getByText("Unlock bike now"));
+    await flushTimers(6000);
+
+    expect(screen.getByText("Bike unlocked — status sync required")).toBeTruthy();
+    expect(screen.getByText("Retry status sync")).toBeTruthy();
+    expect(startUnlock).toHaveBeenCalledTimes(1);
+
+    fireEvent.press(screen.getByText("Retry status sync"));
+    await act(async () => {});
+    await flushTimers(1300);
+
+    expect(updateBikeStatus).toHaveBeenCalledTimes(2);
+    expect(startUnlock).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith({
+      pathname: "/ride/active",
+      params: { bikeId: "G-205", entry: "unlock" }
+    });
+
+    consoleError.mockRestore();
   });
 
   it("switches between methods before starting an unlock", () => {

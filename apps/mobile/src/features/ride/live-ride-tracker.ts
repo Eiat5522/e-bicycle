@@ -318,6 +318,10 @@ export function useLiveRideTracker({
       try {
         const permission = await Location.requestForegroundPermissionsAsync();
 
+        if (!isMounted) {
+          return;
+        }
+
         if (!permission.granted) {
           startMockTracking("Location permission is off. Using simulated ride tracking.", "permission_denied");
           return;
@@ -330,6 +334,10 @@ export function useLiveRideTracker({
             timeInterval: LOCATION_TIME_INTERVAL_MS
           },
           (position) => {
+            if (!isMounted) {
+              return;
+            }
+
             addRoutePoint({
               latitude: position.coords.latitude,
               longitude: position.coords.longitude
@@ -337,11 +345,19 @@ export function useLiveRideTracker({
           }
         );
 
-        if (isMounted) {
-          setTrackingState("live");
-          setWarningMessage(null);
+        if (!isMounted) {
+          locationSubscription.remove();
+          locationSubscription = undefined;
+          return;
         }
+
+        setTrackingState("live");
+        setWarningMessage(null);
       } catch {
+        if (!isMounted) {
+          return;
+        }
+
         startMockTracking("Live GPS tracking could not start. Using simulated ride tracking.", "error");
       }
     }
