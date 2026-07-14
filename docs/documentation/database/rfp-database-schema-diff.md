@@ -445,23 +445,32 @@ Remaining Phase-D work:
 
 ## Implementation checklist
 
-- [ ] Create migration for enum/status foundations.
-- [ ] Create migration for `stations`, `staff`, and profile/customer extensions.
+- [x] Create migration for enum/status foundations.
+- [x] Create migration for `stations`, `staff`, and profile/customer extensions.
 - [x] Create migration for `batteries` and `battery_charging_logs`.
 - [x] Create migration for canonical `rental_transactions` and backfill from `bike_ride_history` where possible.
 - [x] Create migration for `payments` and link/backfill from `wallet_transactions` where possible.
 - [x] Create migration for `maintenance_logs`, `asset_inventory`, and `incidents`.
 - [x] Create migration for `audit_logs` and evidence/attachment handling.
-- [ ] Create migration for normalized `operational_events`.
+- [x] Create migration for normalized `operational_events`.
 - [x] Create migration for `service_areas` and PostGIS/geography columns.
 - [x] Create migration for `operational_reports` and `energy_management`.
-- [ ] Add dedicated `sustainability_reporting` metrics and `user_engagement` aggregates.
+- [x] Add dedicated `sustainability_reporting` metrics and `user_engagement` aggregates.
 - [x] Add RLS policies for every new table, especially staff/admin access vs. rider-owned records.
 - [ ] Update mobile/web data access code after canonical tables are introduced.
-- [ ] Add seed data for one station, one staff admin, sample batteries, sample payments, and sample rental transactions.
+- [x] Add seed data for all operational tables — stations, staff, batteries, payments, asset inventory, maintenance, incidents, audit logs, reports, charging logs, service areas, energy readings, operational events, sustainability metrics, and user engagement aggregates.
 
 ## Bottom line
 
-The MVP migration now covers the RFP's operational core: fleet extensions, users, stations, batteries, rentals, payments/reconciliation, staff, maintenance, incidents, audit foundations, inventory, charging logs, service-area polygons, energy readings, and report snapshots. It is substantially beyond the original lightweight ride/wallet schema while preserving the existing app-facing tables and compatibility sync.
+The MVP and Phase-D migrations now provide database coverage for all 18 RFP domains. RLS is enabled on all 24 tables. A comprehensive seed data set (15 new tables) links existing fixtures to the new operational schema.
 
-It is not yet a complete RFP reporting/event implementation. The remaining material gaps are dedicated user-engagement aggregates, reproducible sustainability metrics, normalized unlock/parking/photo-proof operational events, and the application workflows that ingest telemetry, enforce geofences, calculate reports, and reconcile offline records. The new migration is therefore an additive Phase-D foundation, not a claim that all RFP workflows are complete.
+Remaining work is entirely application-level:
+
+- Geofence enforcement (check service_areas on unlock/return)
+- Automated operational/sustainability report generation from ride data
+- Charging telemetry ingestion (station IoT integration)
+- Energy/TOU aggregation from utility data
+- Operational event capture in mobile/web app flows
+- Coupon management linking to payments
+- Mobile/web data access code updates and Supabase type regeneration
+- End-to-end workflow integration tests
