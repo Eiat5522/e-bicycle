@@ -22,7 +22,7 @@ Generated: 2026-07-02
 
 ## Executive summary
 
-The current Supabase schema is a small Glide MVP data model with 6 public tables:
+The current Supabase schema is a Glide MVP data model with the original app tables plus the first operational tables:
 
 1. `profiles`
 2. `wallets`
@@ -30,16 +30,31 @@ The current Supabase schema is a small Glide MVP data model with 6 public tables
 4. `bikes`
 5. `bike_ride_history`
 6. `reward_milestones`
+7. `rental_transactions`
+8. `stations`
+9. `staff_profiles`
+10. `batteries`
+11. `payments`
+12. `attachments`
+13. `asset_inventory`
+14. `maintenance_logs`
+15. `incidents`
+16. `audit_logs`
+17. `operational_reports`
+18. `battery_charging_logs`
+19. `service_areas`
+20. `energy_management`
 
-The new RFP database requirement is a broader operations platform with 18 logical tables covering fleet assets, batteries, stations, rentals, payment reconciliation, maintenance, incidents, audit logs, ESG reports, energy management, staff permissions, service geofences, inventory, charging logs, and operational events.
+The RFP database requirement is a broader operations platform with 18 logical domains covering fleet assets, batteries, stations, rentals, payment reconciliation, maintenance, incidents, audit logs, ESG reports, energy management, staff permissions, service geofences, inventory, charging logs, and operational events. The MVP migration now implements the operational core plus reporting/infrastructure foundations, while some aggregate/event domains remain partial.
 
 High-level delta:
 
 - **Keep and expand:** `bikes`, `profiles`, `bike_ride_history`, `wallets`, `wallet_transactions`, `reward_milestones`.
-- **Add new first-class operational tables:** batteries, stations, maintenance logs, payments, incidents, audit logs, reports, charging logs, inventory, service areas, energy management, staff, operational events.
+- **Implemented by MVP migration:** batteries, stations, maintenance logs, payments, incidents, audit logs, operational reports, charging logs, inventory, service areas, energy management, staff, and generic attachments.
+- **Still to normalize/expand:** user engagement aggregates, sustainability report metrics, and operational unlock/parking events.
 - **Normalize app/MVP concepts:** current `bike_ride_history` partly acts as rental transaction, payment summary, carbon summary, route log, and event history. RFP requirements split these into separate auditable records.
-- **Add evidence and governance:** photo/slip evidence, staff activity, reconciliation status, KPI/report snapshots, and offline fallback reconciliation are mostly absent from the current schema.
-- **Add infrastructure coverage:** stations, charging slots/cabinets, electricity status, power capacity, phase balance, TOU rates, and battery health are absent.
+- **Remaining evidence/governance work:** audit and attachment foundations exist, but automated audit capture and report generation are still application/workflow responsibilities.
+- **Remaining infrastructure work:** charging logs and service-area polygons now exist; station telemetry ingestion, geofence enforcement, and energy/TOU aggregation still need application integration.
 
 ## Current Supabase baseline
 
@@ -59,6 +74,10 @@ High-level delta:
 | `bikes` | `id`, `model`, `ride_class`, `estimated_range_km`, `top_speed_kmh`, `pricing_label`, `rate_per_minute`, `status`, `location`, `latitude`, `longitude`, `image_url`, active ride columns, timestamps | Partial `Vehicles`. Missing serial number, frame number, color, battery/device status, QR code, maintenance history, station assignment, battery linkage, GPS telemetry history, IoT lock/device metadata. |
 | `bike_ride_history` | `id`, `profile_id`, `bike_id`, start/end timestamps, duration, distance, total cost, rate, billable minutes, currency, wallet transaction link, CO2 saved, start/end location, route label, payment label, route JSON, checkpoints JSON, created_at | Partial `Rental Transactions`, `Sustainability Reporting`, and `Operational Events`. Missing start/return station IDs, explicit rental status, payment ID, service fee vs. wallet transaction separation, photo evidence, incident linkage, staff/manual fallback attribution. |
 | `reward_milestones` | `profile_id`, `milestone_key`, `title`, `points_awarded`, timestamps | Partial `User Engagement`. Missing carbon reduction, calories, accumulated distance, reusable reward definitions/campaigns. |
+| `rental_transactions` | Canonical rental lifecycle plus compatibility projection from `bike_ride_history` | Covered `Rental Transactions` foundation. |
+| `stations`, `staff_profiles`, `batteries` | Station infrastructure, staff roles, battery lifecycle and telemetry fields | Covered operational foundations. |
+| `payments`, `attachments`, `asset_inventory`, `maintenance_logs`, `incidents`, `audit_logs` | Payment reconciliation, evidence, inventory, maintenance, incident, and governance records | Covered operational foundations. |
+| `operational_reports`, `battery_charging_logs`, `service_areas`, `energy_management` | Report snapshots, charging telemetry, PostGIS zones, and station energy readings | Covered Phase-D database foundations; application ingestion/calculation remains. |
 
 ## Required RFP tables vs. current schema
 
@@ -70,24 +89,24 @@ Legend:
 
 | RFP required table | Current equivalent | Status | Main diff / required action |
 | --- | --- | --- | --- |
-| `vehicles` | `bikes` | Partial | Rename or map `bikes` to vehicle registry. Add serial/frame/color, QR code, battery status, device status, maintenance history, station assignment, telemetry metadata. Consider changing `id` from text to UUID or keep text as business `vehicle_code` and add UUID PK. |
-| `batteries` | none | Missing | Add battery registry with vehicle link, health, charge level, charge cycles, SOH, charger ID, voltage/current/temp, inspections, retirement plan. |
-| `users` | `profiles` + `auth.users` | Partial | Expand public profile/customer table with phone, email, user type, status, registration date, PDPA consent, membership ID, KYC/identity verification, student status, driver's license. |
-| `rental_transactions` | `bike_ride_history` | Partial | Add explicit rental transaction table or expand history with transaction lifecycle fields: rental status, start station, return station, payment ID, service fee, photo evidence, staff/fallback source. |
-| `stations` | none | Missing | Add stations/hubs/kiosks with GPS, capacity, charging slots, operating/electricity status, power capacity, equipment inventory, phase balance. |
-| `maintenance_logs` | none | Missing | Add PM/CM work orders and logs linked to vehicle/asset/staff; include dates, parts, post-repair status, next service schedule, QC status. |
-| `payments` | `wallet_transactions` | Partial | Add payment records for QR/gateway/credit-card/manual slip verification with method, reference, status, evidence, coupon, reconciliation link. Keep wallet ledger as balance movement, not as payment authority. |
-| `incidents` | none | Missing | Add accident/damage/loss/breakdown/complaint incident table linked to rental, vehicle, user, staff, photo evidence, status/resolution. |
-| `sustainability_reporting` | `bike_ride_history.co2_saved_kg` | Partial | Add report snapshots/aggregates for estimated distance, emission factor, trip count, carbon reduced, fuel savings, total travel, energy consumption. |
-| `audit_logs` | none | Missing | Add immutable-ish audit trail for role/action/data changed/timestamp/device-location/KPI/evidence. Current RLS policies exist but no business audit table. |
-| `operational_reports` | none | Missing | Add daily/monthly report snapshots or materialized views for usage stats, utilization, app availability, downtime, satisfaction, revenue, reconciliation. |
-| `battery_charging_logs` | none | Missing | Add charging log/slot table for slot ID, battery ID, voltage/current/temp, charge cycles, SOH, swap log. |
-| `asset_inventory` | none | Missing | Add asset/spare-parts inventory with quantity, procurement, warranty, maintenance period, stock level, minimum threshold. |
-| `service_areas` | none | Missing | Add geofence polygons for returnable/prohibited zones and city/service area name. Requires PostGIS/geography extension. |
-| `energy_management` | none | Missing | Add power demand/phase distribution/TOU period/applied rate records, probably station-linked. |
-| `staff` | `profiles.is_admin` | Partial | Add staff table or profile extension for admin/manager/technician roles, permissions JSON/RBAC, station assignment. `is_admin` is too coarse. |
+| `vehicles` | `bikes` | Covered | MVP bike registry now includes serial/frame/color, QR code, battery/device status, maintenance summary, station assignment, and current battery linkage. Text IDs remain the app-facing vehicle identifiers. |
+| `batteries` | `batteries` | Covered | Added battery registry with vehicle/station links, health, charge level, cycles, SOH, inspection, charging slot, sensor readings, retirement plan, and abnormal flag. |
+| `users` | `profiles` + `auth.users` | Covered | MVP profile extensions now include phone, email, user type/status, registration date, consent, membership, identity verification, student status, and license reference. |
+| `rental_transactions` | `rental_transactions` | Covered | Canonical rental table now exists with lifecycle, stations, payment link, service fee, route distance, evidence, and fallback reconciliation fields; it remains synchronized from ride history for compatibility. |
+| `stations` | `stations` | Covered | Added station/hub/kiosk registry with GPS scalars, capacity, charging slots, operating/electricity status, power capacity, equipment inventory, and phase balance. |
+| `maintenance_logs` | `maintenance_logs` | Covered | Added PM/CM work orders linked to bikes, assets, and staff with dates, parts, post-repair status, service schedule, QC, and fallback fields. |
+| `payments` | `payments` + `wallet_transactions` | Covered | Added payment authority/reconciliation records while retaining wallet transactions as the balance ledger. |
+| `incidents` | `incidents` | Covered | Added accident/damage/loss/breakdown/complaint records linked to rentals, bikes, users, staff, and resolution state. |
+| `sustainability_reporting` | `bike_ride_history.co2_saved_kg` + `operational_reports` | Partial | Report storage now exists, but reproducible emission factors, fuel savings, total travel, and energy-consumption calculations still need dedicated metrics or report-generation logic. |
+| `audit_logs` | `audit_logs` | Covered | Business audit table now exists with actor, action, entity, changed data, device/location, KPI, and evidence linkage. Automated capture remains an application concern. |
+| `operational_reports` | `operational_reports` | Covered | Added report snapshots with period/type, usage statistics, utilization, availability, downtime, satisfaction, revenue, and reconciliation payloads. |
+| `battery_charging_logs` | `battery_charging_logs` | Covered | Added charging/swap log with slot, battery, station, sensor readings, charge cycles, SOH, lifecycle status, and source metadata. |
+| `asset_inventory` | `asset_inventory` | Covered | Added asset/spare-parts inventory with quantity, procurement, warranty, maintenance period, stock level, minimum threshold, and station link. |
+| `service_areas` | `service_areas` | Covered | Added PostGIS `geography(Polygon, 4326)` boundaries, returnable/prohibited/service zone types, city, status, and spatial index. Enforcement remains application work. |
+| `energy_management` | `energy_management` | Covered | Added station-linked power demand, L1/L2/L3 phase readings, TOU period/rate, currency, source, and metadata fields. Aggregation/utility ingestion remains application work. |
+| `staff` | `staff_profiles` + `profiles.is_admin` | Covered | Added staff roles, permissions JSON, station assignment, and status. `profiles.is_admin` remains for compatibility with existing policies. |
 | `user_engagement` | `wallets.points` + `reward_milestones` | Partial | Add user-level engagement metrics for eco points, carbon reduction, calories, distance accumulated; keep reward milestones as events. |
-| `operational_events` | `bike_ride_history.checkpoints` JSON | Partial | Add event log for unlock/parking/return/photo proof/GPS with vehicle/rental/user/staff links. JSON checkpoints are not enough for audit/reporting. |
+| `operational_events` | `bike_status_events` + `bike_ride_history.checkpoints` JSON | Partial | Status transitions are normalized, but unlock/parking/return/photo-proof/GPS events still need a dedicated event table. |
 
 ## Detailed table-by-table diff
 
@@ -366,13 +385,19 @@ Add these first because they are required for launch operations and daily workfl
 
 ### Phase D — Infrastructure, reports, and ESG
 
-1. Add `battery_charging_logs`.
-2. Add `service_areas`.
-3. Add `energy_management`.
-4. Add `sustainability_reporting`.
-5. Add `operational_reports` or materialized/report snapshot views.
+The MVP migration `20260714120000_add_phase_d_reporting_infrastructure.sql` now provides the database foundations for the first five items:
+
+1. `battery_charging_logs`.
+2. `service_areas` using PostGIS geography polygons.
+3. `energy_management`.
+4. `operational_reports` report snapshots.
+5. `sustainability_reporting` storage is partially represented through report payloads plus existing ride carbon values.
+
+Remaining Phase-D work:
+
 6. Add `user_engagement` aggregates.
 7. Add `operational_events` for unlock/parking/photo-proof events.
+8. Add application jobs/ingestion for report, energy, charging, geofence, and ESG calculations.
 
 ## Suggested new/changed schema inventory
 
@@ -412,29 +437,31 @@ Add these first because they are required for launch operations and daily workfl
 
 1. **Naming:** use RFP names (`vehicles`, `users`) or keep app names (`bikes`, `profiles`) and document mappings?
 2. **Primary keys:** current `bikes.id` is text (`G-104`). RFP data types imply UUID for most references. Decide whether to keep business IDs as PKs or introduce UUID PKs plus unique public codes.
-3. **PostGIS:** RFP requests `GEOGRAPHY(POINT/POLYGON)`. Confirm Supabase PostGIS extension should be enabled and used instead of scalar lat/lon only.
-4. **Files/evidence:** decide whether evidence is stored as URL text fields per table or via a normalized `attachments` table linked to rentals/incidents/payments/maintenance/audits.
+3. **PostGIS:** Resolved for service areas: the Phase-D migration enables the Supabase PostGIS extension in `extensions` and stores `service_areas.boundary` as `geography(Polygon, 4326)`. Point columns remain scalar in the MVP.
+4. **Files/evidence:** Resolved for the MVP: use the normalized `attachments` table, with table-specific URL fields retained where already present.
 5. **Payment model:** separate external payment intent/receipt records from wallet balance movements.
-6. **Reports:** decide between generated SQL views/materialized views and stored report snapshots. Stored snapshots are better for formal RFP/government reporting because they preserve historical formula versions.
+6. **Reports:** Resolved for the MVP foundation: use `operational_reports` snapshots. Add generated views/jobs later for the metrics and formula versioning required by formal reporting.
 7. **Offline fallback reconciliation:** add source fields such as `source_system`, `fallback_form_id`, `import_batch_id`, `entered_by_staff_id`, and `reconciled_at` to operational tables.
 
 ## Implementation checklist
 
 - [ ] Create migration for enum/status foundations.
 - [ ] Create migration for `stations`, `staff`, and profile/customer extensions.
-- [ ] Create migration for `batteries` and `battery_charging_logs`.
-- [ ] Create migration for canonical `rental_transactions` and backfill from `bike_ride_history` where possible.
-- [ ] Create migration for `payments` and link/backfill from `wallet_transactions` where possible.
-- [ ] Create migration for `maintenance_logs`, `asset_inventory`, and `incidents`.
-- [ ] Create migration for `audit_logs`, `operational_events`, and evidence/attachment handling.
-- [ ] Create migration for `service_areas` and PostGIS/geography columns.
-- [ ] Create migration for `sustainability_reporting`, `operational_reports`, `energy_management`, and `user_engagement`.
-- [ ] Add RLS policies for every new table, especially staff/admin access vs. rider-owned records.
+- [x] Create migration for `batteries` and `battery_charging_logs`.
+- [x] Create migration for canonical `rental_transactions` and backfill from `bike_ride_history` where possible.
+- [x] Create migration for `payments` and link/backfill from `wallet_transactions` where possible.
+- [x] Create migration for `maintenance_logs`, `asset_inventory`, and `incidents`.
+- [x] Create migration for `audit_logs` and evidence/attachment handling.
+- [ ] Create migration for normalized `operational_events`.
+- [x] Create migration for `service_areas` and PostGIS/geography columns.
+- [x] Create migration for `operational_reports` and `energy_management`.
+- [ ] Add dedicated `sustainability_reporting` metrics and `user_engagement` aggregates.
+- [x] Add RLS policies for every new table, especially staff/admin access vs. rider-owned records.
 - [ ] Update mobile/web data access code after canonical tables are introduced.
 - [ ] Add seed data for one station, one staff admin, sample batteries, sample payments, and sample rental transactions.
 
 ## Bottom line
 
-The current Supabase schema is suitable for a lightweight ride/wallet demo, but it does **not** yet satisfy the RFP database requirements for a government/operations-grade e-bike rental platform. The largest missing areas are battery operations, stations, maintenance, payments/reconciliation, incidents, audit trails, asset inventory, geofencing, energy management, and formal reporting.
+The MVP migration now covers the RFP's operational core: fleet extensions, users, stations, batteries, rentals, payments/reconciliation, staff, maintenance, incidents, audit foundations, inventory, charging logs, service-area polygons, energy readings, and report snapshots. It is substantially beyond the original lightweight ride/wallet schema while preserving the existing app-facing tables and compatibility sync.
 
-The safest path is to preserve the current app-facing tables, add the missing operational tables, and introduce compatibility/backfill layers so the existing mobile/web app can continue working while the RFP-compliant operations schema is built.
+It is not yet a complete RFP reporting/event implementation. The remaining material gaps are dedicated user-engagement aggregates, reproducible sustainability metrics, normalized unlock/parking/photo-proof operational events, and the application workflows that ingest telemetry, enforce geofences, calculate reports, and reconcile offline records. The new migration is therefore an additive Phase-D foundation, not a claim that all RFP workflows are complete.

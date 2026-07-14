@@ -525,3 +525,265 @@ set
   payment_label = excluded.payment_label,
   route = excluded.route,
   checkpoints = excluded.checkpoints;
+
+-- --------------------------------------------------
+-- Operational seed data for Phase-D tables
+-- --------------------------------------------------
+
+-- Stations
+insert into public.stations (id, station_code, station_name, location_text, latitude, longitude, station_type, capacity, charging_slot_count, operating_status, electricity_status, power_capacity_kw)
+values
+  ('aaaa0001-0001-4000-a000-000000000001', 'HUB-SIAM', 'Siam Square Hub', 'Siam Square, Pathum Wan', 13.7466, 100.5328, 'hub', 20, 6, 'active', 'normal', 15.0),
+  ('aaaa0001-0001-4000-a000-000000000002', 'KIK-ASOK', 'Asok Interchange Kiosk', 'Asok BTS / MRT Interchange', 13.7372, 100.5606, 'kiosk', 8, 2, 'active', 'normal', 5.0),
+  ('aaaa0001-0001-4000-a000-000000000003', 'HUB-LUMP', 'Lumphini Park Hub', 'West Gate, Lumphini Park', 13.7305, 100.5418, 'hub', 15, 4, 'active', 'normal', 10.0)
+on conflict (id) do nothing;
+
+-- Link existing bikes to stations
+update public.bikes set station_id = 'aaaa0001-0001-4000-a000-000000000001' where id = 'G-104';
+update public.bikes set station_id = 'aaaa0001-0001-4000-a000-000000000002' where id = 'G-205';
+update public.bikes set station_id = 'aaaa0001-0001-4000-a000-000000000003' where id = 'G-509';
+
+-- Staff profiles (admin linked to existing admin profile)
+insert into public.staff_profiles (id, profile_id, staff_name, role, permissions, station_id, status)
+values (
+  'bbbb0001-0001-4000-b000-000000000001',
+  '11111111-1111-1111-1111-111111111111',
+  'Test Admin',
+  'admin',
+  '{"all":true}'::jsonb,
+  'aaaa0001-0001-4000-a000-000000000001',
+  'active'
+) on conflict (id) do nothing;
+
+-- Batteries
+insert into public.batteries (id, battery_code, bike_id, station_id, status, charge_level, charge_cycles, state_of_health, last_inspection_date, voltage, current_amp, temperature_c)
+values
+  ('cccc0001-0001-4000-c000-000000000001', 'BAT-G104-01', 'G-104', 'aaaa0001-0001-4000-a000-000000000001', 'available', 87.0, 42, 94.5, '2026-06-15', 48.2, 12.1, 31.0),
+  ('cccc0001-0001-4000-c000-000000000002', 'BAT-G205-01', 'G-205', 'aaaa0001-0001-4000-a000-000000000002', 'charging', 67.3, 78, 91.2, '2026-06-20', 47.8, 11.9, 32.5),
+  ('cccc0001-0001-4000-c000-000000000003', 'BAT-G318-01', 'G-318', 'aaaa0001-0001-4000-a000-000000000001', 'available', 92.4, 15, 98.1, '2026-07-01', 48.9, 12.3, 30.2),
+  ('cccc0001-0001-4000-c000-000000000004', 'BAT-G412-01', 'G-412', 'aaaa0001-0001-4000-a000-000000000003', 'available', 73.8, 56, 89.7, '2026-06-10', 47.1, 11.8, 33.1),
+  ('cccc0001-0001-4000-c000-000000000005', 'BAT-G509-01', 'G-509', 'aaaa0001-0001-4000-a000-000000000003', 'in_use', 58.2, 104, 85.3, '2026-05-28', 48.5, 12.0, 34.0),
+  ('cccc0001-0001-4000-c000-000000000006', 'BAT-G620-01', 'G-620', 'aaaa0001-0001-4000-a000-000000000001', 'available', 95.1, 8, 99.0, '2026-07-05', 49.1, 12.5, 29.8)
+on conflict (id) do nothing;
+
+-- Assign current batteries to bikes
+update public.bikes set current_battery_id = 'cccc0001-0001-4000-c000-000000000001' where id = 'G-104';
+update public.bikes set current_battery_id = 'cccc0001-0001-4000-c000-000000000003' where id = 'G-318';
+update public.bikes set current_battery_id = 'cccc0001-0001-4000-c000-000000000004' where id = 'G-412';
+update public.bikes set current_battery_id = 'cccc0001-0001-4000-c000-000000000006' where id = 'G-620';
+
+-- Payments (matching existing wallet_transactions)
+insert into public.payments (id, rental_transaction_id, wallet_transaction_id, profile_id, amount, currency_code, payment_method, payment_reference, payment_status, reconciliation_status, source_system)
+values
+  ('dddd0001-0001-4000-d000-000000000001', '73333333-3333-3333-3333-333333333331', '63333333-3333-3333-3333-333333333331', '33333333-3333-3333-3333-333333333333', 4.80, 'THB', 'wallet', 'WLT-4242-20260404', 'verified', 'reconciled', 'app'),
+  ('dddd0001-0001-4000-d000-000000000002', '73333333-3333-3333-3333-333333333332', '63333333-3333-3333-3333-333333333332', '44444444-4444-4444-4444-444444444444', 3.95, 'THB', 'wallet', 'WLT-0188-20260402', 'verified', 'reconciled', 'app'),
+  ('dddd0001-0001-4000-d000-000000000003', '73333333-3333-3333-3333-333333333333', '63333333-3333-3333-3333-333333333333', '55555555-5555-5555-5555-555555555555', 5.30, 'THB', 'wallet', 'WLT-8181-20260331', 'verified', 'reconciled', 'app')
+on conflict (id) do nothing;
+
+-- Link payments to rental transactions
+update public.rental_transactions set payment_id = 'dddd0001-0001-4000-d000-000000000001' where id = '73333333-3333-3333-3333-333333333331';
+update public.rental_transactions set payment_id = 'dddd0001-0001-4000-d000-000000000002' where id = '73333333-3333-3333-3333-333333333332';
+update public.rental_transactions set payment_id = 'dddd0001-0001-4000-d000-000000000003' where id = '73333333-3333-3333-3333-333333333333';
+update public.rental_transactions set start_station_id = 'aaaa0001-0001-4000-a000-000000000002', return_station_id = 'aaaa0001-0001-4000-a000-000000000003' where id = '73333333-3333-3333-3333-333333333331';
+update public.rental_transactions set rental_status = 'completed' where id in ('73333333-3333-3333-3333-333333333331','73333333-3333-3333-3333-333333333332','73333333-3333-3333-3333-333333333333');
+
+-- Asset inventory
+insert into public.asset_inventory (id, item_description, quantity, station_id, procurement_date, warranty_status, stock_level, minimum_threshold)
+values
+  ('eeee0001-0001-4000-e000-000000000001', 'Brake Pad Set (Disc)', 12, 'aaaa0001-0001-4000-a000-000000000001', '2026-04-15', 'active', 8, 5),
+  ('eeee0001-0001-4000-e000-000000000002', 'Inner Tube 26x2.0', 20, 'aaaa0001-0001-4000-a000-000000000001', '2026-03-01', 'active', 15, 10),
+  ('eeee0001-0001-4000-e000-000000000003', 'Battery Charger 48V', 4, 'aaaa0001-0001-4000-a000-000000000003', '2026-05-01', 'active', 3, 2),
+  ('eeee0001-0001-4000-e000-000000000004', 'QR Code Sticker (Roll)', 3, 'aaaa0001-0001-4000-a000-000000000001', '2026-02-10', 'expired', 0, 2),
+  ('eeee0001-0001-4000-e000-000000000005', 'USB-C Lock Box', 10, null, '2026-04-20', 'active', 7, 3)
+on conflict (id) do nothing;
+
+-- Maintenance logs
+insert into public.maintenance_logs (id, bike_id, repair_type, date_reported, date_finished, parts_used, technician_staff_id, post_repair_status, quality_check_status, status)
+values (
+  'ffff0001-0001-4000-f000-000000000001',
+  'G-412',
+  'cm',
+  '2026-07-08T09:30:00Z',
+  '2026-07-08T14:15:00Z',
+  '[{"part":"Brake Pad Set (Disc)","qty":2,"cost":8.00}]'::jsonb,
+  'bbbb0001-0001-4000-b000-000000000001',
+  'ready',
+  'passed',
+  'completed'
+) on conflict (id) do nothing;
+
+-- Incidents
+insert into public.incidents (id, rental_transaction_id, bike_id, profile_id, incident_type, description, status, resolution_status, assigned_staff_id)
+values (
+  'gggg0001-0001-4000-g000-000000000001',
+  '73333333-3333-3333-3333-333333333332',
+  'G-509',
+  '44444444-4444-4444-4444-444444444444',
+  'damage',
+  'Minor scuff on rear mudguard reported by rider after Silom route ride.',
+  'resolved',
+  'resolved',
+  'bbbb0001-0001-4000-b000-000000000001'
+) on conflict (id) do nothing;
+
+-- Audit logs
+insert into public.audit_logs (id, actor_profile_id, actor_staff_id, user_role, action_performed, entity_table, entity_id, data_changed, device_location)
+values (
+  'hhhh0001-0001-4000-h000-000000000001',
+  '11111111-1111-1111-1111-111111111111',
+  'bbbb0001-0001-4000-b000-000000000001',
+  'admin',
+  'update',
+  'bikes',
+  'G-412',
+  '{"status":{"old":"maintenance","new":"available"}}'::jsonb,
+  'Siam Square Hub — Admin Console'
+) on conflict (id) do nothing;
+
+-- Operational reports (monthly snapshot for June 2026)
+insert into public.operational_reports (id, report_type, period_start, period_end, usage_statistics, utilization_rate, app_availability_rate, service_downtime_minutes, user_satisfaction_score, daily_revenue, payment_reconciliation, generated_by_profile_id)
+values (
+  'iiii0001-0001-4000-i000-000000000001',
+  'monthly',
+  '2026-06-01',
+  '2026-06-30',
+  '{"total_rides":847,"active_bikes":6,"registered_users":182,"avg_duration_min":22.3}'::jsonb,
+  78.5,
+  99.2,
+  45,
+  4.3,
+  10895.50,
+  '{"total_collected":10895.50,"reconciled":10398.00,"pending":497.50,"exception":0}'::jsonb,
+  '11111111-1111-1111-1111-111111111111'
+) on conflict (id) do nothing;
+
+-- Battery charging logs
+insert into public.battery_charging_logs (id, station_id, battery_id, charging_slot_id, status, started_at, completed_at, voltage, current_amp, temperature_c, state_of_health)
+values (
+  'jjjj0001-0001-4000-j000-000000000001',
+  'aaaa0001-0001-4000-a000-000000000002',
+  'cccc0001-0001-4000-c000-000000000002',
+  'ASOK-02',
+  'completed',
+  '2026-07-13T18:30:00Z',
+  '2026-07-13T21:45:00Z',
+  48.1,
+  11.2,
+  32.0,
+  91.2
+) on conflict (id) do nothing;
+
+-- Service areas
+insert into public.service_areas (id, zone_code, zone_name, city_name, zone_type, boundary, status)
+values (
+  'kkkk0001-0001-4000-k000-000000000001',
+  'LAM-DOWNTOWN',
+  'Downtown Lamphun Service Zone',
+  'Lamphun',
+  'returnable',
+  extensions.ST_GeomFromText(
+    'POLYGON((99.0000 18.5800, 99.0100 18.5800, 99.0100 18.5700, 99.0000 18.5700, 99.0000 18.5800))',
+    4326
+  )::extensions.geography(Polygon, 4326),
+  'active'
+) on conflict (id) do nothing;
+
+-- Energy management
+insert into public.energy_management (id, station_id, recorded_at, total_power_demand_kw, phase_l1_kw, phase_l2_kw, phase_l3_kw, tou_rate_period, applied_tou_rate, source_system)
+values (
+  'llll0001-0001-4000-l000-000000000001',
+  'aaaa0001-0001-4000-a000-000000000001',
+  '2026-07-14T14:30:00Z',
+  12.45,
+  4.21,
+  4.12,
+  4.12,
+  'peak',
+  4.75,
+  'station'
+) on conflict (id) do nothing;
+
+-- Operational events (unlock/parking for the three existing rides)
+insert into public.operational_events (id, rental_transaction_id, bike_id, profile_id, event_type, gps_location, created_at)
+values
+  (
+    'mmmm0001-0001-4000-m000-000000000001',
+    '73333333-3333-3333-3333-333333333331',
+    'G-205',
+    '33333333-3333-3333-3333-333333333333',
+    'unlock',
+    extensions.ST_MakePoint(100.5606, 13.7372)::extensions.geography(Point, 4326),
+    '2026-04-04T10:15:00Z'
+  ),
+  (
+    'mmmm0001-0001-4000-m000-000000000002',
+    '73333333-3333-3333-3333-333333333331',
+    'G-205',
+    '33333333-3333-3333-3333-333333333333',
+    'return',
+    extensions.ST_MakePoint(100.5472, 13.7245)::extensions.geography(Point, 4326),
+    '2026-04-04T10:41:00Z'
+  ),
+  (
+    'mmmm0001-0001-4000-m000-000000000003',
+    '73333333-3333-3333-3333-333333333332',
+    'G-509',
+    '44444444-4444-4444-4444-444444444444',
+    'unlock',
+    extensions.ST_MakePoint(100.5345, 13.7286)::extensions.geography(Point, 4326),
+    '2026-04-02T05:30:00Z'
+  ),
+  (
+    'mmmm0001-0001-4000-m000-000000000004',
+    '73333333-3333-3333-3333-333333333332',
+    'G-509',
+    '44444444-4444-4444-4444-444444444444',
+    'return',
+    extensions.ST_MakePoint(100.5418, 13.7305)::extensions.geography(Point, 4326),
+    '2026-04-02T05:50:00Z'
+  ),
+  (
+    'mmmm0001-0001-4000-m000-000000000005',
+    '73333333-3333-3333-3333-333333333333',
+    'G-318',
+    '55555555-5555-5555-5555-555555555555',
+    'unlock',
+    extensions.ST_MakePoint(100.5446, 13.7797)::extensions.geography(Point, 4326),
+    '2026-03-31T11:05:00Z'
+  ),
+  (
+    'mmmm0001-0001-4000-m000-000000000006',
+    '73333333-3333-3333-3333-333333333333',
+    'G-318',
+    '55555555-5555-5555-5555-555555555555',
+    'return',
+    extensions.ST_MakePoint(100.5388, 13.7678)::extensions.geography(Point, 4326),
+    '2026-03-31T11:38:00Z'
+  )
+on conflict (id) do nothing;
+
+-- Sustainability reporting
+insert into public.sustainability_reporting (id, report_id, period_start, period_end, estimated_distance_km, emission_factor_kgco2_per_km, trip_count, carbon_reduced_kg, fuel_savings_liters, total_travel_distance_km, energy_consumption_kwh, calculation_method, generated_by_profile_id)
+values (
+  'nnnn0001-0001-4000-n000-000000000001',
+  'iiii0001-0001-4000-i000-000000000001',
+  '2026-06-01',
+  '2026-06-30',
+  2184.50,
+  0.000150,
+  847,
+  327.68,
+  522.50,
+  2184.50,
+  182.70,
+  'standard_v1',
+  '11111111-1111-1111-1111-111111111111'
+) on conflict (id) do nothing;
+
+-- User engagement aggregates
+insert into public.user_engagement_aggregates (id, profile_id, eco_points, carbon_reduced_total_kg, calories_burned_total, distance_accumulated_km)
+values
+  ('oooo0001-0001-4000-o000-000000000001', '33333333-3333-3333-3333-333333333333', 450, 12.8, 480, 85.2),
+  ('oooo0001-0001-4000-o000-000000000002', '44444444-4444-4444-4444-444444444444', 310, 8.5, 320, 58.6),
+  ('oooo0001-0001-4000-o000-000000000003', '55555555-5555-5555-5555-555555555555', 620, 17.2, 650, 112.4)
+on conflict (id) do nothing;
