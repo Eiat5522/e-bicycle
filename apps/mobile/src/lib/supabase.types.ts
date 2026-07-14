@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       asset_inventory: {
@@ -252,6 +277,95 @@ export type Database = {
             columns: ["station_id"]
             isOneToOne: false
             referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      battery_charging_logs: {
+        Row: {
+          battery_id: string
+          charge_cycles: number | null
+          charging_slot_id: string | null
+          completed_at: string | null
+          created_at: string
+          current_amp: number | null
+          id: string
+          metadata: Json
+          source_system: string
+          started_at: string
+          state_of_health: number | null
+          station_id: string | null
+          status: string
+          swap_from_battery_id: string | null
+          swap_to_battery_id: string | null
+          temperature_c: number | null
+          voltage: number | null
+        }
+        Insert: {
+          battery_id: string
+          charge_cycles?: number | null
+          charging_slot_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_amp?: number | null
+          id?: string
+          metadata?: Json
+          source_system?: string
+          started_at?: string
+          state_of_health?: number | null
+          station_id?: string | null
+          status?: string
+          swap_from_battery_id?: string | null
+          swap_to_battery_id?: string | null
+          temperature_c?: number | null
+          voltage?: number | null
+        }
+        Update: {
+          battery_id?: string
+          charge_cycles?: number | null
+          charging_slot_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          current_amp?: number | null
+          id?: string
+          metadata?: Json
+          source_system?: string
+          started_at?: string
+          state_of_health?: number | null
+          station_id?: string | null
+          status?: string
+          swap_from_battery_id?: string | null
+          swap_to_battery_id?: string | null
+          temperature_c?: number | null
+          voltage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "battery_charging_logs_battery_id_fkey"
+            columns: ["battery_id"]
+            isOneToOne: false
+            referencedRelation: "batteries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battery_charging_logs_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battery_charging_logs_swap_from_battery_id_fkey"
+            columns: ["swap_from_battery_id"]
+            isOneToOne: false
+            referencedRelation: "batteries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "battery_charging_logs_swap_to_battery_id_fkey"
+            columns: ["swap_to_battery_id"]
+            isOneToOne: false
+            referencedRelation: "batteries"
             referencedColumns: ["id"]
           },
         ]
@@ -510,6 +624,62 @@ export type Database = {
           },
         ]
       }
+      energy_management: {
+        Row: {
+          applied_tou_rate: number | null
+          created_at: string
+          currency_code: string
+          id: string
+          metadata: Json
+          phase_l1_kw: number | null
+          phase_l2_kw: number | null
+          phase_l3_kw: number | null
+          recorded_at: string
+          source_system: string
+          station_id: string | null
+          total_power_demand_kw: number | null
+          tou_rate_period: string | null
+        }
+        Insert: {
+          applied_tou_rate?: number | null
+          created_at?: string
+          currency_code?: string
+          id?: string
+          metadata?: Json
+          phase_l1_kw?: number | null
+          phase_l2_kw?: number | null
+          phase_l3_kw?: number | null
+          recorded_at?: string
+          source_system?: string
+          station_id?: string | null
+          total_power_demand_kw?: number | null
+          tou_rate_period?: string | null
+        }
+        Update: {
+          applied_tou_rate?: number | null
+          created_at?: string
+          currency_code?: string
+          id?: string
+          metadata?: Json
+          phase_l1_kw?: number | null
+          phase_l2_kw?: number | null
+          phase_l3_kw?: number | null
+          recorded_at?: string
+          source_system?: string
+          station_id?: string | null
+          total_power_demand_kw?: number | null
+          tou_rate_period?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "energy_management_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incidents: {
         Row: {
           assigned_staff_id: string | null
@@ -694,6 +864,133 @@ export type Database = {
             columns: ["technician_staff_id"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_events: {
+        Row: {
+          bike_id: string | null
+          created_at: string
+          event_type: string
+          gps_location: unknown
+          id: string
+          metadata: Json
+          photo_proof_url: string | null
+          profile_id: string | null
+          rental_transaction_id: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          bike_id?: string | null
+          created_at?: string
+          event_type: string
+          gps_location?: unknown
+          id?: string
+          metadata?: Json
+          photo_proof_url?: string | null
+          profile_id?: string | null
+          rental_transaction_id?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          bike_id?: string | null
+          created_at?: string
+          event_type?: string
+          gps_location?: unknown
+          id?: string
+          metadata?: Json
+          photo_proof_url?: string | null
+          profile_id?: string | null
+          rental_transaction_id?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_events_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_events_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_events_rental_transaction_id_fkey"
+            columns: ["rental_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "rental_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_events_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_reports: {
+        Row: {
+          app_availability_rate: number | null
+          created_at: string
+          daily_revenue: number | null
+          generated_at: string
+          generated_by_profile_id: string | null
+          id: string
+          payment_reconciliation: Json
+          period_end: string
+          period_start: string
+          report_type: string
+          service_downtime_minutes: number | null
+          usage_statistics: Json
+          user_satisfaction_score: number | null
+          utilization_rate: number | null
+        }
+        Insert: {
+          app_availability_rate?: number | null
+          created_at?: string
+          daily_revenue?: number | null
+          generated_at?: string
+          generated_by_profile_id?: string | null
+          id?: string
+          payment_reconciliation?: Json
+          period_end: string
+          period_start: string
+          report_type: string
+          service_downtime_minutes?: number | null
+          usage_statistics?: Json
+          user_satisfaction_score?: number | null
+          utilization_rate?: number | null
+        }
+        Update: {
+          app_availability_rate?: number | null
+          created_at?: string
+          daily_revenue?: number | null
+          generated_at?: string
+          generated_by_profile_id?: string | null
+          id?: string
+          payment_reconciliation?: Json
+          period_end?: string
+          period_start?: string
+          report_type?: string
+          service_downtime_minutes?: number | null
+          usage_statistics?: Json
+          user_satisfaction_score?: number | null
+          utilization_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_reports_generated_by_profile_id_fkey"
+            columns: ["generated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1049,6 +1346,42 @@ export type Database = {
           },
         ]
       }
+      service_areas: {
+        Row: {
+          boundary: unknown
+          city_name: string
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          zone_code: string | null
+          zone_name: string
+          zone_type: string
+        }
+        Insert: {
+          boundary: unknown
+          city_name: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          zone_code?: string | null
+          zone_name: string
+          zone_type: string
+        }
+        Update: {
+          boundary?: unknown
+          city_name?: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          zone_code?: string | null
+          zone_name?: string
+          zone_type?: string
+        }
+        Relationships: []
+      }
       staff_profiles: {
         Row: {
           created_at: string
@@ -1157,6 +1490,116 @@ export type Database = {
         }
         Relationships: []
       }
+      sustainability_reporting: {
+        Row: {
+          calculation_method: string
+          carbon_reduced_kg: number | null
+          created_at: string
+          emission_factor_kgco2_per_km: number | null
+          energy_consumption_kwh: number | null
+          estimated_distance_km: number | null
+          fuel_savings_liters: number | null
+          generated_at: string
+          generated_by_profile_id: string | null
+          id: string
+          period_end: string
+          period_start: string
+          report_id: string | null
+          total_travel_distance_km: number | null
+          trip_count: number
+        }
+        Insert: {
+          calculation_method?: string
+          carbon_reduced_kg?: number | null
+          created_at?: string
+          emission_factor_kgco2_per_km?: number | null
+          energy_consumption_kwh?: number | null
+          estimated_distance_km?: number | null
+          fuel_savings_liters?: number | null
+          generated_at?: string
+          generated_by_profile_id?: string | null
+          id?: string
+          period_end: string
+          period_start: string
+          report_id?: string | null
+          total_travel_distance_km?: number | null
+          trip_count?: number
+        }
+        Update: {
+          calculation_method?: string
+          carbon_reduced_kg?: number | null
+          created_at?: string
+          emission_factor_kgco2_per_km?: number | null
+          energy_consumption_kwh?: number | null
+          estimated_distance_km?: number | null
+          fuel_savings_liters?: number | null
+          generated_at?: string
+          generated_by_profile_id?: string | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          report_id?: string | null
+          total_travel_distance_km?: number | null
+          trip_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sustainability_reporting_generated_by_profile_id_fkey"
+            columns: ["generated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sustainability_reporting_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "operational_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_engagement_aggregates: {
+        Row: {
+          calories_burned_total: number
+          carbon_reduced_total_kg: number
+          created_at: string
+          distance_accumulated_km: number
+          eco_points: number
+          id: string
+          last_updated: string
+          profile_id: string
+        }
+        Insert: {
+          calories_burned_total?: number
+          carbon_reduced_total_kg?: number
+          created_at?: string
+          distance_accumulated_km?: number
+          eco_points?: number
+          id?: string
+          last_updated?: string
+          profile_id: string
+        }
+        Update: {
+          calories_burned_total?: number
+          carbon_reduced_total_kg?: number
+          created_at?: string
+          distance_accumulated_km?: number
+          eco_points?: number
+          id?: string
+          last_updated?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_engagement_aggregates_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -1244,6 +1687,26 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      check_service_area: {
+        Args: { p_latitude: number; p_longitude: number }
+        Returns: {
+          boundary: unknown
+          city_name: string
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          zone_code: string | null
+          zone_name: string
+          zone_type: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "service_areas"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_ride: {
         Args: {
           p_bike_id: string
@@ -1284,9 +1747,538 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_operational_report: {
+        Args: {
+          p_period_end: string
+          p_period_start: string
+          p_report_type?: string
+        }
+        Returns: {
+          app_availability_rate: number | null
+          created_at: string
+          daily_revenue: number | null
+          generated_at: string
+          generated_by_profile_id: string | null
+          id: string
+          payment_reconciliation: Json
+          period_end: string
+          period_start: string
+          report_type: string
+          service_downtime_minutes: number | null
+          usage_statistics: Json
+          user_satisfaction_score: number | null
+          utilization_rate: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "operational_reports"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      generate_sustainability_report: {
+        Args: { p_period_end: string; p_period_start: string }
+        Returns: {
+          calculation_method: string
+          carbon_reduced_kg: number | null
+          created_at: string
+          emission_factor_kgco2_per_km: number | null
+          energy_consumption_kwh: number | null
+          estimated_distance_km: number | null
+          fuel_savings_liters: number | null
+          generated_at: string
+          generated_by_profile_id: string | null
+          id: string
+          period_end: string
+          period_start: string
+          report_id: string | null
+          total_travel_distance_km: number | null
+          trip_count: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "sustainability_reporting"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      refresh_user_engagement: {
+        Args: { p_profile_id?: string | null }
+        Returns: number
+      }
+      update_bike_status_with_event: {
+        Args: {
+          p_bike_id: string
+          p_actor_id: string
+          p_expected_status: Database["public"]["Enums"]["bike_status"]
+          p_status: Database["public"]["Enums"]["bike_status"]
+          p_last_reported_at: string
+          p_transition_kind: string
+          p_context: Json
+          p_expected_active_rider_id?: string | null
+          p_active_rider_id?: string | null
+          p_active_ride_started_at?: string | null
+          p_active_ride_start_location?: string | null
+        }
+        Returns: {
+          active_rider_id: string | null
+          id: string
+          status: Database["public"]["Enums"]["bike_status"]
+        }[]
+      }
     }
     Enums: {
       bike_status: "available" | "reserved" | "in_use" | "maintenance"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  storage: {
+    Tables: {
+      buckets: {
+        Row: {
+          allowed_mime_types: string[] | null
+          avif_autodetection: boolean | null
+          created_at: string | null
+          file_size_limit: number | null
+          id: string
+          name: string
+          owner: string | null
+          owner_id: string | null
+          public: boolean | null
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_mime_types?: string[] | null
+          avif_autodetection?: boolean | null
+          created_at?: string | null
+          file_size_limit?: number | null
+          id: string
+          name: string
+          owner?: string | null
+          owner_id?: string | null
+          public?: boolean | null
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_mime_types?: string[] | null
+          avif_autodetection?: boolean | null
+          created_at?: string | null
+          file_size_limit?: number | null
+          id?: string
+          name?: string
+          owner?: string | null
+          owner_id?: string | null
+          public?: boolean | null
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      buckets_analytics: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          format: string
+          id: string
+          name: string
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          format?: string
+          id?: string
+          name: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          format?: string
+          id?: string
+          name?: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      buckets_vectors: {
+        Row: {
+          created_at: string
+          id: string
+          type: Database["storage"]["Enums"]["buckettype"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          type?: Database["storage"]["Enums"]["buckettype"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      migrations: {
+        Row: {
+          executed_at: string | null
+          hash: string
+          id: number
+          name: string
+        }
+        Insert: {
+          executed_at?: string | null
+          hash: string
+          id: number
+          name: string
+        }
+        Update: {
+          executed_at?: string | null
+          hash?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      objects: {
+        Row: {
+          bucket_id: string | null
+          created_at: string | null
+          id: string
+          last_accessed_at: string | null
+          metadata: Json | null
+          name: string | null
+          owner: string | null
+          owner_id: string | null
+          path_tokens: string[] | null
+          updated_at: string | null
+          user_metadata: Json | null
+          version: string | null
+        }
+        Insert: {
+          bucket_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          owner?: string | null
+          owner_id?: string | null
+          path_tokens?: string[] | null
+          updated_at?: string | null
+          user_metadata?: Json | null
+          version?: string | null
+        }
+        Update: {
+          bucket_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          metadata?: Json | null
+          name?: string | null
+          owner?: string | null
+          owner_id?: string | null
+          path_tokens?: string[] | null
+          updated_at?: string | null
+          user_metadata?: Json | null
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objects_bucketId_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      s3_multipart_uploads: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          id: string
+          in_progress_size: number
+          key: string
+          metadata: Json | null
+          owner_id: string | null
+          upload_signature: string
+          user_metadata: Json | null
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          id: string
+          in_progress_size?: number
+          key: string
+          metadata?: Json | null
+          owner_id?: string | null
+          upload_signature: string
+          user_metadata?: Json | null
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          id?: string
+          in_progress_size?: number
+          key?: string
+          metadata?: Json | null
+          owner_id?: string | null
+          upload_signature?: string
+          user_metadata?: Json | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      s3_multipart_uploads_parts: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          etag: string
+          id: string
+          key: string
+          owner_id: string | null
+          part_number: number
+          size: number
+          upload_id: string
+          version: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          etag: string
+          id?: string
+          key: string
+          owner_id?: string | null
+          part_number: number
+          size?: number
+          upload_id: string
+          version: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          etag?: string
+          id?: string
+          key?: string
+          owner_id?: string | null
+          part_number?: number
+          size?: number
+          upload_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "s3_multipart_uploads_parts_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "s3_multipart_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vector_indexes: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          data_type: string
+          dimension: number
+          distance_metric: string
+          id: string
+          metadata_configuration: Json | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          data_type: string
+          dimension: number
+          distance_metric: string
+          id?: string
+          metadata_configuration?: Json | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          data_type?: string
+          dimension?: number
+          distance_metric?: string
+          id?: string
+          metadata_configuration?: Json | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vector_indexes_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_vectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      allow_any_operation: {
+        Args: { expected_operations: string[] }
+        Returns: boolean
+      }
+      allow_only_operation: {
+        Args: { expected_operation: string }
+        Returns: boolean
+      }
+      can_insert_object: {
+        Args: { bucketid: string; metadata: Json; name: string; owner: string }
+        Returns: undefined
+      }
+      extension: { Args: { name: string }; Returns: string }
+      filename: { Args: { name: string }; Returns: string }
+      foldername: { Args: { name: string }; Returns: string[] }
+      get_common_prefix: {
+        Args: { p_delimiter: string; p_key: string; p_prefix: string }
+        Returns: string
+      }
+      get_size_by_bucket: {
+        Args: never
+        Returns: {
+          bucket_id: string
+          size: number
+        }[]
+      }
+      list_multipart_uploads_with_delimiter: {
+        Args: {
+          bucket_id: string
+          delimiter_param: string
+          max_keys?: number
+          next_key_token?: string
+          next_upload_token?: string
+          prefix_param: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+        }[]
+      }
+      list_objects_with_delimiter: {
+        Args: {
+          _bucket_id: string
+          delimiter_param: string
+          max_keys?: number
+          next_token?: string
+          prefix_param: string
+          sort_order?: string
+          start_after?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      operation: { Args: never; Returns: string }
+      search: {
+        Args: {
+          bucketname: string
+          levels?: number
+          limits?: number
+          offsets?: number
+          prefix: string
+          search?: string
+          sortcolumn?: string
+          sortorder?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      search_by_timestamp: {
+        Args: {
+          p_bucket_id: string
+          p_level: number
+          p_limit: number
+          p_prefix: string
+          p_sort_column: string
+          p_sort_column_after: string
+          p_sort_order: string
+          p_start_after: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+      search_v2: {
+        Args: {
+          bucket_name: string
+          levels?: number
+          limits?: number
+          prefix: string
+          sort_column?: string
+          sort_column_after?: string
+          sort_order?: string
+          start_after?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
+    }
+    Enums: {
+      buckettype: "STANDARD" | "ANALYTICS" | "VECTOR"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1411,17 +2403,18 @@ export type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-export type BikeRow = Database["public"]["Tables"]["bikes"]["Row"]
-export type BikeRideHistoryRow =
-  Database["public"]["Tables"]["bike_ride_history"]["Row"]
-export type BikeStatusEventRow =
-  Database["public"]["Tables"]["bike_status_events"]["Row"]
-export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
-
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       bike_status: ["available", "reserved", "in_use", "maintenance"],
+    },
+  },
+  storage: {
+    Enums: {
+      buckettype: ["STANDARD", "ANALYTICS", "VECTOR"],
     },
   },
 } as const

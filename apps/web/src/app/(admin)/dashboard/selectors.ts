@@ -1,13 +1,13 @@
 import { calculateRideRevenue, formatCurrency, formatDistanceKm } from "@glide/shared";
 
 import { formatAdminDate } from "@/lib/formatting";
+import type { Database } from "@/lib/supabase/database.types";
 import type {
   BikeRow,
   BikeStatusEventRow,
   BikeRideHistoryRow,
-  Database,
   ProfileRow
-} from "@/lib/supabase/database.types";
+} from "@/lib/supabase/database.aliases";
 
 type WalletRow = Database["public"]["Tables"]["wallets"]["Row"];
 type WalletTransactionRow = Database["public"]["Tables"]["wallet_transactions"]["Row"];

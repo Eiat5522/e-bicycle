@@ -1,10 +1,10 @@
+import type { Database } from "@/lib/supabase/database.types";
 import type {
   BikeRow,
   BikeStatusEventRow,
   BikeRideHistoryRow,
-  Database,
   ProfileRow
-} from "@/lib/supabase/database.types";
+} from "@/lib/supabase/database.aliases";
 
 import {
   selectExecutiveScorecardViewModel,

@@ -1,6 +1,7 @@
 node_modules/
 .pnpm-store/
 .turbo/
+.codegraph/
 coverage/
 dist/
 output/playwright/

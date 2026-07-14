@@ -25,7 +25,7 @@ jobs:
           node-version: "22"
 
       - name: Install OpenWiki
-        run: npm install --global openwiki
+        run: npm install --global openwiki@0.1.1
 
       - name: Run OpenWiki for mobile workspace
         run: openwiki code --update --print

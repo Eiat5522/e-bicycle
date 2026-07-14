@@ -4,7 +4,7 @@ import { formatAdminDate } from "@/lib/formatting";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { isMissingAuthSessionError } from "@/lib/supabase/auth-errors";
-import type { ProfileRow } from "@/lib/supabase/database.types";
+import type { ProfileRow } from "@/lib/supabase/database.aliases";
 
 export interface AdminProfile {
   readonly id: string;

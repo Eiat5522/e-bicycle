@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import type { BikeRow, BikeStatusEventRow, ProfileRow } from "@/lib/supabase/database.aliases";
 
 import {
   selectExecutiveScorecardViewModel,
@@ -9,12 +10,9 @@ import {
   type OperationsDashboardViewModel
 } from "./selectors";
 
-type BikeRow = Database["public"]["Tables"]["bikes"]["Row"];
 type RentalTransactionRow = Database["public"]["Tables"]["rental_transactions"]["Row"];
-type BikeStatusEventRow = Database["public"]["Tables"]["bike_status_events"]["Row"];
 type WalletRow = Database["public"]["Tables"]["wallets"]["Row"];
 type WalletTransactionRow = Database["public"]["Tables"]["wallet_transactions"]["Row"];
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export interface DashboardViewModels {
   readonly executive: ExecutiveScorecardViewModel;
