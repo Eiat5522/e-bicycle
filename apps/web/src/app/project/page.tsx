@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 
 const launchStations = ["Lamphun Tourism Center", "Lamphun Railway Station", "Storage / operations center"];
 
@@ -74,11 +73,10 @@ export default function ProjectSitePage() {
     <main className="min-h-screen bg-[#f6f7f1] text-[#14211c]">
       <section className="relative overflow-hidden bg-[#143c32] text-white">
         <div className="absolute inset-0 opacity-[0.26]">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             alt="Public bicycle rental station"
             className="h-full w-full object-cover"
-            fill
-            priority
             src="https://commons.wikimedia.org/wiki/Special:FilePath/Bicycle%20rental%20station%20in%20Singapore.jpg"
           />
         </div>
@@ -89,7 +87,8 @@ export default function ProjectSitePage() {
             <a
               className="inline-flex items-center gap-3 border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold backdrop-blur"
               href="#readiness">
-              <Image alt="Glide mark" height={28} src="/glide-mark.png" width={28} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img alt="Glide mark" className="h-7 w-7" src="/glide-mark.png" />
               MVP launch target: October 31, 2026
             </a>
             <h1 className="mt-8 max-w-4xl text-5xl font-semibold leading-[1.02] sm:text-6xl lg:text-7xl">
@@ -210,10 +209,10 @@ export default function ProjectSitePage() {
 
       <section className="grid bg-[#173e35] text-white lg:grid-cols-2" id="enhancements">
         <div className="relative min-h-[460px]">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             alt="Wat Phra That Hariphunchai in Lamphun"
             className="h-full w-full object-cover"
-            fill
             src="https://commons.wikimedia.org/wiki/Special:FilePath/Wat%20Phra%20That%20Hariphunchai.jpg"
           />
         </div>
