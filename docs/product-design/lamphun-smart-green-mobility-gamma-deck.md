@@ -59,14 +59,14 @@ Build the reliable operating core first, then expand into smarter mobility and t
 
 ### Main Copy
 
-The implementation is phased so the MVP can launch by the end of October 2026 with the operational basics in place. Later phases add richer automation, tourism partnerships, and optimization once live station operations are stable.
+The implementation is phased so the MVP can launch by the end of October 2026 with the operational basics in place. As of July 18, 2026, the staff-tablet design and implementation backlog are documented, but the standalone app and tablet sync foundation have not started in the repository. The immediate priority is to lock launch policies and begin the shared contracts and backend foundation. Later phases add richer automation, tourism partnerships, and optimization once live station operations are stable.
 
 ### Timeline
 
 | Phase | Target | Focus |
 | --- | --- | --- |
-| Foundation | July-August 2026 | Shared contracts, backend sync tables, staff tablet app shell, station data model |
-| MVP Build | August-September 2026 | Rental start, return, payment reference, inspection, incident, offline queue |
+| Decision Lock And Foundation | July-August 2026 | Confirm payment, PDPA, device/offline, inspection, battery, role, and fallback policies; then build shared contracts, backend sync tables, device authorization, and the staff tablet app shell |
+| MVP Vertical Slices | August-September 2026 | Prove offline rental start and return end to end, then add payment reference, evidence, incident, safety blocking, sync, and Offline Queue |
 | MVP Launch Readiness | October 2026 | Station testing, staff training, reconciliation reports, backup workflow, launch acceptance |
 | Enhancement Phase | After MVP | GPS/geofencing, smart lock integration, Green Passport, predictive maintenance, tourism rewards |
 
@@ -76,7 +76,7 @@ Horizontal timeline with four blocks. Make October 31, 2026 the MVP launch miles
 
 ### Speaker Notes
 
-The second slide should make the plan feel controlled. The MVP is not trying to finish every future feature. It focuses on safe rentals, returns, evidence, payments, and reconciliation before adding advanced automation.
+The second slide should make the plan feel controlled without implying that implementation is already underway. The MVP is not trying to finish every future feature. It focuses on safe rentals, returns, evidence, payments, and reconciliation before adding advanced automation. Refresh the status statement and phase dates whenever the delivery baseline changes.
 
 ## Slide 3: MVP Phase Features
 

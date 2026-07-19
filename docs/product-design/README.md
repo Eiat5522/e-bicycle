@@ -10,11 +10,13 @@ This folder translates the Lamphun Smart Green Mobility requirements into produc
 4. [Staff Tablet Low-Fidelity Wireframes](staff-tablet-low-fidelity-wireframes.md) - layout-level wireframes for the four MVP-critical tablet screens.
 5. [Staff Tablet Implementation Spec](staff-tablet-implementation-spec.md) - the implementation-facing tablet app contracts, local storage tables, sync payloads, and API endpoints.
 6. [Staff Tablet Implementation Tickets](staff-tablet-implementation-tickets.md) - the build backlog for shared contracts, backend sync APIs, the standalone tablet app, and admin conflict review.
-7. [Lamphun Smart Green Mobility Gamma Deck](lamphun-smart-green-mobility-gamma-deck.md) - a five-slide Gamma-ready presentation outline for project overview, timeline, MVP scope, enhancements, and launch readiness.
-8. [Personas And Journeys](personas-and-journeys.md) - the primary users, their goals, anxieties, and end-to-end journeys.
-9. [MVP Flow And Screen Inventory](mvp-flow-and-screen-inventory.md) - the launch flows and screen-level design scope for mobile, standalone staff tablet, and admin surfaces.
-10. [Operations And Fallback Design](operations-and-fallback-design.md) - the offline continuity, manual override, reconciliation, and evidence capture experience.
-11. [Open Questions](open-questions.md) - remaining decisions needed before high-fidelity UI, prototypes, or implementation planning.
+7. [Staff Tablet Delivery Status](staff-tablet-delivery-status.md) - the current implementation baseline, milestone order, ticket status, blockers, and update rules.
+8. [Staff Tablet Launch Decision Questionnaire](staff-tablet-launch-decision-questionnaire.xlsx) - the customer questionnaire for launch-blocking payment, privacy, device, vehicle, battery, role, fallback, and acceptance decisions.
+9. [Lamphun Smart Green Mobility Gamma Deck](lamphun-smart-green-mobility-gamma-deck.md) - a five-slide Gamma-ready presentation outline for project overview, timeline, MVP scope, enhancements, and launch readiness.
+10. [Personas And Journeys](personas-and-journeys.md) - the primary users, their goals, anxieties, and end-to-end journeys.
+11. [MVP Flow And Screen Inventory](mvp-flow-and-screen-inventory.md) - the launch flows and screen-level design scope for mobile, standalone staff tablet, and admin surfaces.
+12. [Operations And Fallback Design](operations-and-fallback-design.md) - the offline continuity, manual override, reconciliation, and evidence capture experience.
+13. [Open Questions](open-questions.md) - remaining decisions needed before high-fidelity UI, prototypes, or implementation planning.
 
 ## Source Inputs
 

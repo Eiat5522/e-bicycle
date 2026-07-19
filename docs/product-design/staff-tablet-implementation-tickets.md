@@ -10,6 +10,8 @@ Source specs:
 - [Staff Tablet Low-Fidelity Wireframes](staff-tablet-low-fidelity-wireframes.md)
 - [Staff Tablet Implementation Spec](staff-tablet-implementation-spec.md)
 
+Delivery progress is tracked in [Staff Tablet Delivery Status](staff-tablet-delivery-status.md). Update that status document whenever a ticket starts, becomes blocked, or meets its acceptance criteria.
+
 ## Delivery Shape
 
 Recommended implementation sequence:
@@ -807,8 +809,8 @@ Recommended beta gate before full operations:
 - ST-APP-13 through ST-APP-15
 - ST-ADMIN-01
 - ST-ADMIN-02
-ena
-## Cross-Cutting Test Scrios
+
+## Cross-Cutting Test Scenarios
 
 1. Offline rental start syncs once: start rental offline, reconnect, sync twice, verify one rental, one payment reference, one bike status event.
 2. Offline return with failed inspection: return bike offline, mark critical failure, reconnect, verify rental completion, incident/maintenance context, and blocked bike status.

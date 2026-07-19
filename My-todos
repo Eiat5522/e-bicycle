@@ -1,0 +1,690 @@
+# Product-design summary: what needs to happen next
+
+## Bottom line
+
+The documents define a clear MVP:
+
+> Operate a safe, station-based 100-bike rental service even when the rider app, internet, payment gateway, or primary backend is unavailable.
+
+The **largest missing implementation track is the standalone offline-first staff tablet app and its backend synchronization system**. Repository inspection found:
+
+- No `apps/staff-tablet` workspace.
+- No shared `TabletRecordType` / `TabletSyncState` contracts.
+- No tablet sync database tables.
+- No `/api/staff-tablet/*` endpoints.
+- No admin tablet-conflict review surface.
+
+Therefore, the tablet backlog appears to be **designed and specified, but not started in code**.
+
+The current planning target is **October 31, 2026**, which is **105 days from July 18, 2026**.
+
+---
+
+# Recommended continuation order
+
+## Phase 0 — Resolve the decisions that can change implementation
+
+Do this before building UI or locking API validation.
+
+### 1. Confirm the launch acceptance contract
+
+Create one authoritative acceptance checklist and station demo script covering:
+
+1. Staff starts a rental without internet.
+2. A Rental ID is generated before bike release.
+3. Pre-use inspection prevents an unsafe bike from being released.
+4. Payment reference and evidence can be captured offline.
+5. Staff returns a bike offline.
+6. Failed inspection blocks the bike.
+7. Reconnection synchronizes records exactly once.
+8. Duplicate/stale records create visible conflicts.
+9. Manager resolves conflicts from the admin web app.
+10. Daily closeout exposes unresolved operational work.
+11. Google Workflow fallback works during a prolonged outage.
+12. Rider-facing confirmation and support content is bilingual/customer-ready.
+
+This becomes the definition of “MVP ready,” not merely a list of completed screens.
+
+### 2. Decide the blocking product policies
+
+The most urgent unresolved decisions are:
+
+#### Payments and pricing
+
+- Approved launch payment methods.
+- Payment before rental, after return, or both.
+- Launch price and deposit.
+- Overtime, refund, and dispute rules.
+- Who verifies manual slips.
+- Whether receipts are digital, printed, exported, or some combination.
+
+These affect tablet fields, payment state transitions, validation, receipts, and reconciliation.
+
+#### PDPA and rider identity
+
+- Required Thai-resident identity fields.
+- Required tourist/passport fields.
+- Whether documents are uploaded, staff-verified, or metadata-only.
+- Final short notice and full privacy notice.
+- Controller contact, retention period, and withdrawal process.
+- Required account states.
+
+Legal review is required; the existing document is explicitly product guidance rather than legal advice.
+
+#### Tablet operating policy
+
+- Target devices and operating systems.
+- Landscape-only or responsive orientation.
+- Offline authentication duration.
+- Maximum time offline before mandatory sync/export.
+- Local data/evidence retention.
+- Device registration, disabled-device, and lost-device policy.
+- Whether staff can select stations or devices are station-locked.
+
+#### Fleet safety rules
+
+- Official Vehicle ID and printed QR format.
+- Exact battery threshold that blocks rental.
+- Whether missing GPS/IoT is a blocker or warning.
+- Allowed return stations.
+- Final pre-use and return checklists.
+- Which inspection failures are critical.
+- Who may clear maintenance/out-of-service status.
+- Battery quarantine thresholds.
+
+#### Roles and approvals
+
+Finalize permissions for:
+
+- Station staff
+- Technician
+- Station/operations manager
+- Admin
+- Government viewer
+
+Also decide which actions require manager or two-person approval:
+
+- Manual override
+- Payment correction
+- Incident closure
+- Clearing maintenance/out-of-service
+- Publishing reports
+
+### 3. Confirm fallback operations
+
+Some fallback rules are already proposed, but need formal approval:
+
+- Backup mode activators.
+- Station-specific versus system-wide activation.
+- Official manual Rental ID format—currently proposed as  
+  `YYYYMMDD-STATIONCODE-SEQUENCE`.
+- Reconciliation deadline.
+- Google Forms ownership and exact field structures.
+- Evidence folder/naming convention.
+- Record retention after successful reconciliation.
+
+---
+
+## Phase 1 — Establish shared contracts and database foundations
+
+This is the first implementation phase.
+
+### 4. Implement shared tablet contracts
+
+Start with:
+
+- `ST-CONTRACT-01`: shared domain types and payload interfaces.
+- `ST-CONTRACT-02`: centralized bike-product-status mapping and allowed transitions.
+
+These contracts should live in a shared package and be consumed by:
+
+- Backend API
+- Staff tablet
+- Admin conflict review
+- Tests
+
+The status mapping is especially important because the design has seven operational states while the existing backend appears to use narrower bike states.
+
+### 5. Add server-side tablet synchronization tables
+
+Implement `ST-API-01`:
+
+- `tablet_devices`
+- `tablet_sync_batches`
+- `tablet_sync_records`
+- `tablet_sync_conflicts`
+
+Required properties:
+
+- Additive migration only.
+- Idempotency constraints for batch IDs and local record IDs.
+- Raw payload retention for audit/replay.
+- Station, device, staff, business-ID, and conflict-status indexes.
+- RLS and role-aware access.
+- Generated TypeScript types refreshed afterward.
+
+The existing RFP schema work is largely complete, so this should be treated as a focused operational extension rather than another broad schema phase.
+
+### 6. Implement device and staff authorization
+
+Implement `ST-API-02`:
+
+- Registered-device validation.
+- `active`, `disabled`, and `lost` device states.
+- Server-side staff-role checks.
+- Station-assignment checks.
+- Manager/admin cross-station policy.
+- Offline access TTL support.
+
+Do not rely on tablet-side role checks for security.
+
+---
+
+## Phase 2 — Build the minimum backend vertical slice
+
+### 7. Build the bootstrap endpoint
+
+Implement `ST-API-03`:
+
+```text
+GET /api/staff-tablet/bootstrap
+```
+
+It must provide enough cached information to operate offline:
+
+- Station and service mode.
+- Staff and device permissions.
+- PDPA/rental notice versions.
+- Bike status and blocker reasons.
+- Active rentals.
+- Pending payments.
+- Open incidents.
+- Server revision and sync timing.
+
+### 8. Build the idempotent sync endpoint
+
+Implement `ST-API-04`:
+
+```text
+POST /api/staff-tablet/sync
+```
+
+This is the core technical risk and should be proven before broad tablet UI work.
+
+It must:
+
+- Persist raw records before canonical writes.
+- Handle dependencies and ordering.
+- Return accepted, conflict, rejected, and evidence-pending results.
+- Safely replay the same batch.
+- Safely replay the same local record.
+- Reject stale bike transitions.
+- Turn conflicting Rental IDs into reviewable conflicts.
+- Never silently overwrite newer server state.
+
+### 9. Implement rental-start and rental-return processors
+
+In order:
+
+1. `ST-API-05`: rental start.
+2. `ST-API-06`: rental return.
+
+These form the first complete operational path:
+
+```text
+Offline start → reconnect → canonical rental → bike in use
+Offline return → reconnect → canonical completion → inspected bike state
+```
+
+Verify exactly-once writes to:
+
+- Rental ledger.
+- Payment reference.
+- Bike status.
+- Bike status event.
+- Incident/maintenance context when required.
+
+### 10. Build evidence upload support
+
+Implement `ST-API-08`:
+
+```text
+POST /api/staff-tablet/evidence/init
+POST /api/staff-tablet/evidence/complete
+```
+
+Evidence must include:
+
+- Allowlisted MIME type.
+- File size.
+- SHA-256 hash.
+- Parent record.
+- Station/device/staff authorization.
+- Upload and attachment-link state.
+
+Parent records must remain `needs_evidence_upload` until required evidence is accepted.
+
+---
+
+## Phase 3 — Build the standalone tablet foundation
+
+### 11. Scaffold `apps/staff-tablet`
+
+Implement `ST-APP-01` as a separate Expo workspace:
+
+```text
+apps/staff-tablet
+@glide/staff-tablet
+```
+
+It should reuse shared contracts but remain operationally independent from the customer mobile app.
+
+Initial routes:
+
+- Login
+- Station Today
+- Start Rental
+- Return Vehicle
+- Bike Check
+- Payment
+- Incident
+- Battery
+- Offline Queue
+- Daily Closeout
+- Help/SOP
+
+### 12. Implement SQLite and the local repository layer
+
+Implement `ST-APP-02`.
+
+Priority tables:
+
+- Device/session state
+- Local record index
+- Rider and bike caches
+- Rental and return drafts
+- Payment references
+- Inspections and incidents
+- Evidence files
+- Sync outbox
+- Sync conflicts
+
+The critical requirement is **transactional writes**. Creating a rental must atomically:
+
+1. Generate the local/business Rental ID.
+2. Save the rental record.
+3. Save inspection/payment references.
+4. Mark the bike unavailable locally.
+5. Enqueue synchronization.
+
+### 13. Implement online login and offline shift unlock
+
+Implement `ST-APP-03` after device authorization and bootstrap exist.
+
+Staff operations must be blocked when:
+
+- Cached session expired.
+- Station is missing.
+- Device is disabled/lost.
+- Staff lacks the appropriate role.
+- The device requires online re-authentication.
+
+### 14. Implement bootstrap caching and Station Today
+
+In order:
+
+1. `ST-APP-04`: bootstrap download/cache.
+2. `ST-APP-05`: tablet shell and Station Today.
+
+Station Today must always expose:
+
+- Station and staff identity.
+- Online/offline state in text.
+- Unsynced record count.
+- Ready and blocked bikes.
+- Active rentals and returns due.
+- Pending payments.
+- Open incidents.
+- Backup-mode status.
+
+---
+
+## Phase 4 — Deliver the first offline operational vertical slice
+
+### 15. Build offline Start Rental
+
+Implement `ST-APP-06`.
+
+Required sequence:
+
+```text
+Rider → Vehicle → Inspection → Payment → Review → Local success
+```
+
+The tablet must:
+
+- Register a station-assisted rider.
+- Generate Rental ID before release.
+- Block failed inspections.
+- Record payment as pending when offline.
+- Save evidence locally.
+- Immediately prevent another local rental of the same bike.
+- Show a rider-facing confirmation.
+
+### 16. Build offline Return Vehicle
+
+Implement `ST-APP-07`.
+
+Required sequence:
+
+```text
+Find rental → Return details → Inspection → Payment → Finish
+```
+
+It must:
+
+- Handle cached active rentals.
+- Support return exceptions when no cached start exists.
+- Keep offline-returned bikes locally blocked.
+- Create incident/maintenance context on inspection failure.
+- Never silently return a bike to rentable status.
+
+### 17. Implement and test the sync engine
+
+Implement `ST-APP-11` once the two core flows work locally.
+
+Test:
+
+- Record dependency ordering.
+- Retry behavior.
+- Batch replay.
+- Local record replay.
+- Accepted-pending-evidence state.
+- Rejection retention.
+- Conflict creation.
+- Cache updates after server acceptance.
+
+This is the point at which the project has a genuine end-to-end tablet prototype rather than disconnected screens.
+
+---
+
+## Phase 5 — Complete the launch safety loop
+
+### 18. Add evidence capture and Offline Queue
+
+In order:
+
+1. `ST-APP-10`: evidence capture/upload queue.
+2. `ST-APP-12`: Offline Queue.
+
+The queue should prioritize:
+
+1. Bike-availability conflicts.
+2. Rental starts.
+3. Returns.
+4. Payments.
+5. Incidents.
+6. Checks/battery logs.
+7. Evidence.
+8. Closeout summaries.
+
+Staff must be able to understand what failed and what to do next without reading backend error messages.
+
+### 19. Add payment, incident, bike-check, and battery processing
+
+Backend:
+
+- `ST-API-07`
+
+Tablet:
+
+- `ST-APP-08`
+- `ST-APP-09`
+
+These should follow approved payment and safety policies from Phase 0.
+
+The essential behavior is state-changing, not just form capture:
+
+- Incident can block a bike.
+- Critical inspection failure blocks a bike.
+- Abnormal battery creates a hold/quarantine state.
+- Payment remains pending unless verified through an approved method.
+
+---
+
+## Phase 6 — Reconciliation and operational continuity
+
+### 20. Build manager conflict review
+
+Backend:
+
+- `ST-API-10`
+
+Web:
+
+- `ST-ADMIN-01`
+- `ST-ADMIN-02`
+
+Managers need to compare:
+
+- Staff-recorded local state.
+- Current canonical server state.
+- Conflict reason.
+- Operational consequences.
+- Available resolution actions.
+
+Every resolution requires an audit note.
+
+### 21. Add reconnect refresh, closeout, and backup export
+
+In order:
+
+1. `ST-API-09` + `ST-APP-13`: sync-status delta refresh.
+2. `ST-APP-14`: Daily Closeout.
+3. `ST-API-11` + `ST-APP-15`: backup export.
+
+Important distinction:
+
+> `exported_to_backup` is not the same as `synced`.
+
+Exported records must remain visible until canonical acceptance or manager resolution.
+
+### 22. Create and test Google Workflow fallback
+
+The docs describe it, but the actual operational artifacts still need confirmation or creation:
+
+- Start Rental form.
+- Return Vehicle form.
+- Incident form.
+- Master Rental Log sheet.
+- Drive evidence folders.
+- QR/manual payment record.
+- Reconciliation import procedure.
+- Station SOP and staff scripts.
+
+This must be exercised as a real outage drill.
+
+---
+
+## Phase 7 — Complete the other launch surfaces
+
+The staff tablet is the largest missing track, but it is not the entire product.
+
+### 23. Polish the rider mobile MVP
+
+The mobile shell already exists. Focus additions on:
+
+- Lamphun station and return-zone data.
+- Final PDPA and identity flow.
+- Local/tourist registration.
+- Bike-status blocker explanations.
+- Approved payment/reference flow.
+- Station-based return guidance.
+- Bilingual rider-facing copy.
+- Emergency and station-support paths.
+- Clear simulated/app-assisted unlock messaging until physical lock integration is confirmed.
+
+### 24. Extend the admin operations web app
+
+Beyond tablet conflict review, add or complete:
+
+- Staff and role management.
+- Station operations.
+- Payments/reconciliation.
+- Incidents.
+- Maintenance/work orders/QC.
+- Manual battery logs.
+- Daily/monthly reports.
+- Government read-only mode.
+- Estimated versus verified metric labels.
+
+Maintenance is launch-critical because failed inspections must lead to an actionable repair and QC workflow.
+
+### 25. Define reports and exports
+
+Required daily outputs include:
+
+- Rentals and returns.
+- Active/unreturned rentals.
+- Fleet availability.
+- Blocked bikes.
+- Revenue/payment reconciliation.
+- Incidents/damage.
+- Maintenance activity.
+- Battery exceptions.
+- Backup-mode activations.
+- Manual overrides.
+- Data-completeness exceptions.
+
+Monthly/government reporting adds:
+
+- Station utilization.
+- Availability rate.
+- Repair SLA and PM compliance.
+- Revenue and exceptions.
+- Complaints/satisfaction.
+- Estimated carbon reduction.
+- Audit summary.
+
+The exact Lamphun PAO report requirements and carbon formula remain unresolved.
+
+---
+
+## Phase 8 — Validate operations before launch
+
+### 26. Run the cross-cutting acceptance scenarios
+
+At minimum:
+
+1. Offline rental start synchronizes exactly once.
+2. Offline return with failed inspection blocks the bike.
+3. Duplicate Rental ID produces a conflict.
+4. Stale bike status does not overwrite server state.
+5. Missing evidence remains actionable.
+6. Unauthorized station operation is rejected.
+7. Manager resolution propagates to the tablet.
+8. Backup export remains distinct from canonical sync.
+9. Tablet survives the approved offline duration.
+10. Device storage-low and evidence-upload failures are recoverable.
+11. Shift closeout exposes unresolved work.
+12. Lost/disabled tablet cannot continue operating.
+
+### 27. Conduct station pilots
+
+Run realistic drills at all three launch locations:
+
+- Lamphun Tourism Center.
+- Lamphun Railway Station.
+- Storage/operations center.
+
+Include:
+
+- Queue pressure.
+- Poor/no internet.
+- Rider without app.
+- Tourist identity flow.
+- Manual payment.
+- Damaged-bike return.
+- Battery abnormality.
+- Shift handoff.
+- Manager reconciliation.
+- Google Workflow outage procedure.
+
+### 28. Complete launch preparation
+
+- Staff training.
+- Opening/closing SOP.
+- Inspection and battery SOP.
+- Incident/emergency scripts.
+- Bilingual station signage.
+- Rider confirmation and receipt copy.
+- Device provisioning.
+- Support escalation contacts.
+- Launch acceptance sign-off.
+
+---
+
+# Practical milestone plan
+
+| Milestone | Target outcome |
+|---|---|
+| **M0: Decisions locked** | Payment, PDPA, device/offline policy, inspection, battery, roles, return rules, and acceptance script approved |
+| **M1: Backend proof** | Shared contracts, sync tables, authorization, bootstrap, and idempotent sync endpoint working |
+| **M2: Offline vertical slice** | Staff can start and return a rental offline, reconnect, and synchronize exactly once |
+| **M3: Safety/evidence complete** | Inspection blockers, incidents, payment references, evidence uploads, and Offline Queue work |
+| **M4: Reconciliation complete** | Admin conflict resolution, delta refresh, closeout, and backup export work |
+| **M5: Surface readiness** | Rider Lamphun flow and admin operational workflows completed |
+| **M6: Operational beta** | All three stations complete outage, reconciliation, safety, and handoff drills |
+| **M7: Launch acceptance** | End-to-end checklist signed off before October 31 |
+
+---
+
+# What should not delay the MVP
+
+Keep these in Phase 2 unless already stable:
+
+- Full GPS trip maps and geofencing.
+- Real-time battery/charger telemetry.
+- Advanced smart-lock integration.
+- Green Passport.
+- Tourism vouchers and merchant/hotel partnerships.
+- Predictive maintenance.
+- Demand forecasting and fleet rebalancing.
+- Dynamic pricing.
+- Carbon-credit-grade reporting.
+- AI operations.
+
+Basic GPS/lock support may still be used where available, but the station service must not depend on these enhancements.
+
+---
+
+# Documentation issues to fix
+
+Before using these documents as formal implementation input:
+
+1. **`mvp-launch-decisions.md` has a malformed table around lines 10–14.**  
+   The language-scope and no-mobile-app decisions have been merged into broken rows.
+
+2. **`open-questions.md` has broken numbering around lines 88–97.**  
+   “Answer these five next” lists items 1, 3, 4, 5, and 6.
+
+3. **`staff-tablet-implementation-tickets.md` has corrupted text around lines 810–811.**  
+   `ena` and `Scrios` appear to be accidental text; likely “Cross-Cutting Test Scenarios.”
+
+4. **The Gamma timeline should be refreshed regularly.**  
+   It currently assigns foundation work to July–August 2026, but the specified tablet work has not yet appeared in the repository.
+
+5. **Create one status-tracking artifact.**  
+   The documents define work well but do not show ticket completion status. A roadmap or issue backlog should mark every `ST-*` item as pending, in progress, blocked, or complete.
+
+---
+
+## Best immediate next action
+
+The first work session should produce two things:
+
+1. A signed-off **MVP policy/acceptance decision sheet** resolving payment, PDPA, tablet/offline, inspection, battery, roles, and fallback timing.
+2. The first implementation slice:  
+   **`ST-CONTRACT-01` → `ST-CONTRACT-02` → `ST-API-01`**, including tests and regenerated database types.
+
+That sequence removes the policy ambiguity and establishes the shared technical foundation needed by every later tablet, API, and admin ticket.

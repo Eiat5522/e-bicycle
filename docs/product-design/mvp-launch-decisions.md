@@ -7,11 +7,11 @@
 | Staff station surface | Build a standalone offline-first tablet app. The station app must continue core rental/return/incident work without internet and sync later. |
 | Launch stations | Lamphun Tourism Center, Lamphun Railway Station, and storage/operations center. |
 | MVP deadline | End of October 2026; use October 31, 2026 as the planning target unless the project owner sets an earlier acceptance date. |
-| Language son at a station with staff assistance through the tablet app. |
+| Customer-facing language | All customer-facing parts should be bilingual or otherwise customer-ready. Staff-facing tools can be English/Thai-light for MVP because staff can be trained during the MVP period. |
+| No-mobile-app rental | Allowed only in person at a station with staff assistance through the tablet app. |
 | Bike brand | FreeDare for the MVP phase. |
 
-## Product Implicationscope | All customer-facing parts should be bilingual or otherwise customer-ready. Staff-facing tools can be English/Thai-light for MVP because staff can be trained during the MVP period. |
-| No-mobile-app rental | Allowed only in pers
+## Product Implications
 
 ### Standalone Staff Tablet App
 

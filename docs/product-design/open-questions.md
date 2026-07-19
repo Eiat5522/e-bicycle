@@ -88,10 +88,7 @@ These are the remaining product/design decisions that should be answered before 
 Answer these five next:
 
 1. Launch payment methods and pricing/deposit rules.
-    
-
-   
-3. Exact PDPA copy/retention/controller details for the short and full notices.
-4. Staff tablet offline duration, device target, and sync/export behavior.
-5. Exact pre-use and return inspection checklist.
-6. Battery threshold and GPS/IoT blocker policy for FreeDare MVP bikes.
+2. Exact PDPA copy, retention period, data controller details, and withdrawal path for the short and full notices.
+3. Staff tablet offline duration, device target, and sync/export behavior.
+4. Exact pre-use and return inspection checklist.
+5. Battery threshold and GPS/IoT blocker policy for FreeDare MVP bikes.
