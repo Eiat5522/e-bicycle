@@ -93,7 +93,7 @@ function getBikeRefreshWarning(error: unknown) {
   return "Could not refresh bike details.";
 }
 
-async function reconcilePendingStatusSyncs(accessToken: string) {
+async function reconcilePendingStatusSyncs(actorId: string) {
   try {
     const keys = await AsyncStorage.getAllKeys();
     const pendingKeys = keys.filter((key) => key.startsWith("pending_release_"));
@@ -103,9 +103,9 @@ async function reconcilePendingStatusSyncs(accessToken: string) {
         if (value) {
           const { bikeId } = JSON.parse(value);
           await configuredBikeStatusService.updateBikeStatus({
+            actorId,
             bikeId,
-            status: "available",
-            accessToken
+            status: "available"
           });
           await AsyncStorage.removeItem(key);
         }
@@ -170,7 +170,7 @@ function ActiveRideDashboard({
   readonly metadataWarning?: string;
 }) {
   const router = useRouter();
-  const { session } = useAuth();
+  const { authStatus, session, user } = useAuth();
   const { setBikeRideState } = useRideSession();
   const [showArrivalOverlay, setShowArrivalOverlay] = useState(enteredFromUnlock);
   const [showDropoffArrivalBanner, setShowDropoffArrivalBanner] = useState(false);
@@ -193,12 +193,36 @@ function ActiveRideDashboard({
   });
 
   useEffect(() => {
-    if (session?.access_token) {
-      reconcilePendingStatusSyncs(session.access_token).catch((err) => {
-        console.error("Reconciliation failed", err);
-      });
+    if (authStatus !== "authenticated" || !session || !user?.id) {
+      return;
     }
-  }, [session?.access_token]);
+
+    let cancelled = false;
+    let retryCount = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const reconcileWithRetry = () => {
+      void reconcilePendingStatusSyncs(user.id)
+        .catch((err) => {
+          console.error("Reconciliation failed", err);
+        })
+        .finally(() => {
+          if (!cancelled && retryCount < 2) {
+            retryCount += 1;
+            retryTimer = setTimeout(reconcileWithRetry, 1000);
+          }
+        });
+    };
+
+    reconcileWithRetry();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
+    };
+  }, [authStatus, session, user?.id]);
 
   useEffect(() => {
     if (isTestEnvironment) {
@@ -343,7 +367,7 @@ function ActiveRideDashboard({
         checkpoints: snapshot.checkpoints
       });
 
-      if (!session?.access_token) {
+      if (!session || !user?.id) {
         try {
           await AsyncStorage.setItem(
             `pending_release_${bikeId}`,
@@ -356,14 +380,14 @@ function ActiveRideDashboard({
         } catch (storageError) {
           console.error("Failed to persist pending retry", storageError);
         }
-        throw new Error("Session access token is missing. Saved pending status sync.");
+        throw new Error("Session user is missing. Saved pending status sync.");
       }
 
       try {
         await configuredBikeStatusService.updateBikeStatus({
+          actorId: user.id,
           bikeId,
-          status: "available",
-          accessToken: session.access_token
+          status: "available"
         });
 
         try {

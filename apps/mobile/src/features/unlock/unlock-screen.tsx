@@ -482,9 +482,9 @@ export function UnlockScreen() {
 
     try {
       await configuredBikeStatusService.updateBikeStatus({
+        actorId: user.id,
         bikeId,
-        status: "in_use",
-        accessToken: session.access_token
+        status: "in_use"
       });
     } catch (statusError) {
       console.error("Failed to sync bike status", { bikeId, statusError });

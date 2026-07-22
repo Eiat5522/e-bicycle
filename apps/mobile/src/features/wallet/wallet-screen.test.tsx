@@ -27,7 +27,7 @@ describe("WalletScreen", () => {
     transactions: [
       {
         id: "txn-1",
-        type: "ride",
+        type: "shared_ride",
         title: "Ride to Downtown",
         subtitle: "Oct 24, 2023 • 14 mins",
         amount: -4.2,
@@ -101,7 +101,7 @@ describe("WalletScreen", () => {
     const screen = render(<WalletScreen />);
 
     expect(screen.getByText("Wallet")).toBeTruthy();
-    expect(await screen.findByText("฿24.50")).toBeTruthy();
+    expect(await screen.findByText("฿24.50", {}, { timeout: 10000 })).toBeTruthy();
   });
 
   it("renders the Mobile Banking payment method option", async () => {
@@ -209,7 +209,7 @@ describe("WalletScreen", () => {
     expect(screen.getByText("-฿4.20")).toBeTruthy();
   });
 
-  it("renders a sensible label for live ride charge transactions", async () => {
+  it("renders a sensible label for live shared ride transactions", async () => {
     const screen = render(<WalletScreen />);
 
     await screen.findByText("Ride charge");

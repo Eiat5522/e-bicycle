@@ -16,7 +16,7 @@ const user = {
   transactions: [
     {
       id: "txn-1",
-      type: "ride_charge" as const,
+      type: "shared_ride" as const,
       title: "Shared ride fee",
       subtitle: "Glide Urban",
       amount: -4.2,

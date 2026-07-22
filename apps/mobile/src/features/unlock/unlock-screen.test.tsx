@@ -168,9 +168,9 @@ describe("UnlockScreen", () => {
       attempt: 1
     });
     expect(updateBikeStatus).toHaveBeenCalledWith({
+      actorId: "user-1",
       bikeId: "G-205",
-      status: "in_use",
-      accessToken: "session-token"
+      status: "in_use"
     });
 
     await flushTimers(1300);
@@ -203,9 +203,9 @@ describe("UnlockScreen", () => {
       attempt: 1
     });
     expect(updateBikeStatus).toHaveBeenCalledWith({
+      actorId: "user-1",
       bikeId: "G-205",
-      status: "in_use",
-      accessToken: "session-token"
+      status: "in_use"
     });
 
     await flushTimers(1300);

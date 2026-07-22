@@ -16,7 +16,7 @@ The **largest missing implementation track is the standalone offline-first staff
 
 Therefore, the tablet backlog appears to be **designed and specified, but not started in code**.
 
-The current planning target is **October 31, 2026**, which is **105 days from July 18, 2026**.
+The current planning target is **October 31, 2026**. As of July 18, 2026, that target was 105 days away.
 
 ---
 
@@ -658,24 +658,9 @@ Basic GPS/lock support may still be used where available, but the station servic
 
 ---
 
-# Documentation issues to fix
+# Documentation maintenance
 
-Before using these documents as formal implementation input:
-
-1. **`mvp-launch-decisions.md` has a malformed table around lines 10–14.**  
-   The language-scope and no-mobile-app decisions have been merged into broken rows.
-
-2. **`open-questions.md` has broken numbering around lines 88–97.**  
-   “Answer these five next” lists items 1, 3, 4, 5, and 6.
-
-3. **`staff-tablet-implementation-tickets.md` has corrupted text around lines 810–811.**  
-   `ena` and `Scrios` appear to be accidental text; likely “Cross-Cutting Test Scenarios.”
-
-4. **The Gamma timeline should be refreshed regularly.**  
-   It currently assigns foundation work to July–August 2026, but the specified tablet work has not yet appeared in the repository.
-
-5. **Create one status-tracking artifact.**  
-   The documents define work well but do not show ticket completion status. A roadmap or issue backlog should mark every `ST-*` item as pending, in progress, blocked, or complete.
+Refresh the Gamma timeline regularly. It currently assigns foundation work to July–August 2026, while the repository's tablet delivery status still records the specified tablet work as not started.
 
 ---
 

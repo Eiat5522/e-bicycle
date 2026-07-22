@@ -362,7 +362,7 @@ export const mockWallet: Wallet = {
   transactions: [
     {
       id: "txn-1",
-      type: "ride",
+      type: "shared_ride",
       title: "Ride to Downtown",
       subtitle: "Oct 24, 2023 • 14 mins",
       amount: -4.2,

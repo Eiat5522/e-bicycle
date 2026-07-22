@@ -57,7 +57,7 @@ If you touch `apps/web`, read [apps/web/AGENTS.md](/home/eiat/projects/e-bicycle
 
 ## OpenWiki
 
-This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then use `apps/web/openwiki/quickstart.md` for the web admin shell or `apps/mobile/openwiki/quickstart.md` for the mobile app. Follow their links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
 
 The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
 

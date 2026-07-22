@@ -23,6 +23,9 @@
 | Staff | Staff ID | Name, Role (Admin/Manager/Technician), Permissions, Station Assignment | Governance | Manages system access levels, permissions, and physical station assignments for personnel. | 7 |
 | User Engagement | Reward ID | Eco-Points, Carbon Reduction ( $kg$ ), Calories Burned, Distance Accumulated | Governance | Tracks user-specific loyalty metrics, environmental impact points, and engagement rewards. | 6 |
 | Operational Events | Event ID | GPS coordinates, Event Type (Unlock/Parking), Vehicle ID, Photo Proof | Operation | Tracks granular operational logs such as vehicle unlocking events and parking compliance. | 6 |
+| Ride Telemetry Points | Telemetry Point ID | Rental Transaction ID, Vehicle ID, Recorded At, Location, Altitude, Speed, Heading, Accuracy, Is Mocked | Operation | High-frequency GPS telemetry collected during active rides for route replay, speed/elevation analysis, and geofence compliance. | Telemetry Schema Research |
+| Vehicle Telemetry Logs | Telemetry Log ID | Vehicle ID, Battery ID, Recorded At, Battery State of Charge (SoC), Voltage, Current, Battery Temperature, Motor Temperature, Lock Status, Signal Strength RSSI (dBm), Error Codes | Fleet | Time-series IoT telemetry from the bike controller and lock for fleet health, battery monitoring, diagnostics, and connectivity status. | Telemetry Schema Research |
+| Station Energy Telemetry | Energy Telemetry ID | Station ID, Recorded At, Total Power, L1/L2/L3 Power, Active Charging Slots, Grid Voltage | Infrastructure | Time-series charging-station and electrical telemetry for energy monitoring, phase balance, and charging capacity analysis. | Telemetry Schema Research |
 
 ## vehicles
 
@@ -270,3 +273,60 @@
 | Event Type (Unlock/Parking) | ENUM |  |  |
 | Vehicle ID | UUID |  |  |
 | Photo Proof | TEXT |  |  |
+
+## ride_telemetry_points
+
+High-frequency GPS telemetry collected during active rentals. Recommended cadence is every 5–10 seconds while moving and approximately every 30 seconds while stationary. Raw points should be retained for 30 days and rolled up into the completed rental route and checkpoints.
+
+| Col 1 | Col 2 | Col 3 | Col 4 |
+| --- | --- | --- | --- |
+| Field Name | Data Type | Description | Sample Format |
+| Telemetry Point ID | UUID | Unique telemetry point identifier | `8f4e2c6d-8a0e-4f32-bf4d-2b8b5c9b5a10` |
+| Rental Transaction ID | UUID | Active rental session associated with the point | `7f2a9d14-2c0b-4c49-9d50-9a1d4f7e2b30` |
+| Vehicle ID | TEXT | Fleet vehicle identifier | `G-104` |
+| Recorded At | TIMESTAMPTZ | Sensor timestamp in UTC | `2026-07-22T08:30:05Z` |
+| Location | GEOGRAPHY(POINT, 4326) | Geographic position; longitude first in PostGIS representation | `POINT(98.9853 18.7883)` |
+| Altitude (m) | NUMERIC(6,2) | Altitude above sea level | `312.45` |
+| Speed (km/h) | NUMERIC(5,2) | Instantaneous travel speed | `18.60` |
+| Heading (deg) | NUMERIC(5,2) | Compass direction from 0 to less than 360 degrees | `127.50` |
+| Accuracy (m) | NUMERIC(5,2) | GPS accuracy radius / estimated horizontal accuracy | `4.20` |
+| Is Mocked | BOOLEAN | Anti-fraud flag indicating a likely simulated or mock GPS source | `false` |
+
+## vehicle_telemetry_logs
+
+Low-to-medium frequency telemetry from the vehicle IoT lock/controller. Recommended cadence is every 30 seconds during an active ride and every 15 minutes while parked. Raw logs should be retained for 60 days, with hourly averages retained for long-term fleet-health reporting.
+
+| Col 1 | Col 2 | Col 3 | Col 4 |
+| --- | --- | --- | --- |
+| Field Name | Data Type | Description | Sample Format |
+| Telemetry Log ID | UUID | Unique vehicle telemetry log identifier | `2d5c0f12-3b6e-4a22-a0b4-7c9b1f8e6d40` |
+| Vehicle ID | TEXT | Fleet vehicle identifier | `G-104` |
+| Battery ID | UUID | Battery unit associated with the reading | `b1a52df6-6e9b-4b71-90bb-1a8f0d7c2e30` |
+| Recorded At | TIMESTAMPTZ | Sensor timestamp in UTC | `2026-07-22T08:30:00Z` |
+| Battery State of Charge (SoC) | NUMERIC(5,2) | Remaining battery charge percentage, from 0 to 100 | `78.50` |
+| Battery Voltage (V) | NUMERIC(5,2) | Total battery pack voltage | `48.20` |
+| Battery Current (A) | NUMERIC(5,2) | Canonical convention: positive values indicate charging and negative values indicate discharging. Ingestion must normalize provider-specific readings to this convention before storage or aggregation. | `6.40` |
+| Battery Temperature (°C) | NUMERIC(4,1) | Battery pack temperature | `31.5` |
+| Motor Temperature (°C) | NUMERIC(4,1) | Motor or motor-controller temperature | `42.0` |
+| Lock Status | ENUM | Physical lock state: `locked`, `unlocked`, `fault`, or `unknown` | `unlocked` |
+| Signal Strength RSSI (dBm) | INTEGER | Cellular/IoT signal strength, normally approximately -120 to 0 dBm | `-67` |
+| Error Codes | TEXT[] | Active IoT controller diagnostic codes | `{E_BATTERY_TEMP}` |
+| Created At | TIMESTAMPTZ | Server-side ingestion timestamp | `2026-07-22T08:30:02Z` |
+
+## station_energy_telemetry
+
+Aggregated or phase-specific telemetry from smart charging hubs and kiosks. This complements the existing `energy_management` reporting table by preserving time-series station readings.
+
+| Col 1 | Col 2 | Col 3 | Col 4 |
+| --- | --- | --- | --- |
+| Field Name | Data Type | Description | Sample Format |
+| Energy Telemetry ID | UUID | Unique station energy telemetry identifier | `5c4a1d8e-0b32-4f7c-9e11-6a2b8d0f3c50` |
+| Station ID | UUID | Charging station associated with the reading | `a8f10f4c-2a2f-4ad7-9c8d-3e0f2b1a6d70` |
+| Recorded At | TIMESTAMPTZ | Station or ingestion timestamp in UTC | `2026-07-22T08:30:00Z` |
+| Total Power (kW) | NUMERIC(8,2) | Total station power consumption | `12.40` |
+| Cumulative Energy (kWh) | NUMERIC(12,3) | Monotonic cumulative energy delivered/consumed by the station. Ingestion must detect a meter reset or replacement, start a new cumulative segment, and preserve the reset event rather than treating the lower reading as negative consumption. | `1842.375` |
+| Phase L1 Power (kW) | NUMERIC(8,2) | Power draw on phase L1 | `4.10` |
+| Phase L2 Power (kW) | NUMERIC(8,2) | Power draw on phase L2 | `4.20` |
+| Phase L3 Power (kW) | NUMERIC(8,2) | Power draw on phase L3 | `4.10` |
+| Active Charging Slots | INTEGER | Slots currently supplying power | `6` |
+| Grid Voltage (V) | NUMERIC(6,2) | Main grid line voltage | `230.00` |

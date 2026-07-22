@@ -25,6 +25,7 @@ describe("mock api services", () => {
   it("returns wallet data", async () => {
     const wallet = await walletService.getWallet();
     expect(wallet.balance).toBe(24.5);
+    expect(wallet.transactions[0]?.type).toBe("shared_ride");
   });
 
   it("exposes ride history with replay checkpoints", () => {

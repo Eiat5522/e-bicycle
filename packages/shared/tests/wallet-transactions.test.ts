@@ -1,6 +1,13 @@
 import { getWalletTransactionPresentation } from "../src/wallet-transactions";
 
 describe("getWalletTransactionPresentation", () => {
+  it("maps canonical shared ride transactions to a ride icon and label", () => {
+    expect(getWalletTransactionPresentation("shared_ride")).toEqual({
+      iconName: "bike-fast",
+      label: "Ride charge"
+    });
+  });
+
   it("maps live ride charge transactions to a ride icon and label", () => {
     expect(getWalletTransactionPresentation("ride_charge")).toEqual({
       iconName: "bike-fast",

@@ -13,6 +13,10 @@ const WALLET_TRANSACTION_PRESENTATIONS: Record<string, WalletTransactionPresenta
     iconName: "wallet-plus-outline",
     label: "Top-up"
   },
+  shared_ride: {
+    iconName: "bike-fast",
+    label: "Ride charge"
+  },
   ride: {
     iconName: "bike-fast",
     label: "Ride charge"

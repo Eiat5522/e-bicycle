@@ -308,9 +308,9 @@ describe("ActiveRideScreen", () => {
 
     await waitFor(() => {
       expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
+        actorId: "user-1",
         bikeId: "G-205",
-        status: "available",
-        accessToken: "session-token"
+        status: "available"
       });
     });
 
@@ -334,7 +334,9 @@ describe("ActiveRideScreen", () => {
     jest.mocked(useLocalSearchParams).mockReturnValue({ bikeId: "G-205" });
     jest
       .mocked(configuredBikeStatusService.updateBikeStatus)
-      .mockRejectedValueOnce(new Error("EXPO_PUBLIC_API_BASE_URL is required to sync bike status changes."));
+      .mockRejectedValueOnce(
+        new Error("Supabase configuration is required to sync bike status changes.")
+      );
 
     render(<ActiveRideScreen />);
 
@@ -343,9 +345,9 @@ describe("ActiveRideScreen", () => {
 
     await waitFor(() => {
       expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
+        actorId: "user-1",
         bikeId: "G-205",
-        status: "available",
-        accessToken: "session-token"
+        status: "available"
       });
     });
 
@@ -354,7 +356,11 @@ describe("ActiveRideScreen", () => {
       expect(push).not.toHaveBeenCalled();
     });
 
-    expect(await screen.findByText("EXPO_PUBLIC_API_BASE_URL is required to sync bike status changes.")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "Supabase configuration is required to sync bike status changes."
+      )
+    ).toBeTruthy();
 
     consoleError.mockRestore();
   });
