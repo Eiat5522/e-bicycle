@@ -53,7 +53,8 @@ describe("OperationsDashboard", () => {
               route_label: "Asok to Benjakitti",
               payment_label: "Charged to Glide wallet",
               route: [],
-              checkpoints: []
+              checkpoints: [],
+              ride_sharing_session_id: null
             }
           ],
           bikeStatusEvents: [

@@ -35,7 +35,7 @@ export async function POST(
 
   const body = parsed.body as { readonly profileId?: string };
 
-  const rpcArgs = { p_profile_id: body.profileId ?? null };
+  const rpcArgs = body.profileId !== undefined ? { p_profile_id: body.profileId } : {};
 
   const { data, error } = await admin.rpc("refresh_user_engagement", rpcArgs);
 

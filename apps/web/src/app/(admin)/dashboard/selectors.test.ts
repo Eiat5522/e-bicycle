@@ -64,6 +64,7 @@ function makeRideHistoryRow(overrides: Partial<BikeRideHistoryRow> = {}): BikeRi
     payment_label: "Charged to Visa **** 4242",
     profile_id: "profile-1",
     rate_per_minute: 0.09,
+    ride_sharing_session_id: null,
     route: [],
     route_label: "Siam to Benjakitti",
     started_at: "2026-06-27T08:42:00Z",

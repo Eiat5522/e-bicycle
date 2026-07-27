@@ -387,6 +387,7 @@ export type Database = {
           payment_label: string
           profile_id: string | null
           rate_per_minute: number
+          ride_sharing_session_id: string | null
           route: Json
           route_label: string
           start_location: string
@@ -410,6 +411,7 @@ export type Database = {
           payment_label: string
           profile_id?: string | null
           rate_per_minute?: number
+          ride_sharing_session_id?: string | null
           route?: Json
           route_label: string
           start_location: string
@@ -433,6 +435,7 @@ export type Database = {
           payment_label?: string
           profile_id?: string | null
           rate_per_minute?: number
+          ride_sharing_session_id?: string | null
           route?: Json
           route_label?: string
           start_location?: string
@@ -453,6 +456,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bike_ride_history_ride_sharing_session_id_fkey"
+            columns: ["ride_sharing_session_id"]
+            isOneToOne: false
+            referencedRelation: "ride_sharing_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -1178,6 +1188,7 @@ export type Database = {
           reconciled_at: string | null
           rental_status: string
           return_station_id: string | null
+          ride_sharing_session_id: string | null
           route: Json
           route_distance_km: number | null
           route_label: string
@@ -1213,6 +1224,7 @@ export type Database = {
           reconciled_at?: string | null
           rental_status?: string
           return_station_id?: string | null
+          ride_sharing_session_id?: string | null
           route?: Json
           route_distance_km?: number | null
           route_label: string
@@ -1248,6 +1260,7 @@ export type Database = {
           reconciled_at?: string | null
           rental_status?: string
           return_station_id?: string | null
+          ride_sharing_session_id?: string | null
           route?: Json
           route_distance_km?: number | null
           route_label?: string
@@ -1293,6 +1306,13 @@ export type Database = {
             columns: ["return_station_id"]
             isOneToOne: false
             referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rental_transactions_ride_sharing_session_id_fkey"
+            columns: ["ride_sharing_session_id"]
+            isOneToOne: false
+            referencedRelation: "ride_sharing_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -1342,6 +1362,142 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_sharing_participants: {
+        Row: {
+          created_at: string
+          id: string
+          invitation_channel: string | null
+          invited_at: string | null
+          joined_at: string | null
+          left_at: string | null
+          participant_role: string
+          participant_status: string
+          profile_id: string
+          ride_sharing_session_id: string
+          source_system: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitation_channel?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          left_at?: string | null
+          participant_role: string
+          participant_status?: string
+          profile_id: string
+          ride_sharing_session_id: string
+          source_system?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitation_channel?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          left_at?: string | null
+          participant_role?: string
+          participant_status?: string
+          profile_id?: string
+          ride_sharing_session_id?: string
+          source_system?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_sharing_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_sharing_participants_ride_sharing_session_id_fkey"
+            columns: ["ride_sharing_session_id"]
+            isOneToOne: false
+            referencedRelation: "ride_sharing_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_sharing_sessions: {
+        Row: {
+          bike_id: string | null
+          created_at: string
+          ended_at: string | null
+          host_profile_id: string | null
+          id: string
+          notes: string | null
+          participant_limit: number
+          rental_transaction_id: string | null
+          session_state: string
+          share_expires_at: string | null
+          share_token: string
+          source_system: string
+          started_at: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          bike_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          host_profile_id?: string | null
+          id?: string
+          notes?: string | null
+          participant_limit?: number
+          rental_transaction_id?: string | null
+          session_state?: string
+          share_expires_at?: string | null
+          share_token?: string
+          source_system?: string
+          started_at?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          bike_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          host_profile_id?: string | null
+          id?: string
+          notes?: string | null
+          participant_limit?: number
+          rental_transaction_id?: string | null
+          session_state?: string
+          share_expires_at?: string | null
+          share_token?: string
+          source_system?: string
+          started_at?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_sharing_sessions_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_sharing_sessions_host_profile_id_fkey"
+            columns: ["host_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_sharing_sessions_rental_transaction_id_fkey"
+            columns: ["rental_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "rental_transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -1559,6 +1715,315 @@ export type Database = {
           },
         ]
       }
+      tablet_devices: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device_identifier: string
+          device_name: string | null
+          device_status: string
+          id: string
+          last_seen_at: string | null
+          metadata: Json
+          registered_by_staff_id: string | null
+          station_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device_identifier: string
+          device_name?: string | null
+          device_status?: string
+          id?: string
+          last_seen_at?: string | null
+          metadata?: Json
+          registered_by_staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device_identifier?: string
+          device_name?: string | null
+          device_status?: string
+          id?: string
+          last_seen_at?: string | null
+          metadata?: Json
+          registered_by_staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_devices_registered_by_staff_id_fkey"
+            columns: ["registered_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_devices_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablet_sync_batches: {
+        Row: {
+          batch_status: string
+          client_batch_id: string
+          completed_at: string | null
+          created_at: string
+          device_id: string
+          error_summary: string | null
+          id: string
+          received_at: string
+          record_count: number
+          request_payload: Json
+          response_payload: Json
+          staff_id: string | null
+          station_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_status?: string
+          client_batch_id: string
+          completed_at?: string | null
+          created_at?: string
+          device_id: string
+          error_summary?: string | null
+          id?: string
+          received_at?: string
+          record_count?: number
+          request_payload?: Json
+          response_payload?: Json
+          staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_status?: string
+          client_batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          device_id?: string
+          error_summary?: string | null
+          id?: string
+          received_at?: string
+          record_count?: number
+          request_payload?: Json
+          response_payload?: Json
+          staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_sync_batches_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_batches_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_batches_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablet_sync_conflicts: {
+        Row: {
+          business_id: string | null
+          conflict_status: string
+          conflict_type: string
+          created_at: string
+          device_id: string | null
+          id: string
+          local_id: string
+          local_payload: Json
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by_staff_id: string | null
+          server_payload: Json
+          staff_id: string | null
+          station_id: string | null
+          sync_record_id: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          conflict_status?: string
+          conflict_type: string
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          local_id: string
+          local_payload?: Json
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_staff_id?: string | null
+          server_payload?: Json
+          staff_id?: string | null
+          station_id?: string | null
+          sync_record_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          conflict_status?: string
+          conflict_type?: string
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          local_id?: string
+          local_payload?: Json
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_staff_id?: string | null
+          server_payload?: Json
+          staff_id?: string | null
+          station_id?: string | null
+          sync_record_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_sync_conflicts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_resolved_by_staff_id_fkey"
+            columns: ["resolved_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_sync_record_id_fkey"
+            columns: ["sync_record_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_sync_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablet_sync_records: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          device_id: string
+          id: string
+          local_id: string
+          record_type: string
+          rejection_reason: string | null
+          request_payload: Json
+          response_payload: Json
+          server_entity_id: string | null
+          server_entity_table: string | null
+          staff_id: string | null
+          station_id: string | null
+          sync_batch_id: string
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          device_id: string
+          id?: string
+          local_id: string
+          record_type: string
+          rejection_reason?: string | null
+          request_payload?: Json
+          response_payload?: Json
+          server_entity_id?: string | null
+          server_entity_table?: string | null
+          staff_id?: string | null
+          station_id?: string | null
+          sync_batch_id: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          device_id?: string
+          id?: string
+          local_id?: string
+          record_type?: string
+          rejection_reason?: string | null
+          request_payload?: Json
+          response_payload?: Json
+          server_entity_id?: string | null
+          server_entity_table?: string | null
+          staff_id?: string | null
+          station_id?: string | null
+          sync_batch_id?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_sync_records_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_records_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_records_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_records_sync_batch_id_fkey"
+            columns: ["sync_batch_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_sync_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_engagement_aggregates: {
         Row: {
           calories_burned_total: number
@@ -1733,6 +2198,7 @@ export type Database = {
           payment_label: string
           profile_id: string | null
           rate_per_minute: number
+          ride_sharing_session_id: string | null
           route: Json
           route_label: string
           start_location: string
@@ -1803,25 +2269,26 @@ export type Database = {
         }
       }
       refresh_user_engagement: {
-        Args: { p_profile_id?: string | null }
+        Args: { p_profile_id?: string }
         Returns: number
       }
+      run_daily_reports: { Args: never; Returns: Json }
       update_bike_status_with_event: {
         Args: {
-          p_bike_id: string
+          p_active_ride_start_location?: string
+          p_active_ride_started_at?: string
+          p_active_rider_id?: string
           p_actor_id: string
-          p_expected_status: Database["public"]["Enums"]["bike_status"]
-          p_status: Database["public"]["Enums"]["bike_status"]
-          p_last_reported_at: string
-          p_transition_kind: string
+          p_bike_id: string
           p_context: Json
-          p_expected_active_rider_id?: string | null
-          p_active_rider_id?: string | null
-          p_active_ride_started_at?: string | null
-          p_active_ride_start_location?: string | null
+          p_expected_active_rider_id?: string
+          p_expected_status: Database["public"]["Enums"]["bike_status"]
+          p_last_reported_at: string
+          p_status: Database["public"]["Enums"]["bike_status"]
+          p_transition_kind: string
         }
         Returns: {
-          active_rider_id: string | null
+          active_rider_id: string
           id: string
           status: Database["public"]["Enums"]["bike_status"]
         }[]
