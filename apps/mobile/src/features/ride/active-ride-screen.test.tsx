@@ -310,13 +310,13 @@ describe("ActiveRideScreen", () => {
       expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
         actorId: "user-1",
         bikeId: "G-205",
-        status: "available"
+        status: "returned_pending_inspection"
       });
     });
 
     await waitFor(() => {
       expect(setBikeRideState).toHaveBeenCalledWith("G-205", {
-        status: "available",
+        status: "returned_pending_inspection",
         activeRiderId: null
       });
     });
@@ -347,7 +347,7 @@ describe("ActiveRideScreen", () => {
       expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
         actorId: "user-1",
         bikeId: "G-205",
-        status: "available"
+        status: "returned_pending_inspection"
       });
     });
 

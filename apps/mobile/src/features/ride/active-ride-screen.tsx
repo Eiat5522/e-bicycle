@@ -105,7 +105,7 @@ async function reconcilePendingStatusSyncs(actorId: string) {
           await configuredBikeStatusService.updateBikeStatus({
             actorId,
             bikeId,
-            status: "available"
+            status: "returned_pending_inspection"
           });
           await AsyncStorage.removeItem(key);
         }
@@ -373,7 +373,7 @@ function ActiveRideDashboard({
             `pending_release_${bikeId}`,
             JSON.stringify({
               bikeId,
-              status: "available",
+              status: "returned_pending_inspection",
               timestamp: new Date().toISOString()
             })
           );
@@ -387,7 +387,7 @@ function ActiveRideDashboard({
         await configuredBikeStatusService.updateBikeStatus({
           actorId: user.id,
           bikeId,
-          status: "available"
+          status: "returned_pending_inspection"
         });
 
         try {
@@ -397,7 +397,7 @@ function ActiveRideDashboard({
         }
 
         setBikeRideState(bikeId, {
-          status: "available",
+          status: "returned_pending_inspection",
           activeRiderId: null
         });
 
@@ -409,7 +409,7 @@ function ActiveRideDashboard({
             `pending_release_${bikeId}`,
             JSON.stringify({
               bikeId,
-              status: "available",
+              status: "returned_pending_inspection",
               timestamp: new Date().toISOString()
             })
           );

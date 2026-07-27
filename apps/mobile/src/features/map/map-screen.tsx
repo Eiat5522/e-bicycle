@@ -281,24 +281,36 @@ export function MapScreen() {
   );
   const isDrawerBikeOwnedByCurrentUser =
     drawerBike?.status === "in_use" && drawerBike.activeRiderId === currentUserId;
-  const isDrawerBikeUnlockable = drawerBike?.status === "available";
+  const isDrawerBikeUnlockable = drawerBike?.status === "ready_to_rent";
   const drawerStatusMessage = drawerBike
     ? isDrawerBikeOwnedByCurrentUser
       ? "Your active ride"
       : drawerBike.status === "in_use"
         ? "Currently in use by another rider"
-        : drawerBike.status === "maintenance"
-          ? "Under maintenance"
-          : drawerBike.status === "reserved"
-            ? "Reserved"
-        : "Ready to rent"
+        : drawerBike.status === "returned_pending_inspection"
+          ? "Returned and awaiting inspection"
+          : drawerBike.status === "charging"
+            ? "Charging"
+            : drawerBike.status === "maintenance_required"
+              ? "Under maintenance"
+              : drawerBike.status === "out_of_service"
+                ? "Out of service"
+                : drawerBike.status === "reserved"
+                  ? "Reserved"
+                  : "Ready to rent"
     : undefined;
   const drawerUnlockDisabledMessage = drawerBike
-    ? drawerBike.status === "maintenance"
+    ? drawerBike.status === "maintenance_required"
       ? "This bike is under maintenance and cannot be unlocked."
-      : drawerBike.status === "reserved"
-        ? "This bike is reserved and cannot be unlocked right now."
-        : "This bike is currently in use by another rider."
+      : drawerBike.status === "out_of_service"
+        ? "This bike is out of service and cannot be unlocked."
+        : drawerBike.status === "returned_pending_inspection"
+          ? "This bike is awaiting inspection and cannot be unlocked."
+          : drawerBike.status === "charging"
+            ? "This bike is charging and cannot be unlocked right now."
+            : drawerBike.status === "reserved"
+              ? "This bike is reserved and cannot be unlocked right now."
+              : "This bike is currently in use by another rider."
     : undefined;
   const mapCenter = nearbyResult?.searchCenter ?? userCoordinates;
 
@@ -354,7 +366,7 @@ export function MapScreen() {
             onPressMarker={handlePressMarker}
           />
 
-          {!sortedBikes.length ? (
+          {!sortedBikes.filter((bike) => bike.status === "ready_to_rent").length ? (
             <View
               style={{
                 bottom: spacing.xxl * 2,
@@ -365,7 +377,7 @@ export function MapScreen() {
             >
               <SurfaceCard>
                 <Text selectable style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-                  No bikes nearby right now
+                  No rentable bikes nearby right now
                 </Text>
                 <Text selectable style={{ color: colors.textMuted, fontSize: 15, lineHeight: 22 }}>
                   Try refreshing in a moment or moving to a busier pickup area.

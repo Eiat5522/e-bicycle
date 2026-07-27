@@ -1,4 +1,5 @@
-export type BikeStatus = "available" | "reserved" | "in_use" | "maintenance";
+import type { BikeStatus } from "./bike-status";
+
 export type RideStatus = "ready" | "active" | "paused" | "completed";
 export type SupportMode = "chatbot" | "live_agent";
 export type UnlockMethod = "qr" | "bluetooth";

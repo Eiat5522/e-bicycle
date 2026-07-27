@@ -59,9 +59,9 @@ describe("/api/bikes/[bikeId]/status-events", () => {
           bike_id: "G-205",
           actor_id: "user-1",
           from_status: "in_use",
-          to_status: "available",
+          to_status: "returned_pending_inspection",
           transition_kind: "ride_end",
-          context: { requested_status: "available" },
+          context: { requested_status: "returned_pending_inspection" },
           created_at: "2026-07-03T10:00:00.000Z"
         }
       ],
@@ -125,11 +125,11 @@ describe("/api/bikes/[bikeId]/status-events", () => {
         {
           actorId: "user-1",
           bikeId: "G-205",
-          context: { requested_status: "available" },
+          context: { requested_status: "returned_pending_inspection" },
           createdAt: "2026-07-03T10:00:00.000Z",
           fromStatus: "in_use",
           id: "event-2",
-          toStatus: "available",
+          toStatus: "returned_pending_inspection",
           transitionKind: "ride_end"
         }
       ]

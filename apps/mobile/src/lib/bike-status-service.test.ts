@@ -27,7 +27,7 @@ describe("configuredBikeStatusService", () => {
     mockMaybeSingle.mockResolvedValue({
       data: {
         id: "G-205",
-        status: "available",
+        status: "ready_to_rent",
         active_rider_id: null,
         active_ride_started_at: null,
         active_ride_start_location: null,
@@ -72,7 +72,7 @@ describe("configuredBikeStatusService", () => {
         source: "apps/mobile/src/lib/bike-status-service.ts"
       },
       p_expected_active_rider_id: null,
-      p_expected_status: "available",
+      p_expected_status: "ready_to_rent",
       p_last_reported_at: expect.any(String),
       p_status: "in_use",
       p_transition_kind: "ride_start"
@@ -92,7 +92,7 @@ describe("configuredBikeStatusService", () => {
       error: null
     });
     mockRpc.mockResolvedValueOnce({
-      data: [{ id: "G-205", status: "available", active_rider_id: null }],
+      data: [{ id: "G-205", status: "returned_pending_inspection", active_rider_id: null }],
       error: null
     });
 
@@ -103,7 +103,7 @@ describe("configuredBikeStatusService", () => {
     await configuredBikeStatusService.updateBikeStatus({
       actorId: "user-1",
       bikeId: "G-205",
-      status: "available"
+      status: "returned_pending_inspection"
     });
 
     expect(mockRpc).toHaveBeenCalledWith(
@@ -114,13 +114,25 @@ describe("configuredBikeStatusService", () => {
         p_active_rider_id: null,
         p_expected_active_rider_id: "user-1",
         p_expected_status: "in_use",
-        p_status: "available",
+        p_status: "returned_pending_inspection",
         p_transition_kind: "ride_end"
       })
     );
   });
 
   it("does not write when the bike already has the requested status", async () => {
+    mockMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: "G-205",
+        status: "returned_pending_inspection",
+        active_rider_id: null,
+        active_ride_started_at: null,
+        active_ride_start_location: null,
+        location: "Benjakitti Park"
+      },
+      error: null
+    });
+
     const { configuredBikeStatusService } = jest.requireActual(
       "./bike-status-service"
     ) as typeof import("./bike-status-service");
@@ -128,7 +140,7 @@ describe("configuredBikeStatusService", () => {
     await configuredBikeStatusService.updateBikeStatus({
       actorId: "user-1",
       bikeId: "G-205",
-      status: "available"
+      status: "returned_pending_inspection"
     });
 
     expect(mockRpc).not.toHaveBeenCalled();
@@ -210,7 +222,7 @@ describe("configuredBikeStatusService", () => {
         bikeId: "G-205",
         status: "reserved"
       })
-    ).rejects.toThrow("Only available bikes can be reserved.");
+    ).rejects.toThrow("Only ready-to-rent bikes can be reserved.");
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
@@ -235,7 +247,7 @@ describe("configuredBikeStatusService", () => {
       configuredBikeStatusService.updateBikeStatus({
         actorId: "user-1",
         bikeId: "G-205",
-        status: "available"
+        status: "returned_pending_inspection"
       })
     ).rejects.toThrow("Only the active rider can end this ride.");
     expect(mockRpc).not.toHaveBeenCalled();

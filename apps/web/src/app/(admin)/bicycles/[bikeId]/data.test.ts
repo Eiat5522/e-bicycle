@@ -98,7 +98,7 @@ describe("getBikeDetail", () => {
           id: "event-1",
           bike_id: "G-205",
           actor_id: "user-1",
-          from_status: "available",
+          from_status: "ready_to_rent",
           to_status: "in_use",
           transition_kind: "ride_start",
           context: {
@@ -196,7 +196,7 @@ describe("getBikeDetail", () => {
     expect(result.statusHistory[0]).toMatchObject({
       actorId: "user-1",
       bikeId: "G-205",
-      fromStatus: "available",
+      fromStatus: "ready_to_rent",
       toStatus: "in_use",
       transitionKind: "ride_start"
     });

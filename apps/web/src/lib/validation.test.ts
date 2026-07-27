@@ -40,7 +40,7 @@ function createBikeFormData(overrides?: Record<string, string>) {
   formData.set("rideClass", "Urban");
   formData.set("pricingLabel", "฿1.10 / 10 min");
   formData.set("ratePerMinute", "0.11");
-  formData.set("status", "available");
+  formData.set("status", "ready_to_rent");
   formData.set("location", "Central World");
   formData.set("topSpeedKmh", "25");
   formData.set("latitude", "13.7466");
@@ -79,7 +79,7 @@ describe("validateBikeForm", () => {
       pricingLabel: "฿1.10 / 10 min",
       ratePerMinute: 0.11,
       rideClass: "Urban",
-      status: "available",
+      status: "ready_to_rent",
       topSpeedKmh: 25
     });
   });

@@ -1,4 +1,7 @@
-import type { BikeStatus } from "@glide/shared";
+import {
+  getBikeStatusTransitionKind,
+  type BikeStatus
+} from "@glide/shared";
 
 import { hasSupabaseConfig, supabase } from "./supabase";
 import type { Database } from "./supabase.types";
@@ -21,48 +24,56 @@ export interface BikeStatusService {
   }): Promise<void>;
 }
 
-function validateTransition(
-  bike: BikeStatusRow,
-  requestedStatus: BikeStatus,
-  actorId: string
-) {
-  if (
-    requestedStatus === "in_use" &&
-    bike.status === "in_use" &&
-    bike.active_rider_id !== actorId
-  ) {
-    throw new Error("This bike is already in use by another rider.");
+function validateTransition(bike: BikeStatusRow, requestedStatus: BikeStatus, actorId: string) {
+  if (requestedStatus === "reserved") {
+    if (bike.status !== "ready_to_rent") {
+      throw new Error("Only ready-to-rent bikes can be reserved.");
+    }
+
+    return;
   }
 
-  if (requestedStatus === "available" && bike.active_rider_id !== actorId) {
-    throw new Error("Only the active rider can end this ride.");
+  if (requestedStatus === "in_use") {
+    if (bike.status === "in_use" && bike.active_rider_id !== actorId) {
+      throw new Error("This bike is already in use by another rider.");
+    }
+
+    if (bike.status === "reserved" && bike.active_rider_id !== actorId) {
+      throw new Error("This bike is reserved by another rider.");
+    }
+
+    if (bike.status !== "ready_to_rent" && bike.status !== "reserved" && bike.status !== "in_use") {
+      throw new Error("Only ready-to-rent or reserved bikes can start a ride.");
+    }
+
+    return;
   }
 
-  if (requestedStatus === "reserved" && bike.status !== "available") {
-    throw new Error("Only available bikes can be reserved.");
+  if (requestedStatus === "returned_pending_inspection") {
+    if (bike.status !== "in_use") {
+      throw new Error("Only in-use bikes can be returned for inspection.");
+    }
+
+    if (bike.active_rider_id !== actorId) {
+      throw new Error("Only the active rider can end this ride.");
+    }
+
+    return;
   }
 
-  if (requestedStatus === "maintenance" && bike.status === "in_use") {
-    throw new Error("Cannot set in-use bike to maintenance.");
-  }
-}
-
-function assertNever(value: never): never {
-  throw new Error(`Unsupported bike status: ${String(value)}`);
+  throw new Error("Unsupported bike status transition.");
 }
 
 function getTransitionKind(status: BikeStatus) {
   switch (status) {
     case "in_use":
-      return "ride_start";
-    case "available":
-      return "ride_end";
+      return getBikeStatusTransitionKind("rider", "start_ride") ?? "ride_start";
     case "reserved":
-      return "reserve";
-    case "maintenance":
-      return "maintenance";
+      return getBikeStatusTransitionKind("rider", "reserve") ?? "reserve";
+    case "returned_pending_inspection":
+      return getBikeStatusTransitionKind("rider", "complete_ride") ?? "ride_end";
     default:
-      return assertNever(status);
+      throw new Error(`Unsupported rider bike status: ${status}`);
   }
 }
 
@@ -85,21 +96,13 @@ function createSupabaseBikeStatusService(): BikeStatusService {
         throw new Error("Bike not found.");
       }
 
-      // complete_ride releases the bike atomically before the mobile retry path
-      // runs, so an unowned available bike is an idempotent success.
-      if (
-        currentBike.status === "available" &&
-        status === "available" &&
-        currentBike.active_rider_id === null
-      ) {
-        return;
-      }
+      const isSameStatus = currentBike.status === status;
+      const isOwnedNoOp =
+        (status === "in_use" || status === "reserved") && currentBike.active_rider_id === actorId;
+      const isReturnRetry =
+        status === "returned_pending_inspection" && currentBike.active_rider_id === null;
 
-      if (
-        currentBike.status === status &&
-        status === "reserved" &&
-        currentBike.active_rider_id === actorId
-      ) {
+      if (isSameStatus && (isOwnedNoOp || isReturnRetry)) {
         return;
       }
 
@@ -111,19 +114,20 @@ function createSupabaseBikeStatusService(): BikeStatusService {
 
       const reportedAt = new Date().toISOString();
       const isStartingRide = status === "in_use";
+      const isEndingRide = status === "returned_pending_inspection";
       const isAssigningRider = isStartingRide || status === "reserved";
       const activeRiderId = isAssigningRider ? actorId : null;
 
       const { data, error } = await supabase.rpc("update_bike_status_with_event", {
         p_active_ride_start_location: isStartingRide ? currentBike.location : null,
         p_active_ride_started_at: isStartingRide ? reportedAt : null,
-        p_active_rider_id: activeRiderId,
+        p_active_rider_id: isEndingRide ? null : activeRiderId,
         p_actor_id: actorId,
         p_bike_id: bikeId,
         p_context: {
           active_ride_start_location: currentBike.active_ride_start_location,
           active_ride_started_at: currentBike.active_ride_started_at,
-          active_rider_id_after: activeRiderId,
+          active_rider_id_after: isEndingRide ? null : activeRiderId,
           active_rider_id_before: currentBike.active_rider_id,
           bike_location: currentBike.location,
           requested_status: status,

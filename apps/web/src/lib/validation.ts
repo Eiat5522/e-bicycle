@@ -1,6 +1,7 @@
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+import { bikeStatusValues, type BikeStatus } from "@glide/shared";
 
 export interface LoginFormValues {
   readonly email: string;
@@ -20,7 +21,7 @@ export interface UserCreateFormValues {
 }
 
 const bikeIdPattern = /^[A-Z0-9-]{2,32}$/;
-const bikeStatuses = new Set(["available", "reserved", "in_use", "maintenance"]);
+const bikeStatuses = new Set<BikeStatus>(bikeStatusValues);
 
 export function validateLoginForm(formData: FormData) {
   const values: LoginFormValues = {
@@ -147,7 +148,9 @@ export function validateBikeForm(formData: FormData) {
     throw new Error("Bike location is required.");
   }
 
-  if (!bikeStatuses.has(status)) {
+  const normalizedStatus = status as BikeStatus;
+
+  if (!bikeStatuses.has(normalizedStatus)) {
     throw new Error("Bike status is invalid.");
   }
 
@@ -172,7 +175,7 @@ export function validateBikeForm(formData: FormData) {
     pricingLabel,
     ratePerMinute,
     rideClass: rideClass || null,
-    status: status as "available" | "reserved" | "in_use" | "maintenance",
+    status: status as BikeStatus,
     topSpeedKmh
   };
 }

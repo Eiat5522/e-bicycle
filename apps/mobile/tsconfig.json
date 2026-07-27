@@ -3,7 +3,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@glide/shared": ["../../packages/shared/src/index.ts"],
+      "@glide/api": ["../../packages/api/src/index.ts"]
     },
     "strict": true,
     "types": ["jest"]

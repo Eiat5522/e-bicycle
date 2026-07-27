@@ -1828,7 +1828,7 @@ export type Database = {
       }
     }
     Enums: {
-      bike_status: "available" | "reserved" | "in_use" | "maintenance"
+      bike_status: "ready_to_rent" | "reserved" | "in_use" | "returned_pending_inspection" | "charging" | "maintenance_required" | "out_of_service"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2409,7 +2409,15 @@ export const Constants = {
   },
   public: {
     Enums: {
-      bike_status: ["available", "reserved", "in_use", "maintenance"],
+      bike_status: [
+        "ready_to_rent",
+        "reserved",
+        "in_use",
+        "returned_pending_inspection",
+        "charging",
+        "maintenance_required",
+        "out_of_service"
+      ],
     },
   },
   storage: {

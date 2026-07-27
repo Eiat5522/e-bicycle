@@ -77,7 +77,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 25,
     pricingLabel: "฿1.20 / 10 min",
     ratePerMinute: 0.12,
-    status: "available",
+    status: "ready_to_rent",
     location: "Siam Square",
     coordinates: { latitude: 13.7466, longitude: 100.5328 },
     lastReportedAt: "2026-04-06T08:55:00Z"
@@ -106,7 +106,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 20,
     pricingLabel: "฿0.80 / 10 min",
     ratePerMinute: 0.08,
-    status: "available",
+    status: "ready_to_rent",
     location: "Ari Soi 1",
     coordinates: { latitude: 13.7797, longitude: 100.5446 },
     lastReportedAt: "2026-04-06T08:58:00Z"
@@ -120,7 +120,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 20,
     pricingLabel: "฿1.40 / 10 min",
     ratePerMinute: 0.14,
-    status: "available",
+    status: "ready_to_rent",
     location: "Lumphini Park West Gate",
     coordinates: { latitude: 13.7305, longitude: 100.5418 },
     lastReportedAt: "2026-04-06T08:57:00Z"
@@ -134,7 +134,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 23,
     pricingLabel: "฿1.00 / 10 min",
     ratePerMinute: 0.1,
-    status: "available",
+    status: "ready_to_rent",
     location: "Silom Complex",
     coordinates: { latitude: 13.7286, longitude: 100.5345 },
     lastReportedAt: "2026-04-06T08:54:00Z"
@@ -147,7 +147,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 25,
     pricingLabel: "฿1.20 / 10 min",
     ratePerMinute: 0.12,
-    status: "available",
+    status: "ready_to_rent",
     location: "Phrom Phong BTS",
     coordinates: { latitude: 13.7301, longitude: 100.5697 },
     lastReportedAt: "2026-04-06T08:59:00Z"

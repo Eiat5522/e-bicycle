@@ -7,6 +7,7 @@ import {
 } from "@glide/shared";
 import Link from "next/link";
 
+import { bikeStatusLabels } from "@glide/shared";
 import { formatAdminDate } from "@/lib/formatting";
 import type { OperationsDashboardViewModel } from "@/app/(admin)/dashboard/selectors";
 
@@ -485,7 +486,7 @@ export function OperationsDashboard({ data }: OperationsDashboardProps) {
                       </p>
                     </div>
                     <span className="clay-badge px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--dashboard-ink-muted)]">
-                      {bike.status.replace("_", " ")}
+                      {bikeStatusLabels[bike.status]}
                     </span>
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-3">

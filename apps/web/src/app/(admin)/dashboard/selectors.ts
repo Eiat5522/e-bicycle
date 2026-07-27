@@ -380,17 +380,20 @@ function getFleetBreakdown(bikes: readonly BikeRow[]): readonly FleetStatusMetri
       return accumulator;
     },
     {
-      available: 0,
+      ready_to_rent: 0,
       in_use: 0,
-      maintenance: 0,
-      reserved: 0
+      maintenance_required: 0,
+      reserved: 0,
+      returned_pending_inspection: 0,
+      charging: 0,
+      out_of_service: 0
     }
   );
 
   return [
     {
-      label: "Available",
-      count: counts.available,
+      label: "Ready to rent",
+      count: counts.ready_to_rent,
       accent: "var(--dashboard-success)",
       accentSoft: "var(--dashboard-success-soft)"
     },
@@ -407,8 +410,8 @@ function getFleetBreakdown(bikes: readonly BikeRow[]): readonly FleetStatusMetri
       accentSoft: "var(--dashboard-highlight-soft)"
     },
     {
-      label: "Maintenance",
-      count: counts.maintenance,
+      label: "Needs maintenance",
+      count: counts.maintenance_required,
       accent: "var(--dashboard-danger)",
       accentSoft: "var(--dashboard-danger-soft)"
     }
@@ -475,10 +478,10 @@ function getActivityFeed(input: DashboardInput, activeRide: ActiveRideSummary | 
 
 export function selectExecutiveScorecardViewModel(input: DashboardInput): ExecutiveScorecardViewModel {
   const totalBikes = input.bikes.length;
-  const availableBikes = input.bikes.filter((bike) => bike.status === "available").length;
+  const availableBikes = input.bikes.filter((bike) => bike.status === "ready_to_rent").length;
   const activeRideCount = input.bikes.filter((bike) => bike.status === "in_use").length;
   const reservedBikesCount = input.bikes.filter((bike) => bike.status === "reserved").length;
-  const maintenanceCount = input.bikes.filter((bike) => bike.status === "maintenance").length;
+  const maintenanceCount = input.bikes.filter((bike) => bike.status === "maintenance_required").length;
   const walletBalanceTotal = input.wallets.reduce((totalBalance, wallet) => totalBalance + Number(wallet.balance), 0);
   const completedRevenue = getCompletedRevenue(input.rideHistory);
   const activeRide = getActiveRide(input.bikes, input.bikeStatusEvents, input.profiles, input.serverTime);
@@ -575,9 +578,9 @@ export function selectExecutiveScorecardViewModel(input: DashboardInput): Execut
 
 export function selectOperationsDashboardViewModel(input: DashboardInput): OperationsDashboardViewModel {
   const totalBikes = input.bikes.length;
-  const availableBikes = input.bikes.filter((bike) => bike.status === "available").length;
+  const availableBikes = input.bikes.filter((bike) => bike.status === "ready_to_rent").length;
   const activeRideCount = input.bikes.filter((bike) => bike.status === "in_use").length;
-  const maintenanceCount = input.bikes.filter((bike) => bike.status === "maintenance").length;
+  const maintenanceCount = input.bikes.filter((bike) => bike.status === "maintenance_required").length;
   const completedRevenue = getCompletedRevenue(input.rideHistory);
   const averageRideDistanceKm = getAverage(input.rideHistory.map((ride) => Number(ride.distance_km)));
   const averageRideDurationSec = getAverage(input.rideHistory.map((ride) => Number(ride.duration_sec)));

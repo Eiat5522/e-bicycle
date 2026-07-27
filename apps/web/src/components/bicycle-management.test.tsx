@@ -49,7 +49,7 @@ const bike: ManagedBike = {
   topSpeedKmh: 32,
   pricingLabel: "฿15 / 30 min",
   ratePerMinute: 0.5,
-  status: "available",
+  status: "ready_to_rent",
   activeRiderId: null,
   activeRiderLabel: null,
   location: "Silom Station",
@@ -347,7 +347,7 @@ describe("BicycleManagementList", () => {
       ...bike,
       id: "G-412",
       model: "Glide Cargo",
-      status: "maintenance",
+      status: "maintenance_required",
       location: "Sathon Depot"
     };
 
