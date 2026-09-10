@@ -1,40 +1,107 @@
--- Expand the fleet lifecycle vocabulary to the canonical MVP states.
--- This migration is additive: it introduces the new enum values, translates
--- existing rows and audit history, and replaces the RPC with canonical status
--- handling for rider and admin workflows.
+-- Replace the legacy enum instead of adding labels in place. PostgreSQL does
+-- not support removing enum labels, and labels added in a migration
+-- transaction cannot safely be used until that transaction commits.
 
-alter type public.bike_status add value if not exists 'ready_to_rent';
-alter type public.bike_status add value if not exists 'returned_pending_inspection';
-alter type public.bike_status add value if not exists 'charging';
-alter type public.bike_status add value if not exists 'maintenance_required';
-alter type public.bike_status add value if not exists 'out_of_service';
+lock table public.bikes, public.bike_status_events in access exclusive mode;
 
-update public.bikes
-set status = 'ready_to_rent'
-where status = 'available';
+-- The function parameters and return row depend on the enum OID, so release
+-- that dependency before replacing the type.
+create temporary table bike_status_rpc_execute_acl on commit drop as
+select
+  case when expanded.grantee = 0 then 'PUBLIC' else grantee.rolname end as grantee,
+  expanded.is_grantable
+from pg_catalog.pg_proc as procedure
+cross join lateral pg_catalog.aclexplode(
+  coalesce(
+    procedure.proacl,
+    pg_catalog.acldefault('f', procedure.proowner)
+  )
+) as expanded
+left join pg_catalog.pg_roles as grantee on grantee.oid = expanded.grantee
+where procedure.oid = 'public.update_bike_status_with_event(text,uuid,public.bike_status,public.bike_status,timestamp with time zone,text,jsonb,uuid,uuid,timestamp with time zone,text)'::regprocedure
+  and expanded.privilege_type = 'EXECUTE';
 
-update public.bikes
-set status = 'maintenance_required'
-where status = 'maintenance';
+do $$
+begin
+  if exists (
+    select 1
+    from bike_status_rpc_execute_acl
+    where grantee in ('PUBLIC', 'anon')
+  ) then
+    raise exception 'Refusing to preserve insecure bike-status RPC execute grants';
+  end if;
 
-update public.bike_status_events
-set from_status = 'ready_to_rent'
-where from_status = 'available';
+  if not exists (
+    select 1
+    from bike_status_rpc_execute_acl
+    where grantee = 'authenticated'
+  ) then
+    raise exception 'Authenticated bike-status RPC execute grant is missing';
+  end if;
+end;
+$$;
 
-update public.bike_status_events
-set to_status = 'ready_to_rent'
-where to_status = 'available';
+drop function if exists public.update_bike_status_with_event(
+  text,
+  uuid,
+  public.bike_status,
+  public.bike_status,
+  timestamptz,
+  text,
+  jsonb,
+  uuid,
+  uuid,
+  timestamptz,
+  text
+);
 
-update public.bike_status_events
-set from_status = 'maintenance_required'
-where from_status = 'maintenance';
+alter table public.bikes alter column status drop default;
+alter type public.bike_status rename to bike_status_legacy;
 
-update public.bike_status_events
-set to_status = 'maintenance_required'
-where to_status = 'maintenance';
+create type public.bike_status as enum (
+  'ready_to_rent',
+  'reserved',
+  'in_use',
+  'returned_pending_inspection',
+  'charging',
+  'maintenance_required',
+  'out_of_service'
+);
+
+-- Unknown legacy labels intentionally fail the cast and roll back the whole
+-- migration rather than being silently mapped to a rentable state.
+alter table public.bikes
+  alter column status type public.bike_status
+  using (
+    case status::text
+      when 'available' then 'ready_to_rent'
+      when 'maintenance' then 'maintenance_required'
+      else status::text
+    end
+  )::public.bike_status;
+
+alter table public.bike_status_events
+  alter column from_status type public.bike_status
+  using (
+    case from_status::text
+      when 'available' then 'ready_to_rent'
+      when 'maintenance' then 'maintenance_required'
+      else from_status::text
+    end
+  )::public.bike_status,
+  alter column to_status type public.bike_status
+  using (
+    case to_status::text
+      when 'available' then 'ready_to_rent'
+      when 'maintenance' then 'maintenance_required'
+      else to_status::text
+    end
+  )::public.bike_status;
 
 alter table public.bikes
   alter column status set default 'ready_to_rent'::public.bike_status;
+
+drop type public.bike_status_legacy;
 
 create or replace function public.update_bike_status_with_event(
   p_bike_id text,
@@ -78,8 +145,8 @@ begin
 
   v_is_admin := exists (
     select 1
-    from public.profiles
-    where id = v_user_id and is_admin
+    from public.profiles as profile
+    where profile.id = v_user_id and profile.is_admin
   );
 
   if p_actor_id is distinct from v_user_id then
@@ -190,7 +257,7 @@ begin
 end;
 $$;
 
-revoke execute on function public.update_bike_status_with_event(
+revoke all on function public.update_bike_status_with_event(
   text,
   uuid,
   public.bike_status,
@@ -202,18 +269,22 @@ revoke execute on function public.update_bike_status_with_event(
   uuid,
   timestamptz,
   text
-) from public, anon;
+) from public;
 
-grant execute on function public.update_bike_status_with_event(
-  text,
-  uuid,
-  public.bike_status,
-  public.bike_status,
-  timestamptz,
-  text,
-  jsonb,
-  uuid,
-  uuid,
-  timestamptz,
-  text
-) to authenticated;
+do $$
+declare
+  execute_acl record;
+begin
+  for execute_acl in
+    select grantee, is_grantable
+    from bike_status_rpc_execute_acl
+    where grantee <> 'PUBLIC'
+  loop
+    execute format(
+      'grant execute on function public.update_bike_status_with_event(text, uuid, public.bike_status, public.bike_status, timestamptz, text, jsonb, uuid, uuid, timestamptz, text) to %I%s',
+      execute_acl.grantee,
+      case when execute_acl.is_grantable then ' with grant option' else '' end
+    );
+  end loop;
+end;
+$$;
