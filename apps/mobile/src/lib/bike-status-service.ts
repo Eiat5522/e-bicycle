@@ -3,6 +3,11 @@ import type { BikeStatus } from "@glide/shared";
 import { hasSupabaseConfig, supabase } from "./supabase";
 import type { Database } from "./supabase.types";
 
+type MobileBikeStatusTransition = Exclude<
+  BikeStatus,
+  "charging" | "out_of_service" | "returned_pending_inspection"
+>;
+
 type BikeStatusRow = Pick<
   Database["public"]["Tables"]["bikes"]["Row"],
   | "active_ride_start_location"
@@ -17,13 +22,13 @@ export interface BikeStatusService {
   updateBikeStatus(input: {
     actorId: string;
     bikeId: string;
-    status: BikeStatus;
+    status: MobileBikeStatusTransition;
   }): Promise<void>;
 }
 
 function validateTransition(
   bike: BikeStatusRow,
-  requestedStatus: BikeStatus,
+  requestedStatus: MobileBikeStatusTransition,
   actorId: string
 ) {
   if (
@@ -51,15 +56,17 @@ function assertNever(value: never): never {
   throw new Error(`Unsupported bike status: ${String(value)}`);
 }
 
-function getTransitionKind(status: BikeStatus) {
+function getTransitionKind(status: MobileBikeStatusTransition) {
   switch (status) {
     case "in_use":
       return "ride_start";
     case "available":
+    case "ready_to_rent":
       return "ride_end";
     case "reserved":
       return "reserve";
     case "maintenance":
+    case "maintenance_required":
       return "maintenance";
     default:
       return assertNever(status);

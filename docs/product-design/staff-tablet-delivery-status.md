@@ -8,9 +8,11 @@ This document is the single product-design status view for the staff tablet deli
 
 - Baseline date: July 18, 2026.
 - MVP planning target: October 31, 2026.
-- Current stage: documented and ready for launch-policy decisions; implementation has not started.
-- Repository evidence at baseline: no `apps/staff-tablet` workspace, shared tablet contracts, `/api/staff-tablet/*` routes, tablet sync tables, or admin tablet-conflict review surface were found.
-- Next implementation ticket: `ST-CONTRACT-01`; assign and time-box the launch-blocking decisions below in parallel.
+- Current stage: ST01 setup/planning complete; ST02 begins with architecture-wide bike-status unification before tablet-specific contracts and sync infrastructure.
+- Repository evidence at baseline: the current shared/mobile/web/database model uses `available | reserved | in_use | maintenance`, while the approved product model also requires returned/pending-inspection, charging, and out-of-service states.
+- Next implementation ticket: `ST-CONTRACT-00` (Kanban `t_76e0ae06`) unifies the canonical bike lifecycle status across all Glide apps and persistence layers.
+- ST01 completed: Staff Tablet delivery track initialized — delivery status doc, implementation tickets, board configuration, and launch-policy framework all in place.
+- ST02 reseeded on dedicated board `glide-staff-tablet`: ST-CONTRACT-00 → ST-CONTRACT-01, then parallel ST-API-01, followed by ST-API-02. The former tablet-only status-mapping task was archived.
 
 ## Status Definitions
 
@@ -45,7 +47,7 @@ Use the workbook's `Instructions & Summary` sheet to monitor customer-response c
 | Order | Milestone                                  | Included tickets                                                                       | Status      |
 | ----- | ------------------------------------------ | -------------------------------------------------------------------------------------- | ----------- |
 | 0     | Lock launch policies and acceptance script | Product/operations decisions above                                                     | Not started |
-| 1     | Shared contracts and server foundation     | `ST-CONTRACT-01` to `ST-CONTRACT-02`, `ST-API-01` to `ST-API-02`                       | Not started |
+| 1     | Unified status, shared contracts, and server foundation | `ST-CONTRACT-00` to `ST-CONTRACT-01`, `ST-API-01` to `ST-API-02`                       | In progress |
 | 2     | Bootstrap and idempotent sync proof        | `ST-API-03` to `ST-API-04`                                                             | Not started |
 | 3     | Tablet shell and local data foundation     | `ST-APP-01` to `ST-APP-05`                                                             | Not started |
 | 4     | Offline rental and return vertical slice   | `ST-API-05` to `ST-API-06`, `ST-APP-06` to `ST-APP-07`, `ST-APP-11`                    | Not started |
@@ -57,8 +59,8 @@ Use the workbook's `Instructions & Summary` sheet to monitor customer-response c
 
 | Epic                          | Tickets                              | Status      | Current blocker or next action                                             |
 | ----------------------------- | ------------------------------------ | ----------- | -------------------------------------------------------------------------- |
-| Shared contracts              | `ST-CONTRACT-01` to `ST-CONTRACT-02` | Not started | Begin with shared tablet domain types and status mapping.                  |
-| Backend schema and sync       | `ST-API-01` to `ST-API-11`           | Not started | Start additive sync tables after shared contract names are fixed.          |
+| Shared contracts              | `ST-CONTRACT-00` to `ST-CONTRACT-01` | In progress | ST-CONTRACT-00 unifies bike lifecycle status architecture-wide; ST-CONTRACT-01 waits on it. |
+| Backend schema and sync       | `ST-API-01` to `ST-API-11`           | In progress | ST-API-01, ST-API-02 seeded; depend on ST-CONTRACT-01.                    |
 | Tablet foundation             | `ST-APP-01` to `ST-APP-05`           | Not started | Depends on shared contracts; device policy affects authentication details. |
 | Tablet MVP workflows          | `ST-APP-06` to `ST-APP-10`           | Not started | Payment, inspection, battery, and evidence policies remain open.           |
 | Sync, conflicts, and closeout | `ST-APP-11` to `ST-APP-15`           | Not started | Depends on sync API and local repository foundation.                       |

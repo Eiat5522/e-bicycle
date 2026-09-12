@@ -381,9 +381,14 @@ function getFleetBreakdown(bikes: readonly BikeRow[]): readonly FleetStatusMetri
     },
     {
       available: 0,
+      charging: 0,
       in_use: 0,
       maintenance: 0,
-      reserved: 0
+      maintenance_required: 0,
+      out_of_service: 0,
+      ready_to_rent: 0,
+      reserved: 0,
+      returned_pending_inspection: 0
     }
   );
 
@@ -391,6 +396,12 @@ function getFleetBreakdown(bikes: readonly BikeRow[]): readonly FleetStatusMetri
     {
       label: "Available",
       count: counts.available,
+      accent: "var(--dashboard-success)",
+      accentSoft: "var(--dashboard-success-soft)"
+    },
+    {
+      label: "Ready to rent",
+      count: counts.ready_to_rent,
       accent: "var(--dashboard-success)",
       accentSoft: "var(--dashboard-success-soft)"
     },
@@ -407,8 +418,32 @@ function getFleetBreakdown(bikes: readonly BikeRow[]): readonly FleetStatusMetri
       accentSoft: "var(--dashboard-highlight-soft)"
     },
     {
+      label: "Returned pending inspection",
+      count: counts.returned_pending_inspection,
+      accent: "var(--dashboard-highlight)",
+      accentSoft: "var(--dashboard-highlight-soft)"
+    },
+    {
+      label: "Charging",
+      count: counts.charging,
+      accent: "var(--dashboard-accent)",
+      accentSoft: "var(--dashboard-accent-soft)"
+    },
+    {
       label: "Maintenance",
       count: counts.maintenance,
+      accent: "var(--dashboard-danger)",
+      accentSoft: "var(--dashboard-danger-soft)"
+    },
+    {
+      label: "Maintenance required",
+      count: counts.maintenance_required,
+      accent: "var(--dashboard-danger)",
+      accentSoft: "var(--dashboard-danger-soft)"
+    },
+    {
+      label: "Out of service",
+      count: counts.out_of_service,
       accent: "var(--dashboard-danger)",
       accentSoft: "var(--dashboard-danger-soft)"
     }

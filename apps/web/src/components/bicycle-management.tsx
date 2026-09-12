@@ -1,6 +1,6 @@
 "use client";
 
-import type { Coordinates, RideHistoryCheckpoint } from "@glide/shared";
+import type { BikeStatus, Coordinates, RideHistoryCheckpoint } from "@glide/shared";
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import type {
   KeyboardEvent,
@@ -25,7 +25,7 @@ export interface ManagedBike {
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
   readonly ratePerMinute: number;
-  readonly status: "available" | "reserved" | "in_use" | "maintenance";
+  readonly status: BikeStatus;
   readonly activeRiderId: string | null;
   readonly activeRiderLabel: string | null;
   readonly location: string;
@@ -79,9 +79,15 @@ export interface BikeStatusEventEntry {
 
 const statusClasses: Record<ManagedBike["status"], string> = {
   available: "bg-[var(--clay-success-soft)] text-[var(--clay-success)]",
-  reserved: "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]",
+  charging: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
   in_use: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
-  maintenance: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]"
+  maintenance: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]",
+  maintenance_required: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]",
+  out_of_service: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]",
+  ready_to_rent: "bg-[var(--clay-success-soft)] text-[var(--clay-success)]",
+  reserved: "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]",
+  returned_pending_inspection:
+    "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]"
 };
 const routeReplayIntervalMs = 900;
 const coordinateEpsilon = 1e-9;

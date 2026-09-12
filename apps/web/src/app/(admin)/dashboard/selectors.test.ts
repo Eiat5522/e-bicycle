@@ -232,6 +232,46 @@ describe("dashboard selectors", () => {
     expect(operations.watchlist).toHaveLength(0);
   });
 
+  it("reports every expanded bike status in the fleet breakdown", () => {
+    const statuses = [
+      "available",
+      "reserved",
+      "in_use",
+      "maintenance",
+      "ready_to_rent",
+      "returned_pending_inspection",
+      "charging",
+      "maintenance_required",
+      "out_of_service"
+    ] as const;
+    const operations = selectOperationsDashboardViewModel({
+      bikes: statuses.map((status, index) =>
+        makeBikeRow({
+          id: `G-${index + 1}`,
+          status
+        })
+      ),
+      bikeStatusEvents: [],
+      profiles: [],
+      rideHistory: [],
+      serverTime: "2026-06-28T09:30:00Z",
+      walletTransactions: [],
+      wallets: []
+    });
+
+    expect(operations.fleetBreakdown).toEqual([
+      expect.objectContaining({ count: 1, label: "Available" }),
+      expect.objectContaining({ count: 1, label: "Ready to rent" }),
+      expect.objectContaining({ count: 1, label: "In use" }),
+      expect.objectContaining({ count: 1, label: "Reserved" }),
+      expect.objectContaining({ count: 1, label: "Returned pending inspection" }),
+      expect.objectContaining({ count: 1, label: "Charging" }),
+      expect.objectContaining({ count: 1, label: "Maintenance" }),
+      expect.objectContaining({ count: 1, label: "Maintenance required" }),
+      expect.objectContaining({ count: 1, label: "Out of service" })
+    ]);
+  });
+
   it("uses persisted ride start events and live bike coordinates for the active ride summary", () => {
     const activeInput = {
       bikes: [

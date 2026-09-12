@@ -54,7 +54,7 @@ Preserve these existing seams:
 
 ## Domain Enums
 
-Use shared string enums so local records, API payloads, and server validation agree.
+Use shared string enums so local records, API payloads, and server validation agree. `BikeStatus` is the canonical cross-application lifecycle status imported from the shared package; the tablet must not define a parallel status vocabulary.
 
 ```ts
 export type TabletRecordType =
@@ -80,7 +80,7 @@ export type TabletSyncState =
   | "exported_to_backup"
   | "rejected";
 
-export type TabletBikeProductStatus =
+export type BikeStatus =
   | "ready_to_rent"
   | "reserved"
   | "in_use"
@@ -195,8 +195,8 @@ Local station bike snapshot.
 | --- | --- | --- |
 | `vehicle_id` | text primary key | Bike ID / QR code ID |
 | `model` | text | FreeDare model label if available |
-| `product_status` | text not null | `TabletBikeProductStatus` |
-| `server_status` | text | Current backend `bikes.status` value |
+| `product_status` | text not null | `BikeStatus` |
+| `server_status` | text | Last server-confirmed canonical `BikeStatus`; used for offline expected-state conflict detection |
 | `station_id` | text | Last known station |
 | `battery_status` | text | `normal`, `low`, `charging`, `abnormal`, etc. |
 | `battery_level` | integer | Percent when available |
@@ -238,7 +238,7 @@ Rental return records.
 | `returned_at_device` | text not null | Return timestamp |
 | `inspection_outcome` | text not null | `pass`, `minor_issue`, `critical_fail`, `damage`, `exception` |
 | `payment_state` | text not null | Payment verification state |
-| `bike_outcome` | text not null | Next `TabletBikeProductStatus` |
+| `bike_outcome` | text not null | Next `BikeStatus` |
 | `sync_state` | text not null | Sync status |
 | `payload_json` | text not null | Full return payload |
 
@@ -287,7 +287,7 @@ Pre-use, return, ad hoc, and daily bike checks.
 | `vehicle_id` | text not null | Checked bike |
 | `check_type` | text not null | `pre_use`, `return`, `daily`, `ad_hoc`, `maintenance_followup` |
 | `outcome` | text not null | `pass`, `minor_issue`, `critical_fail`, `override` |
-| `next_status` | text not null | Proposed `TabletBikeProductStatus` |
+| `next_status` | text not null | Proposed `BikeStatus` |
 | `staff_id` | text not null | Staff actor |
 | `station_id` | text not null | Station |
 | `sync_state` | text not null | Sync status |
@@ -405,7 +405,7 @@ export interface TabletDeviceSnapshot {
 export interface BikeSnapshot {
   vehicleId: string;
   model?: string;
-  productStatus: TabletBikeProductStatus;
+  productStatus: BikeStatus;
   serverStatus?: string;
   stationId?: string;
   batteryLevel?: number;
@@ -779,7 +779,7 @@ export interface RentalReturnPayload {
   distanceKm?: number;
   batteryLevel?: number;
   paymentState: TabletPaymentVerificationState;
-  bikeOutcome: TabletBikeProductStatus;
+  bikeOutcome: BikeStatus;
   incidentLocalId?: string;
   manualOverride?: ManualOverridePayload;
 }
@@ -802,7 +802,7 @@ export interface BikeInspectionPayload {
     riderDispute?: boolean;
   };
   outcome: "pass" | "minor_issue" | "critical_fail" | "override";
-  nextStatus: TabletBikeProductStatus;
+  nextStatus: BikeStatus;
   notes?: string;
   evidenceLocalIds: string[];
 }
@@ -994,5 +994,5 @@ The server must not silently overwrite current bike status with a stale offline 
 - Keep raw accepted payloads in server-side tablet sync tables for audit and replay.
 - Keep local payloads forward-compatible with `payload_json` columns even when typed helper tables exist.
 - Use server-generated timestamps for canonical reporting, but preserve device timestamps for audit and offline reconstruction.
-- Treat `TabletBikeProductStatus` as the staff-facing product state. Map it explicitly to the current backend `bikes.status` values in one server utility.
+- Treat shared `BikeStatus` as the canonical lifecycle state for tablet, mobile, web/admin, server validation, `bikes.status`, and `bike_status_events`; do not add a tablet-to-backend status mapping layer.
 - Keep all sync copy staff-readable; conflict text is part of the operational UX, not only an engineering error.

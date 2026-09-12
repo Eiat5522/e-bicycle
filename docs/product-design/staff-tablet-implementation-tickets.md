@@ -29,17 +29,57 @@ The MVP should prioritize reliable station operation over broad feature coverage
 
 ## Epic A: Shared Contracts
 
+### ST-CONTRACT-00: Unify Canonical Bike Status Model Across Glide
+
+Owner: shared/backend/mobile/web/database.
+
+Scope:
+
+- Replace overlapping tablet, shared, mobile, web, and database bike-status vocabularies with one canonical lifecycle model:
+  - `ready_to_rent`
+  - `reserved`
+  - `in_use`
+  - `returned_pending_inspection`
+  - `charging`
+  - `maintenance_required`
+  - `out_of_service`
+- Make the shared package the canonical seam for status values, labels, rentability/blocking metadata, and actor/action-aware transition policy.
+- Adopt the same serialized values in `public.bike_status`, `bikes.status`, `bike_status_events`, the status-transition RPC, generated Supabase clients, mobile, web/admin, and staff-tablet contracts.
+- Add an explicit data migration for current values: `available` to `ready_to_rent`, `reserved` to `reserved`, `in_use` to `in_use`, and `maintenance` to `maintenance_required`.
+- Preserve atomic expected-state updates, active-rider authorization, audit events, and idempotent retry behavior.
+- Do not introduce a tablet-only status vocabulary or mapping adapter.
+
+Dependencies: none.
+
+Acceptance criteria:
+
+- Exactly one canonical bike lifecycle status vocabulary is used across all Glide applications and persistence layers.
+- No app declares an independent bike-status union.
+- Pending inspection, charging, maintenance, and out-of-service remain distinct safety/operational states.
+- Rider discovery exposes only rentable bikes, while staff/admin surfaces expose all operational states accurately.
+- Existing rows and status-event history migrate deterministically without data loss.
+- Every accepted transition can atomically produce a `bike_status_events` row; stale, unsafe, and unauthorized transitions are rejected.
+
+Validation:
+
+- Unit tests cover metadata and the full transition matrix for every canonical state.
+- Database tests cover existing-value migration, authorization, concurrency, active-rider invariants, and event insertion.
+- Mobile tests cover rentable filtering, reservation, ride start, ride completion, and retry behavior.
+- Web tests cover all labels, badges, filters, and status history.
+- Run typecheck, tests, and targeted lint for every affected workspace; apply the migration and regenerate Supabase types.
+
 ### ST-CONTRACT-01: Add Shared Staff Tablet Domain Types
 
 Owner: shared/frontend-backend.
 
 Scope:
 
-- Add shared TypeScript types for tablet record types, sync states, product bike status, payment methods, payment verification states, evidence kinds, and conflict types.
+- Add shared TypeScript types for tablet record types, sync states, payment methods, payment verification states, evidence kinds, and conflict types.
+- Reuse the canonical `BikeStatus` from `ST-CONTRACT-00`; do not define a tablet-specific bike-status union.
 - Add payload interfaces for rider registration, rental start, rental return, bike inspection, payment reference, incident, battery log, manual override, and shift closeout.
 - Keep names aligned with [Staff Tablet Implementation Spec](staff-tablet-implementation-spec.md).
 
-Dependencies: none.
+Dependencies: ST-CONTRACT-00.
 
 Acceptance criteria:
 
@@ -50,30 +90,7 @@ Acceptance criteria:
 Validation:
 
 - Run shared package typecheck.
-- Add unit tests for status mapping helpers if included in this ticket.
-
-### ST-CONTRACT-02: Add Bike Status Mapping Utility
-
-Owner: backend/shared.
-
-Scope:
-
-- Implement one server-side utility that maps `TabletBikeProductStatus` to current backend `bikes.status` values.
-- Preserve existing mobile bike status update behavior.
-- Define allowed staff tablet transitions for rental start, return, inspection fail, charging, maintenance, and out-of-service.
-
-Dependencies: ST-CONTRACT-01.
-
-Acceptance criteria:
-
-- Status transition rules are centralized.
-- Stale or unsafe offline transitions can be rejected by the sync endpoint.
-- Every accepted status transition can produce a `bike_status_events` row.
-
-Validation:
-
-- Unit tests cover all product statuses.
-- Unit tests cover rejected stale transitions.
+- Add focused unit tests for any runtime constants or validation helpers introduced by this ticket.
 
 ## Epic B: Backend Schema And Sync Foundation
 
@@ -141,7 +158,7 @@ Scope:
 - Shape response according to `StaffTabletBootstrapResponse`.
 - Use current canonical sources such as `bikes`, `rental_transactions`, `payments`, `incidents`, and staff/station tables where available.
 
-Dependencies: ST-API-02, ST-CONTRACT-02.
+Dependencies: ST-API-02, ST-CONTRACT-00.
 
 Acceptance criteria:
 
@@ -193,7 +210,7 @@ Scope:
 - Transition bike to unavailable/in-use using centralized status mapping.
 - Insert `bike_status_events` for the status transition.
 
-Dependencies: ST-API-04, ST-CONTRACT-02.
+Dependencies: ST-API-04, ST-CONTRACT-00.
 
 Acceptance criteria:
 
@@ -218,7 +235,7 @@ Scope:
 - Create incident/maintenance records when inspection fails.
 - Insert `bike_status_events` for status changes.
 
-Dependencies: ST-API-04, ST-CONTRACT-02.
+Dependencies: ST-API-04, ST-CONTRACT-00.
 
 Acceptance criteria:
 
@@ -241,7 +258,7 @@ Scope:
 - Write to canonical `payments`, `incidents`, `maintenance_logs`, `batteries` or battery log table, `attachments`, and `audit_logs` where appropriate.
 - Block bike/battery when a safety condition requires it.
 
-Dependencies: ST-API-04, ST-CONTRACT-02.
+Dependencies: ST-API-04, ST-CONTRACT-00.
 
 Acceptance criteria:
 
@@ -797,7 +814,7 @@ Validation:
 The MVP should not launch station-assisted tablet rentals until these tickets are complete:
 
 - ST-CONTRACT-01
-- ST-CONTRACT-02
+- ST-CONTRACT-00
 - ST-API-01 through ST-API-06
 - ST-API-08
 - ST-APP-01 through ST-APP-07
