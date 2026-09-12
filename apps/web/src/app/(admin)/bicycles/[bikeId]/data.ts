@@ -1,0 +1,218 @@
+import { notFound } from "next/navigation";
+
+import {
+  type BikeRideHistoryEntry,
+  type BikeStatusEventEntry,
+  type ManagedBike
+} from "@/components/bicycle-management";
+import { requireAdmin } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+
+function mapActiveRiderLabel(
+  activeRiderId: string | null,
+  profileMap: Readonly<Record<string, string>>
+) {
+  if (!activeRiderId) {
+    return null;
+  }
+
+  return profileMap[activeRiderId] ?? null;
+}
+
+function mapBike(row: {
+  readonly created_at: string;
+  readonly id: string;
+  readonly active_rider_id: string | null;
+  readonly image_url: string | null;
+  readonly last_reported_at: string;
+  readonly latitude: number;
+  readonly location: string;
+  readonly longitude: number;
+  readonly model: string;
+  readonly pricing_label: string;
+  readonly rate_per_minute: number;
+  readonly ride_class: string | null;
+  readonly status: ManagedBike["status"];
+  readonly top_speed_kmh: number;
+  readonly updated_at: string;
+}): ManagedBike {
+  return {
+    createdAt: row.created_at,
+    activeRiderId: row.active_rider_id,
+    activeRiderLabel: null,
+    id: row.id,
+    imageUrl: row.image_url,
+    lastReportedAt: row.last_reported_at,
+    latitude: row.latitude,
+    location: row.location,
+    longitude: row.longitude,
+    model: row.model,
+    pricingLabel: row.pricing_label,
+    ratePerMinute: Number(row.rate_per_minute),
+    rideClass: row.ride_class,
+    status: row.status,
+    topSpeedKmh: row.top_speed_kmh,
+    updatedAt: row.updated_at
+  };
+}
+
+function mapRideHistory(row: {
+  readonly co2_saved_kg: number;
+  readonly completed_at: string;
+  readonly distance_km: number;
+  readonly duration_sec: number;
+  readonly end_location: string;
+  readonly fare_calculation_method: string;
+  readonly id: string;
+  readonly payment_label: string;
+  readonly rate_per_minute: number;
+  readonly route: unknown;
+  readonly route_label: string;
+  readonly start_location: string;
+  readonly started_at: string;
+  readonly total_cost: number;
+  readonly billable_minutes: number;
+  readonly checkpoints: unknown;
+  readonly currency_code: string;
+  readonly wallet_transaction_id: string | null;
+}): BikeRideHistoryEntry {
+  return {
+    checkpoints: row.checkpoints as BikeRideHistoryEntry["checkpoints"],
+    co2SavedKg: row.co2_saved_kg,
+    completedAt: row.completed_at,
+    distanceKm: row.distance_km,
+    durationSec: row.duration_sec,
+    endLocation: row.end_location,
+    fareCalculationMethod: row.fare_calculation_method,
+    id: row.id,
+    paymentLabel: row.payment_label,
+    ratePerMinute: Number(row.rate_per_minute),
+    route: row.route as BikeRideHistoryEntry["route"],
+    routeLabel: row.route_label,
+    startLocation: row.start_location,
+    startedAt: row.started_at,
+    totalCost: row.total_cost,
+    billableMinutes: row.billable_minutes,
+    currencyCode: row.currency_code,
+    walletTransactionId: row.wallet_transaction_id
+  };
+}
+
+function mapStatusHistory(row: {
+  readonly actor_id: string;
+  readonly bike_id: string;
+  readonly context: unknown;
+  readonly created_at: string;
+  readonly from_status: ManagedBike["status"];
+  readonly id: string;
+  readonly to_status: ManagedBike["status"];
+  readonly transition_kind: string;
+}): BikeStatusEventEntry {
+  const context = row.context as
+    | {
+        readonly active_ride_start_location: string | null;
+        readonly active_ride_started_at: string | null;
+        readonly active_rider_id_after: string | null;
+        readonly active_rider_id_before: string | null;
+        readonly bike_location: string;
+        readonly requested_status: ManagedBike["status"] | string;
+        readonly source: string;
+      }
+    | null;
+
+  return {
+    actorId: row.actor_id,
+    bikeId: row.bike_id,
+    context: {
+      activeRideStartLocation: context?.active_ride_start_location ?? null,
+      activeRideStartedAt: context?.active_ride_started_at ?? null,
+      activeRiderIdAfter: context?.active_rider_id_after ?? null,
+      activeRiderIdBefore: context?.active_rider_id_before ?? null,
+      bikeLocation: context?.bike_location ?? "",
+      requestedStatus: context?.requested_status ?? row.to_status,
+      source: context?.source ?? ""
+    },
+    createdAt: row.created_at,
+    fromStatus: row.from_status,
+    id: row.id,
+    toStatus: row.to_status,
+    transitionKind: row.transition_kind
+  };
+}
+
+export async function getBikeDetail(bikeId: string) {
+  await requireAdmin();
+
+  const supabase = await createClient();
+  const [
+    { data: bike, error: bikeError },
+    { data: rideHistory, error: rideHistoryError },
+    { data: statusHistory, error: statusHistoryError }
+  ] =
+    await Promise.all([
+      supabase
+        .from("bikes")
+        .select(
+          "id, model, ride_class, top_speed_kmh, pricing_label, rate_per_minute, status, active_rider_id, location, latitude, longitude, last_reported_at, image_url, created_at, updated_at"
+        )
+        .eq("id", bikeId)
+        .maybeSingle(),
+      supabase
+        .from("rental_transactions")
+        .select(
+          "id, started_at, completed_at, duration_sec, distance_km, total_cost, rate_per_minute, billable_minutes, currency_code, wallet_transaction_id, fare_calculation_method, co2_saved_kg, start_location, end_location, route_label, payment_label, route, checkpoints"
+        )
+        .eq("bike_id", bikeId)
+        .order("completed_at", { ascending: false }),
+      supabase
+        .from("bike_status_events")
+        .select(
+          "id, bike_id, actor_id, from_status, to_status, transition_kind, context, created_at"
+        )
+        .eq("bike_id", bikeId)
+        .order("created_at", { ascending: false })
+    ]);
+
+  if (bikeError) {
+    throw new Error(bikeError.message);
+  }
+
+  if (rideHistoryError) {
+    throw new Error(rideHistoryError.message);
+  }
+
+  if (statusHistoryError) {
+    throw new Error(statusHistoryError.message);
+  }
+
+  if (!bike) {
+    notFound();
+  }
+
+  const riderResult = bike.active_rider_id
+    ? await supabase
+        .from("profiles")
+        .select("id, first_name")
+        .eq("id", bike.active_rider_id)
+        .maybeSingle()
+    : { data: null as { id: string; first_name: string } | null, error: null };
+
+  if (riderResult.error) {
+    console.error("Failed to load rider profile for bike detail", {
+      bikeId,
+      activeRiderId: bike.active_rider_id,
+      error: riderResult.error
+    });
+  }
+
+  const rider = riderResult.error ? null : riderResult.data;
+
+  return {
+    bike: {
+      ...mapBike(bike),
+      activeRiderLabel: mapActiveRiderLabel(bike.active_rider_id, rider ? { [rider.id]: rider.first_name } : {})
+    },
+    rideHistory: rideHistory.map(mapRideHistory),
+    statusHistory: statusHistory.map(mapStatusHistory)
+  };
+}
