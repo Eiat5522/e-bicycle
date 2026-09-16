@@ -103,9 +103,25 @@ export function UserDetailDrawerContent({
   const onStartEditing = editorControls?.onStartEditing;
   const onCancelEditing = editorControls?.onCancelEditing;
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        if (isEditing && onCancelEditing) {
+          onCancelEditing();
+        } else {
+          onClose();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isEditing, onCancelEditing, onClose]);
+
   return (
     <div
       aria-label={`User details for ${user.firstName}`}
+      aria-modal="true"
       className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-[2px]"
       role="dialog">
       <button
@@ -446,6 +462,17 @@ function CreateUserDrawer({
     }
   }, [onClose, submitState.status]);
 
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   function checkCreateFormReadiness() {
     const email = emailRef.current?.value.trim() ?? "";
     const firstName = firstNameRef.current?.value.trim() ?? "";
@@ -457,6 +484,7 @@ function CreateUserDrawer({
   return (
     <div
       aria-label="Create user"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-[2px]"
       role="dialog">
       <button
