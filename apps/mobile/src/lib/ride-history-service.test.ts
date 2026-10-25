@@ -1,3 +1,7 @@
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  __esModule: true, default: { getItem: jest.fn(async () => null), setItem: jest.fn(async () => {}) }
+}));
+
 describe("configuredRideHistoryService", () => {
   beforeEach(() => {
     jest.resetModules();
@@ -196,10 +200,10 @@ describe("configuredRideHistoryService", () => {
 
     const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
-    const ride = await configuredRideHistoryService.completeDemoRide({ bikeId: "G-205" });
+    const ride = await configuredRideHistoryService.completeDemoRide({ bikeId: "G-205", rideStartedAt: "2026-04-14T10:00:00Z" });
 
     expect(ride.id).toBe("ride-new");
-    expect(rpc).toHaveBeenCalledWith("complete_ride", expect.objectContaining({
+    expect(rpc).toHaveBeenCalledWith("complete_ride_recoverable", expect.objectContaining({
       p_bike_id: "G-205",
       p_distance_km: 3.1,
       p_route_label: "อโศก to Benjakitti Park"
@@ -273,6 +277,7 @@ describe("configuredRideHistoryService", () => {
     const { configuredRideHistoryService } = jest.requireActual("./ride-history-service") as typeof import("./ride-history-service");
 
     const ride = await configuredRideHistoryService.completeRide({
+      rideStartedAt: "2026-04-14T10:00:00Z",
       bikeId: "G-205",
       distanceKm: 1.2,
       endLocation: "Benjakitti Park",
@@ -294,7 +299,9 @@ describe("configuredRideHistoryService", () => {
     });
 
     expect(ride.id).toBe("ride-live");
-    expect(rpc).toHaveBeenCalledWith("complete_ride", {
+    expect(rpc).toHaveBeenCalledWith("complete_ride_recoverable", {
+      p_request_id: expect.any(String),
+      p_expected_ride_started_at: "2026-04-14T10:00:00Z",
       p_bike_id: "G-205",
       p_distance_km: 1.2,
       p_end_location: "Benjakitti Park",

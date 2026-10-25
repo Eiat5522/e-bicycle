@@ -43,6 +43,7 @@ describe("OperationsDashboard", () => {
               distance_km: 2.4,
               total_cost: 1.2,
               rate_per_minute: 0.1,
+              ride_sharing_session_id: null,
               billable_minutes: 12,
               currency_code: "THB",
               wallet_transaction_id: "txn-ride-1",
@@ -70,7 +71,7 @@ describe("OperationsDashboard", () => {
                 source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
               },
               created_at: "2026-04-22T02:30:00.000Z",
-              from_status: "available",
+              from_status: "ready_to_rent",
               id: "event-ride-start",
               to_status: "in_use",
               transition_kind: "ride_start"
@@ -118,7 +119,7 @@ describe("OperationsDashboard", () => {
               ride_class: null,
               serial_number: null,
               station_id: null,
-              status: "maintenance",
+              status: "maintenance_required",
               top_speed_kmh: 24,
               updated_at: "2026-06-28T08:50:00Z"
             },
@@ -147,7 +148,7 @@ describe("OperationsDashboard", () => {
               ride_class: null,
               serial_number: null,
               station_id: null,
-              status: "available",
+              status: "ready_to_rent",
               top_speed_kmh: 28,
               updated_at: "2026-06-28T08:55:00Z"
             }

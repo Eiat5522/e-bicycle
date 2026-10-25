@@ -1,4 +1,5 @@
-export type BikeStatus = "available" | "reserved" | "in_use" | "maintenance" | "ready_to_rent" | "returned_pending_inspection" | "charging" | "maintenance_required" | "out_of_service";
+import type { BikeStatus } from "./bike-status";
+
 export type RideStatus = "ready" | "active" | "paused" | "completed";
 export type SupportMode = "chatbot" | "live_agent";
 export type UnlockMethod = "qr" | "bluetooth";
@@ -27,6 +28,7 @@ export interface Bike {
   readonly ratePerMinute?: number;
   readonly status: BikeStatus;
   readonly activeRiderId?: string | null;
+  readonly activeRideStartedAt?: string | null;
   readonly location: string;
   readonly coordinates: Coordinates;
   readonly lastReportedAt: string;

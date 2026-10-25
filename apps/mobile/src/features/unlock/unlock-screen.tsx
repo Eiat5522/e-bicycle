@@ -135,7 +135,7 @@ function getPhaseVisualLabel(status: UnlockStatus) {
 }
 
 function wait(ms: number) {
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     setTimeout(resolve, ms);
   });
 }

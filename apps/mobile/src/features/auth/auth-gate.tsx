@@ -5,7 +5,7 @@ import { useAuth } from "./auth-provider";
 
 export function AuthGate({ children }: { readonly children: ReactNode }) {
   const router = useRouter();
-  const segments = useSegments();
+  const segments: readonly string[] = useSegments();
   const { authStatus, session } = useAuth();
 
   useEffect(() => {

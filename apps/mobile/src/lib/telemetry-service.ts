@@ -88,9 +88,9 @@ function createSupabaseTelemetryService(): ConfiguredTelemetryService {
         event_type: input.eventType,
         gps_location: (gpsLocation as never) ?? null,
         photo_proof_url: input.photoProofUrl ?? null,
-        metadata: (input.metadata ?? {}) as
-          | Database["public"]["Tables"]["operational_events"]["Row"]["metadata"]
-          | null
+        metadata: (input.metadata ?? {}) as NonNullable<
+          OperationalEventInsert["metadata"]
+        >
       };
 
       const { data, error } = await supabase

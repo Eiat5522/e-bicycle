@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Text, View } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { Bike, Coordinates } from "@glide/shared";
 import { formatCurrency, formatDistanceKm, formatDuration } from "@glide/shared";
@@ -81,6 +80,7 @@ function mapBikeToSessionBike(bike: Bike): ActiveRideBikeSnapshot {
     ...(bike.pricingLabel ? { pricingLabel: bike.pricingLabel } : {}),
     ...(bike.status ? { status: bike.status } : {}),
     ...(bike.activeRiderId !== undefined ? { activeRiderId: bike.activeRiderId } : {}),
+    ...(bike.activeRideStartedAt ? { activeRideStartedAt: bike.activeRideStartedAt } : {}),
     ...(bike.lastReportedAt ? { lastReportedAt: bike.lastReportedAt } : {})
   };
 }
@@ -94,28 +94,9 @@ function getBikeRefreshWarning(error: unknown) {
 }
 
 async function reconcilePendingStatusSyncs(actorId: string) {
-  try {
-    const keys = await AsyncStorage.getAllKeys();
-    const pendingKeys = keys.filter((key) => key.startsWith("pending_release_"));
-    for (const key of pendingKeys) {
-      try {
-        const value = await AsyncStorage.getItem(key);
-        if (value) {
-          const { bikeId } = JSON.parse(value);
-          await configuredBikeStatusService.updateBikeStatus({
-            actorId,
-            bikeId,
-            status: "available"
-          });
-          await AsyncStorage.removeItem(key);
-        }
-      } catch (err) {
-        console.error(`Failed to reconcile pending status sync for key ${key}:`, err);
-      }
-    }
-  } catch (error) {
-    console.error("Failed to reconcile pending status syncs:", error);
-  }
+  // Legacy pending_release_* records contain neither an owner nor a receipt payload.
+  // They cannot safely authorize a retry and must never be rebuilt for the current user.
+  await configuredBikeStatusService.reconcilePendingStatusChanges(actorId);
 }
 
 function LoadingActiveRideScreen() {
@@ -355,6 +336,7 @@ function ActiveRideDashboard({
 
     try {
       const ride = await configuredRideHistoryService.completeRide({
+        rideStartedAt: bike.activeRideStartedAt ?? undefined,
         bikeId,
         durationSec: snapshot.durationSec,
         distanceKm: snapshot.distanceKm,
@@ -367,57 +349,14 @@ function ActiveRideDashboard({
         checkpoints: snapshot.checkpoints
       });
 
-      if (!session || !user?.id) {
-        try {
-          await AsyncStorage.setItem(
-            `pending_release_${bikeId}`,
-            JSON.stringify({
-              bikeId,
-              status: "available",
-              timestamp: new Date().toISOString()
-            })
-          );
-        } catch (storageError) {
-          console.error("Failed to persist pending retry", storageError);
-        }
-        throw new Error("Session user is missing. Saved pending status sync.");
-      }
-
-      try {
-        await configuredBikeStatusService.updateBikeStatus({
-          actorId: user.id,
-          bikeId,
-          status: "available"
-        });
-
-        try {
-          await AsyncStorage.removeItem(`pending_release_${bikeId}`);
-        } catch {
-          // Ignore cleanup failures.
-        }
-
-        setBikeRideState(bikeId, {
-          status: "available",
-          activeRiderId: null
-        });
-
-        await clearActiveRideSession();
-      } catch (statusError) {
-        console.error("Failed to sync bike status", { bikeId, statusError });
-        try {
-          await AsyncStorage.setItem(
-            `pending_release_${bikeId}`,
-            JSON.stringify({
-              bikeId,
-              status: "available",
-              timestamp: new Date().toISOString()
-            })
-          );
-        } catch (storageError) {
-          console.error("Failed to persist pending retry", storageError);
-        }
-        throw statusError;
-      }
+      // complete_ride authenticates ownership and atomically returns the bike for
+      // inspection. Its returned ride is the proof of completion; a second status
+      // mutation would fail after ownership has been cleared, not prove a retry.
+      setBikeRideState(bikeId, {
+        status: "returned_pending_inspection",
+        activeRiderId: null
+      });
+      await clearActiveRideSession();
 
       let milestone: string | undefined;
       try {
@@ -832,7 +771,11 @@ export function ActiveRideScreen() {
         const fetchedBike = await configuredBikeService.getById(resolvedBikeId);
         if (cancelled) return;
         if (fetchedBike) {
-          sessionBike = mapBikeToSessionBike(fetchedBike);
+          sessionBike = {
+            ...mapBikeToSessionBike(fetchedBike),
+            // A persisted ride must never adopt the identity of a later ride.
+            ...(persistedSession ? { activeRideStartedAt: persistedSession.bike.activeRideStartedAt ?? null } : {})
+          };
         } else if (!sessionBike) {
           setSessionState({
             status: "missing",

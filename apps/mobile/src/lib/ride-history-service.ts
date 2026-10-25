@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   calculateBillableMinutes,
   calculateRideRevenue,
@@ -23,10 +24,11 @@ export interface ConfiguredRideHistoryService {
   getRideHistory(): Promise<readonly RideHistoryItem[]>;
   getRideHistoryById(id: string): Promise<RideHistoryItem | undefined>;
   completeRide(input: CompleteRideInput): Promise<RideHistoryItem>;
-  completeDemoRide(input: { bikeId: string }): Promise<RideHistoryItem>;
+  completeDemoRide(input: { bikeId: string; rideStartedAt?: string }): Promise<RideHistoryItem>;
 }
 
 export interface CompleteRideInput {
+  readonly rideStartedAt?: string | undefined;
   readonly bikeId: string;
   readonly durationSec?: number;
   readonly distanceKm?: number;
@@ -111,6 +113,8 @@ function mapRideHistoryRow(
 }
 
 function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
+  type Payload = Database["public"]["Functions"]["complete_ride_recoverable"]["Args"];
+  const inFlight = new Map<string, Promise<RideHistoryItem>>();
   return {
     async getRideHistory() {
       const userId = await getAuthenticatedUserId();
@@ -167,43 +171,58 @@ function createSupabaseRideHistoryService(): ConfiguredRideHistoryService {
 
     async completeRide(input) {
       const userId = await getAuthenticatedUserId();
+      if (!userId) throw new Error("No active rider session was found.");
+      if (!input.rideStartedAt) throw new Error("Authoritative ride start required. Reopen the active ride before completing.");
+      const key = "ride_completion_v1:" + JSON.stringify([userId, input.bikeId, input.rideStartedAt ?? "legacy"]);
+      const running = inFlight.get(key);
+      if (running) return running;
+      const operation = (async () => {
+        const stored = await AsyncStorage.getItem(key);
 
-      if (!userId) {
-        throw new Error("No active rider session was found.");
-      }
+        const route = (input.route ?? mockRideHistory[0]?.route ?? []) as unknown as NonNullable<
+          RentalTransactionInsert["route"]
+        >;
+        const checkpoints = (input.checkpoints ?? mockRideHistory[0]?.checkpoints ?? []) as unknown as NonNullable<
+          RentalTransactionInsert["checkpoints"]
+        >;
 
-      const route = (input.route ?? mockRideHistory[0]?.route ?? []) as unknown as NonNullable<
-        RentalTransactionInsert["route"]
-      >;
-      const checkpoints = (input.checkpoints ?? mockRideHistory[0]?.checkpoints ?? []) as unknown as NonNullable<
-        RentalTransactionInsert["checkpoints"]
-      >;
+        const payload: Payload = stored ? JSON.parse(stored) : {
+          p_request_id: `${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`,
+          p_bike_id: input.bikeId,
+          p_expected_ride_started_at: input.rideStartedAt!,
+          p_distance_km: input.distanceKm ?? mockRideSummary.distanceKm,
+          p_end_location: input.endLocation ?? mockActiveRide.endLocation ?? "Benjakitti Park",
+          p_route_label: input.routeLabel ?? mockRideSummary.routeLabel,
+          p_route: route,
+          p_checkpoints: checkpoints,
+          p_co2_saved_kg: input.co2SavedKg ?? mockRideSummary.co2SavedKg
+        };
+        if (payload.p_bike_id !== input.bikeId) throw new Error("Completion recovery bike mismatch.");
+        if (payload.p_expected_ride_started_at !== input.rideStartedAt) {
+          throw new Error("Completion recovery ride mismatch. Unscoped legacy requests cannot be dispatched.");
+        }
+        // Retain exact payload after success too: session cleanup can itself fail.
+        if (!stored) await AsyncStorage.setItem(key, JSON.stringify(payload));
+        const { data, error } = await supabase.rpc("complete_ride_recoverable", payload);
 
-      const { data, error } = await supabase.rpc("complete_ride", {
-        p_bike_id: input.bikeId,
-        p_distance_km: input.distanceKm ?? mockRideSummary.distanceKm,
-        p_end_location: input.endLocation ?? mockActiveRide.endLocation ?? "Benjakitti Park",
-        p_route_label: input.routeLabel ?? mockRideSummary.routeLabel,
-        p_route: route,
-        p_checkpoints: checkpoints,
-        p_co2_saved_kg: input.co2SavedKg ?? mockRideSummary.co2SavedKg
-      });
+        if (error) {
+          throw new Error(`Failed to complete ride: ${error.message}`);
+        }
 
-      if (error) {
-        throw new Error(`Failed to complete ride: ${error.message}`);
-      }
+        if (!data) {
+          throw new Error("The completed ride could not be loaded.");
+        }
 
-      if (!data) {
-        throw new Error("The completed ride could not be loaded.");
-      }
-
-      const bikeModelMap = await getBikeModelMap([data.bike_id]);
-
-      return mapRideHistoryRow(data, bikeModelMap);
+        // Optional display metadata cannot invalidate the committed result.
+        const bikeModelMap = await getBikeModelMap([data.bike_id]).catch(() => new Map<string, string>());
+        return mapRideHistoryRow(data, bikeModelMap);
+      })();
+      inFlight.set(key, operation);
+      try { return await operation; } finally { inFlight.delete(key); }
     },
 
-    async completeDemoRide({ bikeId }) {
-      return this.completeRide({ bikeId });
+    async completeDemoRide({ bikeId, rideStartedAt }: { bikeId: string; rideStartedAt?: string }) {
+      return this.completeRide({ bikeId, rideStartedAt });
     }
   };
 }
@@ -264,8 +283,8 @@ function createMockRideHistoryService(): ConfiguredRideHistoryService {
         checkpoints: input.checkpoints ?? mockRideHistory[0]?.checkpoints ?? []
       };
     },
-    async completeDemoRide({ bikeId }) {
-      return this.completeRide({ bikeId });
+    async completeDemoRide({ bikeId, rideStartedAt }: { bikeId: string; rideStartedAt?: string }) {
+      return this.completeRide({ bikeId, rideStartedAt });
     }
   };
 }

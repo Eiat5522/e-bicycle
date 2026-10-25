@@ -510,10 +510,10 @@ function getActivityFeed(input: DashboardInput, activeRide: ActiveRideSummary | 
 
 export function selectExecutiveScorecardViewModel(input: DashboardInput): ExecutiveScorecardViewModel {
   const totalBikes = input.bikes.length;
-  const availableBikes = input.bikes.filter((bike) => bike.status === "available").length;
+  const availableBikes = input.bikes.filter((bike) => (bike.status === "ready_to_rent" || bike.status === "available")).length;
   const activeRideCount = input.bikes.filter((bike) => bike.status === "in_use").length;
   const reservedBikesCount = input.bikes.filter((bike) => bike.status === "reserved").length;
-  const maintenanceCount = input.bikes.filter((bike) => bike.status === "maintenance").length;
+  const maintenanceCount = input.bikes.filter((bike) => (bike.status === "maintenance_required" || bike.status === "maintenance")).length;
   const walletBalanceTotal = input.wallets.reduce((totalBalance, wallet) => totalBalance + Number(wallet.balance), 0);
   const completedRevenue = getCompletedRevenue(input.rideHistory);
   const activeRide = getActiveRide(input.bikes, input.bikeStatusEvents, input.profiles, input.serverTime);
@@ -610,9 +610,9 @@ export function selectExecutiveScorecardViewModel(input: DashboardInput): Execut
 
 export function selectOperationsDashboardViewModel(input: DashboardInput): OperationsDashboardViewModel {
   const totalBikes = input.bikes.length;
-  const availableBikes = input.bikes.filter((bike) => bike.status === "available").length;
+  const availableBikes = input.bikes.filter((bike) => (bike.status === "ready_to_rent" || bike.status === "available")).length;
   const activeRideCount = input.bikes.filter((bike) => bike.status === "in_use").length;
-  const maintenanceCount = input.bikes.filter((bike) => bike.status === "maintenance").length;
+  const maintenanceCount = input.bikes.filter((bike) => (bike.status === "maintenance_required" || bike.status === "maintenance")).length;
   const completedRevenue = getCompletedRevenue(input.rideHistory);
   const averageRideDistanceKm = getAverage(input.rideHistory.map((ride) => Number(ride.distance_km)));
   const averageRideDurationSec = getAverage(input.rideHistory.map((ride) => Number(ride.duration_sec)));

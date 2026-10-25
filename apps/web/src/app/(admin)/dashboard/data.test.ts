@@ -45,7 +45,7 @@ describe("loadDashboardViewModels", () => {
               source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
             },
             created_at: "2026-06-28T08:00:00Z",
-            from_status: "available",
+            from_status: "ready_to_rent",
             id: "bike-status-event-1",
             to_status: "in_use",
             transition_kind: "ride_start"

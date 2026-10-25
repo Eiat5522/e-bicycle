@@ -162,7 +162,7 @@ async function waitForProfile(userId: string) {
       break;
     }
 
-    await new Promise((resolve) => {
+    await new Promise<void>((resolve) => {
       setTimeout(resolve, profileRetryDelayMs);
     });
   }

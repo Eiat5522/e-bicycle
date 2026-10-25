@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import { SideDrawer } from "@/components/side-drawer";
 
 import {
   BicycleEditor,
+  RideRouteMap,
   BicycleManagementList,
   type BikeRideHistoryEntry,
   type ManagedBike
@@ -49,7 +50,7 @@ const bike: ManagedBike = {
   topSpeedKmh: 32,
   pricingLabel: "฿15 / 30 min",
   ratePerMinute: 0.5,
-  status: "available",
+  status: "ready_to_rent",
   activeRiderId: null,
   activeRiderLabel: null,
   location: "Silom Station",
@@ -334,6 +335,34 @@ describe("BicycleEditor", () => {
   });
 });
 
+describe("RideRouteMap lifecycle", () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it("finishes, restarts and pauses replay without a terminal reset effect", () => {
+    render(<RideRouteMap ride={rideWithRoute} />);
+    fireEvent.click(screen.getByRole("button", { name: "Play replay" }));
+    act(() => jest.advanceTimersByTime(10000));
+    expect(screen.getByText("Replay progress: 100%")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Replay route" }));
+    expect(screen.getByText("Replay progress: 0%")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Pause replay" }));
+    act(() => jest.advanceTimersByTime(10000));
+    expect(screen.getByText("Replay progress: 0%")).toBeInTheDocument();
+  });
+
+  it("starts a replacement ride stopped at its first point", () => {
+    const { rerender } = render(<RideRouteMap ride={rideWithRoute} />);
+    fireEvent.click(screen.getByRole("button", { name: "Play replay" }));
+    act(() => jest.advanceTimersByTime(10000));
+    rerender(<RideRouteMap ride={{ ...rideWithRoute, id: "replacement" }} />);
+    expect(screen.getByText("Replay progress: 0%")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play replay" })).toBeInTheDocument();
+    act(() => jest.advanceTimersByTime(10000));
+    expect(screen.getByText("Replay progress: 0%")).toBeInTheDocument();
+  });
+});
+
 describe("BicycleManagementList", () => {
   it("renders a fleet empty state", () => {
     render(<BicycleManagementList bikes={[]} rideCounts={{}} />);
@@ -347,7 +376,7 @@ describe("BicycleManagementList", () => {
       ...bike,
       id: "G-412",
       model: "Glide Cargo",
-      status: "maintenance",
+      status: "maintenance_required",
       location: "Sathon Depot"
     };
 

@@ -90,7 +90,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Mission District",
           coordinates: { latitude: 37.7599, longitude: -122.4148 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -165,7 +165,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Mission District",
           coordinates: { latitude: 37.7599, longitude: -122.4148 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -196,7 +196,7 @@ describe("MapScreen", () => {
 
     expect(latestCall?.[0].bikes).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "G-104", status: "available" }),
+        expect.objectContaining({ id: "G-104", status: "ready_to_rent" }),
         expect.objectContaining({ id: "G-205", status: "in_use" })
       ])
     );
@@ -220,7 +220,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -244,7 +244,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 28,
           topSpeedKmh: 20,
           pricingLabel: "฿0.80 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Ari Soi 1",
           coordinates: { latitude: 13.7797, longitude: 100.5446 },
           lastReportedAt: "2026-04-06T08:58:00Z"
@@ -277,7 +277,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 47,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Phrom Phong BTS",
           coordinates: { latitude: 13.7301, longitude: 100.5697 },
           lastReportedAt: "2026-04-06T08:59:00Z"
@@ -289,7 +289,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -301,7 +301,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 28,
           topSpeedKmh: 20,
           pricingLabel: "฿0.80 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Ari Soi 1",
           coordinates: { latitude: 13.7797, longitude: 100.5446 },
           lastReportedAt: "2026-04-06T08:58:00Z"
@@ -331,7 +331,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -365,7 +365,7 @@ describe("MapScreen", () => {
     expect(pressMarker).toBeDefined();
 
     act(() => {
-      pressMarker?.("G-104", "available", null);
+      pressMarker?.("G-104", "ready_to_rent", null);
     });
 
     expect(screen.getByText("View Details")).toBeTruthy();
@@ -386,7 +386,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -437,7 +437,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -486,7 +486,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "maintenance",
+          status: "maintenance_required",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -503,7 +503,7 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-104", "maintenance", null);
+      pressMarker?.("G-104", "maintenance_required", null);
     });
 
     expect(screen.getByText("Under maintenance")).toBeTruthy();
@@ -547,7 +547,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -576,7 +576,7 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-104", "available", null);
+      pressMarker?.("G-104", "ready_to_rent", null);
     });
 
     expect(screen.getByText("G-104 · Siam Square")).toBeTruthy();
@@ -597,7 +597,7 @@ describe("MapScreen", () => {
           estimatedRangeKm: 45,
           topSpeedKmh: 25,
           pricingLabel: "฿1.20 / 10 min",
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           coordinates: { latitude: 13.7466, longitude: 100.5328 },
           lastReportedAt: "2026-04-06T08:55:00Z"
@@ -626,21 +626,21 @@ describe("MapScreen", () => {
     const pressMarker = mapCanvasMock.mock.calls.at(-1)?.[0].onPressMarker;
 
     act(() => {
-      pressMarker?.("G-104", "available", null);
+      pressMarker?.("G-104", "ready_to_rent", null);
     });
 
     fireEvent.press(screen.getByText("Unlock and Ride"));
     expect(push).toHaveBeenCalledWith("/unlock/G-104");
 
     act(() => {
-      pressMarker?.("G-104", "available", null);
+      pressMarker?.("G-104", "ready_to_rent", null);
     });
 
     fireEvent.press(screen.getByText("Need Help?"));
     expect(push).toHaveBeenCalledWith("/help");
 
     act(() => {
-      pressMarker?.("G-104", "available", null);
+      pressMarker?.("G-104", "ready_to_rent", null);
     });
 
     fireEvent.press(screen.getByText("View Details"));
@@ -688,7 +688,7 @@ describe("MapScreen", () => {
     await renderScreen();
 
     await waitFor(() => {
-      expect(screen.getByText("No bikes nearby right now")).toBeTruthy();
+      expect(screen.getByText("No rentable bikes nearby right now")).toBeTruthy();
     });
   });
 
@@ -708,7 +708,7 @@ describe("MapScreen", () => {
             estimatedRangeKm: 45,
             topSpeedKmh: 25,
             pricingLabel: "฿1.20 / 10 min",
-            status: "available",
+            status: "ready_to_rent",
             location: "Mission District",
             coordinates: { latitude: 37.7599, longitude: -122.4148 },
             lastReportedAt: "2026-04-06T08:55:00Z"
@@ -767,7 +767,7 @@ describe("MapScreen", () => {
             estimatedRangeKm: 45,
             topSpeedKmh: 25,
             pricingLabel: "฿1.20 / 10 min",
-            status: "available",
+            status: "ready_to_rent",
             location: "Mission District",
             coordinates: { latitude: 37.7599, longitude: -122.4148 },
             lastReportedAt: "2026-04-06T08:55:00Z"

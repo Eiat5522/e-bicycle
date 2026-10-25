@@ -37,7 +37,8 @@ jest.mock("@/lib/bike-service", () => ({
 
 jest.mock("@/lib/bike-status-service", () => ({
   configuredBikeStatusService: {
-    updateBikeStatus: jest.fn()
+    updateBikeStatus: jest.fn(),
+    reconcilePendingStatusChanges: jest.fn().mockResolvedValue(undefined)
   }
 }));
 
@@ -112,6 +113,7 @@ describe("ActiveRideScreen", () => {
     ratePerMinute: 0.09,
     status: "in_use",
     activeRiderId: "user-1",
+    activeRideStartedAt: "2026-07-28T10:00:00.123456+00:00",
     location: "อโศก Interchange",
     coordinates: { latitude: 13.7372, longitude: 100.5606 },
     lastReportedAt: "2026-04-06T08:56:00Z"
@@ -126,6 +128,7 @@ describe("ActiveRideScreen", () => {
       setBikeRideState
     });
     jest.mocked(useAuth).mockReturnValue({
+      authStatus: "authenticated",
       session: { access_token: "session-token" },
       user: { id: "user-1" }
     } as ReturnType<typeof useAuth>);
@@ -275,6 +278,7 @@ describe("ActiveRideScreen", () => {
 
     await waitFor(() => {
       expect(configuredRideHistoryService.completeRide).toHaveBeenCalledWith({
+        rideStartedAt: expect.any(String),
         bikeId: "G-205",
         durationSec: 125,
         distanceKm: 0.8,
@@ -306,17 +310,11 @@ describe("ActiveRideScreen", () => {
       });
     });
 
-    await waitFor(() => {
-      expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
-        actorId: "user-1",
-        bikeId: "G-205",
-        status: "available"
-      });
-    });
+    expect(configuredBikeStatusService.updateBikeStatus).not.toHaveBeenCalled();
 
     await waitFor(() => {
       expect(setBikeRideState).toHaveBeenCalledWith("G-205", {
-        status: "available",
+        status: "returned_pending_inspection",
         activeRiderId: null
       });
     });
@@ -329,40 +327,45 @@ describe("ActiveRideScreen", () => {
     });
   });
 
-  it("does not complete the ride when the bike status sync fails", async () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+  it("uses owner-scoped exact recovery and never rebuilds legacy unowned releases", async () => {
+    await AsyncStorage.setItem("pending_release_G-205", JSON.stringify({ bikeId: "G-205" }));
     jest.mocked(useLocalSearchParams).mockReturnValue({ bikeId: "G-205" });
-    jest
-      .mocked(configuredBikeStatusService.updateBikeStatus)
-      .mockRejectedValueOnce(
-        new Error("Supabase configuration is required to sync bike status changes.")
-      );
-
     render(<ActiveRideScreen />);
+    await screen.findByText("Live Ride Companion");
+    await waitFor(() => expect(configuredBikeStatusService.reconcilePendingStatusChanges).toHaveBeenCalledWith("user-1"));
+    expect(configuredBikeStatusService.updateBikeStatus).not.toHaveBeenCalled();
+  });
 
+  it("uses the authenticated completion result rather than a second cleared-owner mutation", async () => {
+    jest.mocked(useLocalSearchParams).mockReturnValue({ bikeId: "G-205" });
+    render(<ActiveRideScreen />);
     await screen.findByText("Live Ride Companion");
     fireEvent.press(screen.getByText("End Ride"));
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    expect(configuredBikeStatusService.updateBikeStatus).not.toHaveBeenCalled();
+    expect(await AsyncStorage.getItem("pending_release_G-205")).toBeNull();
+  });
 
-    await waitFor(() => {
-      expect(configuredBikeStatusService.updateBikeStatus).toHaveBeenCalledWith({
-        actorId: "user-1",
-        bikeId: "G-205",
-        status: "available"
-      });
+  it("keeps the completion identity across screen restart after response loss", async () => {
+    jest.mocked(useLocalSearchParams).mockReturnValue({ bikeId: "G-205" });
+    jest.mocked(configuredRideHistoryService.completeRide).mockRejectedValueOnce(new Error("response lost"));
+    const first = render(<ActiveRideScreen />);
+    await screen.findByText("Live Ride Companion");
+    fireEvent.press(screen.getByText("End Ride"));
+    await screen.findByText("response lost");
+    const identity = jest.mocked(configuredRideHistoryService.completeRide).mock.calls[0]?.[0].rideStartedAt;
+    expect(identity).toBe("2026-07-28T10:00:00.123456+00:00");
+    expect(push).not.toHaveBeenCalled();
+    first.unmount();
+    jest.mocked(configuredBikeService.getById).mockResolvedValue({
+      ...activeBike, activeRideStartedAt: "2026-07-28T11:00:00.987654+00:00"
     });
-
-    await waitFor(() => {
-      expect(setBikeRideState).not.toHaveBeenCalled();
-      expect(push).not.toHaveBeenCalled();
-    });
-
-    expect(
-      await screen.findByText(
-        "Supabase configuration is required to sync bike status changes."
-      )
-    ).toBeTruthy();
-
-    consoleError.mockRestore();
+    render(<ActiveRideScreen />);
+    await screen.findByText("Live Ride Companion");
+    fireEvent.press(screen.getByText("End Ride"));
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    expect(jest.mocked(configuredRideHistoryService.completeRide).mock.calls[1]?.[0].rideStartedAt).toBe(identity);
+    expect(configuredBikeStatusService.updateBikeStatus).not.toHaveBeenCalled();
   });
 
   it("shows an inline error when completing the ride fails", async () => {

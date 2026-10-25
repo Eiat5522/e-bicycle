@@ -1,3 +1,6 @@
+// RECONCILIATION ONLY: manual public declarations plus preserved main GraphQL/Storage declarations.
+// Legacy enum declarations retained for read compatibility; NOT final-schema generation.
+// Final-schema generation remains BLOCKED on migration/enum policy and native proof.
 export type Json =
   | string
   | number
@@ -53,6 +56,7 @@ export type Database = {
           updated_at: string
           warranty_status: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           id?: string
@@ -102,6 +106,7 @@ export type Database = {
           storage_path: string | null
           uploaded_by_profile_id: string | null
         }
+        ComputedFields: never
         Insert: {
           attachment_type: string
           content_type?: string | null
@@ -142,7 +147,7 @@ export type Database = {
           actor_profile_id: string | null
           actor_staff_id: string | null
           created_at: string
-          data_changed: Json
+          data_changed: NonNullable<Json>
           device_location: string | null
           entity_id: string | null
           entity_table: string | null
@@ -151,12 +156,13 @@ export type Database = {
           kpi_achievement: number | null
           user_role: string | null
         }
+        ComputedFields: never
         Insert: {
           action_performed: string
           actor_profile_id?: string | null
           actor_staff_id?: string | null
           created_at?: string
-          data_changed?: Json
+          data_changed?: NonNullable<Json>
           device_location?: string | null
           entity_id?: string | null
           entity_table?: string | null
@@ -170,7 +176,7 @@ export type Database = {
           actor_profile_id?: string | null
           actor_staff_id?: string | null
           created_at?: string
-          data_changed?: Json
+          data_changed?: NonNullable<Json>
           device_location?: string | null
           entity_id?: string | null
           entity_table?: string | null
@@ -224,6 +230,7 @@ export type Database = {
           updated_at: string
           voltage: number | null
         }
+        ComputedFields: never
         Insert: {
           abnormal_flag?: boolean
           battery_code: string
@@ -290,7 +297,7 @@ export type Database = {
           created_at: string
           current_amp: number | null
           id: string
-          metadata: Json
+          metadata: NonNullable<Json>
           source_system: string
           started_at: string
           state_of_health: number | null
@@ -301,6 +308,7 @@ export type Database = {
           temperature_c: number | null
           voltage: number | null
         }
+        ComputedFields: never
         Insert: {
           battery_id: string
           charge_cycles?: number | null
@@ -309,7 +317,7 @@ export type Database = {
           created_at?: string
           current_amp?: number | null
           id?: string
-          metadata?: Json
+          metadata?: NonNullable<Json>
           source_system?: string
           started_at?: string
           state_of_health?: number | null
@@ -328,7 +336,7 @@ export type Database = {
           created_at?: string
           current_amp?: number | null
           id?: string
-          metadata?: Json
+          metadata?: NonNullable<Json>
           source_system?: string
           started_at?: string
           state_of_health?: number | null
@@ -374,7 +382,7 @@ export type Database = {
         Row: {
           bike_id: string
           billable_minutes: number
-          checkpoints: Json
+          checkpoints: NonNullable<Json>
           co2_saved_kg: number
           completed_at: string
           created_at: string
@@ -387,17 +395,19 @@ export type Database = {
           payment_label: string
           profile_id: string | null
           rate_per_minute: number
-          route: Json
+          ride_sharing_session_id: string | null
+          route: NonNullable<Json>
           route_label: string
           start_location: string
           started_at: string
           total_cost: number
           wallet_transaction_id: string | null
         }
+        ComputedFields: never
         Insert: {
           bike_id: string
           billable_minutes?: number
-          checkpoints?: Json
+          checkpoints?: NonNullable<Json>
           co2_saved_kg?: number
           completed_at: string
           created_at?: string
@@ -410,7 +420,8 @@ export type Database = {
           payment_label: string
           profile_id?: string | null
           rate_per_minute?: number
-          route?: Json
+          ride_sharing_session_id?: string | null
+          route?: NonNullable<Json>
           route_label: string
           start_location: string
           started_at: string
@@ -420,7 +431,7 @@ export type Database = {
         Update: {
           bike_id?: string
           billable_minutes?: number
-          checkpoints?: Json
+          checkpoints?: NonNullable<Json>
           co2_saved_kg?: number
           completed_at?: string
           created_at?: string
@@ -433,7 +444,8 @@ export type Database = {
           payment_label?: string
           profile_id?: string | null
           rate_per_minute?: number
-          route?: Json
+          ride_sharing_session_id?: string | null
+          route?: NonNullable<Json>
           route_label?: string
           start_location?: string
           started_at?: string
@@ -456,6 +468,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bike_ride_history_ride_sharing_session_id_fkey"
+            columns: ["ride_sharing_session_id"]
+            isOneToOne: false
+            referencedRelation: "ride_sharing_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bike_ride_history_wallet_transaction_id_fkey"
             columns: ["wallet_transaction_id"]
             isOneToOne: false
@@ -468,17 +487,18 @@ export type Database = {
         Row: {
           actor_id: string
           bike_id: string
-          context: Json
+          context: NonNullable<Json>
           created_at: string
           from_status: Database["public"]["Enums"]["bike_status"]
           id: string
           to_status: Database["public"]["Enums"]["bike_status"]
           transition_kind: string
         }
+        ComputedFields: never
         Insert: {
           actor_id: string
           bike_id: string
-          context?: Json
+          context?: NonNullable<Json>
           created_at?: string
           from_status: Database["public"]["Enums"]["bike_status"]
           id?: string
@@ -488,7 +508,7 @@ export type Database = {
         Update: {
           actor_id?: string
           bike_id?: string
-          context?: Json
+          context?: NonNullable<Json>
           created_at?: string
           from_status?: Database["public"]["Enums"]["bike_status"]
           id?: string
@@ -542,6 +562,7 @@ export type Database = {
           top_speed_kmh: number
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           active_ride_start_location?: string | null
           active_ride_started_at?: string | null
@@ -630,7 +651,7 @@ export type Database = {
           created_at: string
           currency_code: string
           id: string
-          metadata: Json
+          metadata: NonNullable<Json>
           phase_l1_kw: number | null
           phase_l2_kw: number | null
           phase_l3_kw: number | null
@@ -640,12 +661,13 @@ export type Database = {
           total_power_demand_kw: number | null
           tou_rate_period: string | null
         }
+        ComputedFields: never
         Insert: {
           applied_tou_rate?: number | null
           created_at?: string
           currency_code?: string
           id?: string
-          metadata?: Json
+          metadata?: NonNullable<Json>
           phase_l1_kw?: number | null
           phase_l2_kw?: number | null
           phase_l3_kw?: number | null
@@ -660,7 +682,7 @@ export type Database = {
           created_at?: string
           currency_code?: string
           id?: string
-          metadata?: Json
+          metadata?: NonNullable<Json>
           phase_l1_kw?: number | null
           phase_l2_kw?: number | null
           phase_l3_kw?: number | null
@@ -699,6 +721,7 @@ export type Database = {
           status: string
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           assigned_staff_id?: string | null
           bike_id?: string | null
@@ -785,7 +808,7 @@ export type Database = {
           id: string
           import_batch_id: string | null
           next_service_schedule: string | null
-          parts_used: Json
+          parts_used: NonNullable<Json>
           post_repair_status: string | null
           quality_check_status: string
           reconciled_at: string | null
@@ -795,6 +818,7 @@ export type Database = {
           technician_staff_id: string | null
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           asset_id?: string | null
           bike_id?: string | null
@@ -806,7 +830,7 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           next_service_schedule?: string | null
-          parts_used?: Json
+          parts_used?: NonNullable<Json>
           post_repair_status?: string | null
           quality_check_status?: string
           reconciled_at?: string | null
@@ -827,7 +851,7 @@ export type Database = {
           id?: string
           import_batch_id?: string | null
           next_service_schedule?: string | null
-          parts_used?: Json
+          parts_used?: NonNullable<Json>
           post_repair_status?: string | null
           quality_check_status?: string
           reconciled_at?: string | null
@@ -875,19 +899,20 @@ export type Database = {
           event_type: string
           gps_location: unknown
           id: string
-          metadata: Json
+          metadata: NonNullable<Json>
           photo_proof_url: string | null
           profile_id: string | null
           rental_transaction_id: string | null
           staff_id: string | null
         }
+        ComputedFields: never
         Insert: {
           bike_id?: string | null
           created_at?: string
           event_type: string
           gps_location?: unknown
           id?: string
-          metadata?: Json
+          metadata?: NonNullable<Json>
           photo_proof_url?: string | null
           profile_id?: string | null
           rental_transaction_id?: string | null
@@ -899,7 +924,7 @@ export type Database = {
           event_type?: string
           gps_location?: unknown
           id?: string
-          metadata?: Json
+          metadata?: NonNullable<Json>
           photo_proof_url?: string | null
           profile_id?: string | null
           rental_transaction_id?: string | null
@@ -944,15 +969,16 @@ export type Database = {
           generated_at: string
           generated_by_profile_id: string | null
           id: string
-          payment_reconciliation: Json
+          payment_reconciliation: NonNullable<Json>
           period_end: string
           period_start: string
           report_type: string
           service_downtime_minutes: number | null
-          usage_statistics: Json
+          usage_statistics: NonNullable<Json>
           user_satisfaction_score: number | null
           utilization_rate: number | null
         }
+        ComputedFields: never
         Insert: {
           app_availability_rate?: number | null
           created_at?: string
@@ -960,12 +986,12 @@ export type Database = {
           generated_at?: string
           generated_by_profile_id?: string | null
           id?: string
-          payment_reconciliation?: Json
+          payment_reconciliation?: NonNullable<Json>
           period_end: string
           period_start: string
           report_type: string
           service_downtime_minutes?: number | null
-          usage_statistics?: Json
+          usage_statistics?: NonNullable<Json>
           user_satisfaction_score?: number | null
           utilization_rate?: number | null
         }
@@ -976,12 +1002,12 @@ export type Database = {
           generated_at?: string
           generated_by_profile_id?: string | null
           id?: string
-          payment_reconciliation?: Json
+          payment_reconciliation?: NonNullable<Json>
           period_end?: string
           period_start?: string
           report_type?: string
           service_downtime_minutes?: number | null
-          usage_statistics?: Json
+          usage_statistics?: NonNullable<Json>
           user_satisfaction_score?: number | null
           utilization_rate?: number | null
         }
@@ -1018,6 +1044,7 @@ export type Database = {
           updated_at: string
           wallet_transaction_id: string | null
         }
+        ComputedFields: never
         Insert: {
           amount: number
           coupon_id?: string | null
@@ -1113,6 +1140,7 @@ export type Database = {
           user_status: string
           user_type: string
         }
+        ComputedFields: never
         Insert: {
           consent_agreed?: boolean
           consent_agreed_at?: string | null
@@ -1157,7 +1185,7 @@ export type Database = {
         Row: {
           bike_id: string
           billable_minutes: number
-          checkpoints: Json
+          checkpoints: NonNullable<Json>
           co2_saved_kg: number
           completed_at: string
           created_at: string
@@ -1178,7 +1206,8 @@ export type Database = {
           reconciled_at: string | null
           rental_status: string
           return_station_id: string | null
-          route: Json
+          ride_sharing_session_id: string | null
+          route: NonNullable<Json>
           route_distance_km: number | null
           route_label: string
           service_fee: number | null
@@ -1189,10 +1218,11 @@ export type Database = {
           total_cost: number
           wallet_transaction_id: string | null
         }
+        ComputedFields: never
         Insert: {
           bike_id: string
           billable_minutes?: number
-          checkpoints?: Json
+          checkpoints?: NonNullable<Json>
           co2_saved_kg?: number
           completed_at: string
           created_at?: string
@@ -1213,7 +1243,8 @@ export type Database = {
           reconciled_at?: string | null
           rental_status?: string
           return_station_id?: string | null
-          route?: Json
+          ride_sharing_session_id?: string | null
+          route?: NonNullable<Json>
           route_distance_km?: number | null
           route_label: string
           service_fee?: number | null
@@ -1227,7 +1258,7 @@ export type Database = {
         Update: {
           bike_id?: string
           billable_minutes?: number
-          checkpoints?: Json
+          checkpoints?: NonNullable<Json>
           co2_saved_kg?: number
           completed_at?: string
           created_at?: string
@@ -1248,7 +1279,8 @@ export type Database = {
           reconciled_at?: string | null
           rental_status?: string
           return_station_id?: string | null
-          route?: Json
+          ride_sharing_session_id?: string | null
+          route?: NonNullable<Json>
           route_distance_km?: number | null
           route_label?: string
           service_fee?: number | null
@@ -1296,6 +1328,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "rental_transactions_ride_sharing_session_id_fkey"
+            columns: ["ride_sharing_session_id"]
+            isOneToOne: false
+            referencedRelation: "ride_sharing_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "rental_transactions_start_station_id_fkey"
             columns: ["start_station_id"]
             isOneToOne: false
@@ -1320,6 +1359,7 @@ export type Database = {
           profile_id: string
           title: string
         }
+        ComputedFields: never
         Insert: {
           achieved_at?: string
           created_at?: string
@@ -1346,6 +1386,144 @@ export type Database = {
           },
         ]
       }
+      ride_sharing_participants: {
+        Row: {
+          created_at: string
+          id: string
+          invitation_channel: string | null
+          invited_at: string | null
+          joined_at: string | null
+          left_at: string | null
+          participant_role: string
+          participant_status: string
+          profile_id: string
+          ride_sharing_session_id: string
+          source_system: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          id?: string
+          invitation_channel?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          left_at?: string | null
+          participant_role: string
+          participant_status?: string
+          profile_id: string
+          ride_sharing_session_id: string
+          source_system?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitation_channel?: string | null
+          invited_at?: string | null
+          joined_at?: string | null
+          left_at?: string | null
+          participant_role?: string
+          participant_status?: string
+          profile_id?: string
+          ride_sharing_session_id?: string
+          source_system?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_sharing_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_sharing_participants_ride_sharing_session_id_fkey"
+            columns: ["ride_sharing_session_id"]
+            isOneToOne: false
+            referencedRelation: "ride_sharing_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_sharing_sessions: {
+        Row: {
+          bike_id: string | null
+          created_at: string
+          ended_at: string | null
+          host_profile_id: string | null
+          id: string
+          notes: string | null
+          participant_limit: number
+          rental_transaction_id: string | null
+          session_state: string
+          share_expires_at: string | null
+          share_token: string
+          source_system: string
+          started_at: string | null
+          updated_at: string
+          visibility: string
+        }
+        ComputedFields: never
+        Insert: {
+          bike_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          host_profile_id?: string | null
+          id?: string
+          notes?: string | null
+          participant_limit?: number
+          rental_transaction_id?: string | null
+          session_state?: string
+          share_expires_at?: string | null
+          share_token?: string
+          source_system?: string
+          started_at?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          bike_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          host_profile_id?: string | null
+          id?: string
+          notes?: string | null
+          participant_limit?: number
+          rental_transaction_id?: string | null
+          session_state?: string
+          share_expires_at?: string | null
+          share_token?: string
+          source_system?: string
+          started_at?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_sharing_sessions_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_sharing_sessions_host_profile_id_fkey"
+            columns: ["host_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_sharing_sessions_rental_transaction_id_fkey"
+            columns: ["rental_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "rental_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_areas: {
         Row: {
           boundary: unknown
@@ -1358,6 +1536,7 @@ export type Database = {
           zone_name: string
           zone_type: string
         }
+        ComputedFields: never
         Insert: {
           boundary: unknown
           city_name: string
@@ -1386,7 +1565,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          permissions: Json
+          permissions: NonNullable<Json>
           profile_id: string
           role: string
           staff_name: string
@@ -1394,10 +1573,11 @@ export type Database = {
           status: string
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           id?: string
-          permissions?: Json
+          permissions?: NonNullable<Json>
           profile_id: string
           role: string
           staff_name: string
@@ -1408,7 +1588,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          permissions?: Json
+          permissions?: NonNullable<Json>
           profile_id?: string
           role?: string
           staff_name?: string
@@ -1433,37 +1613,236 @@ export type Database = {
           },
         ]
       }
+      station_assisted_rentals: {
+        Row: {
+          bike_id: string
+          device_id: string
+          id: string
+          pdpa_notice_version: string
+          rental_id: string
+          rental_notice_version: string
+          return_device_id: string | null
+          return_local_id: string | null
+          return_payload: Json | null
+          return_station_id: string | null
+          returned_at_device: string | null
+          returned_at_server: string | null
+          returned_by_staff_id: string | null
+          rider_id: string
+          start_local_id: string
+          start_payload: NonNullable<Json>
+          start_station_id: string
+          started_at_device: string
+          started_at_server: string
+          started_by_staff_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          bike_id: string
+          device_id: string
+          id?: string
+          pdpa_notice_version: string
+          rental_id: string
+          rental_notice_version: string
+          return_device_id?: string | null
+          return_local_id?: string | null
+          return_payload?: Json | null
+          return_station_id?: string | null
+          returned_at_device?: string | null
+          returned_at_server?: string | null
+          returned_by_staff_id?: string | null
+          rider_id: string
+          start_local_id: string
+          start_payload: NonNullable<Json>
+          start_station_id: string
+          started_at_device: string
+          started_at_server?: string
+          started_by_staff_id: string
+        }
+        Update: {
+          bike_id?: string
+          device_id?: string
+          id?: string
+          pdpa_notice_version?: string
+          rental_id?: string
+          rental_notice_version?: string
+          return_device_id?: string | null
+          return_local_id?: string | null
+          return_payload?: Json | null
+          return_station_id?: string | null
+          returned_at_device?: string | null
+          returned_at_server?: string | null
+          returned_by_staff_id?: string | null
+          rider_id?: string
+          start_local_id?: string
+          start_payload?: NonNullable<Json>
+          start_station_id?: string
+          started_at_device?: string
+          started_at_server?: string
+          started_by_staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_assisted_rentals_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_rentals_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_rentals_return_device_id_fkey"
+            columns: ["return_device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_rentals_return_station_id_fkey"
+            columns: ["return_station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_rentals_returned_by_staff_id_fkey"
+            columns: ["returned_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_rentals_rider_id_fkey"
+            columns: ["rider_id"]
+            isOneToOne: false
+            referencedRelation: "station_assisted_riders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_rentals_start_station_id_fkey"
+            columns: ["start_station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_rentals_started_by_staff_id_fkey"
+            columns: ["started_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      station_assisted_riders: {
+        Row: {
+          created_at: string
+          device_id: string
+          email: string | null
+          id: string
+          name: string
+          pdpa_accepted_at_device: string
+          pdpa_notice_version: string
+          phone: string
+          registered_by_staff_id: string
+          registration_payload: NonNullable<Json>
+          rider_local_id: string
+          station_id: string
+          user_type: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          device_id: string
+          email?: string | null
+          id?: string
+          name: string
+          pdpa_accepted_at_device: string
+          pdpa_notice_version: string
+          phone: string
+          registered_by_staff_id: string
+          registration_payload: NonNullable<Json>
+          rider_local_id: string
+          station_id: string
+          user_type: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          email?: string | null
+          id?: string
+          name?: string
+          pdpa_accepted_at_device?: string
+          pdpa_notice_version?: string
+          phone?: string
+          registered_by_staff_id?: string
+          registration_payload?: NonNullable<Json>
+          rider_local_id?: string
+          station_id?: string
+          user_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_assisted_riders_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_riders_registered_by_staff_id_fkey"
+            columns: ["registered_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_assisted_riders_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stations: {
         Row: {
           capacity: number
           charging_slot_count: number
           created_at: string
           electricity_status: string
-          equipment_inventory: Json
+          equipment_inventory: NonNullable<Json>
           id: string
           latitude: number | null
           location_text: string | null
           longitude: number | null
           operating_status: string
-          phase_balance: Json
+          phase_balance: NonNullable<Json>
           power_capacity_kw: number | null
           station_code: string | null
           station_name: string
           station_type: string
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           capacity?: number
           charging_slot_count?: number
           created_at?: string
           electricity_status?: string
-          equipment_inventory?: Json
+          equipment_inventory?: NonNullable<Json>
           id?: string
           latitude?: number | null
           location_text?: string | null
           longitude?: number | null
           operating_status?: string
-          phase_balance?: Json
+          phase_balance?: NonNullable<Json>
           power_capacity_kw?: number | null
           station_code?: string | null
           station_name: string
@@ -1475,13 +1854,13 @@ export type Database = {
           charging_slot_count?: number
           created_at?: string
           electricity_status?: string
-          equipment_inventory?: Json
+          equipment_inventory?: NonNullable<Json>
           id?: string
           latitude?: number | null
           location_text?: string | null
           longitude?: number | null
           operating_status?: string
-          phase_balance?: Json
+          phase_balance?: NonNullable<Json>
           power_capacity_kw?: number | null
           station_code?: string | null
           station_name?: string
@@ -1508,6 +1887,7 @@ export type Database = {
           total_travel_distance_km: number | null
           trip_count: number
         }
+        ComputedFields: never
         Insert: {
           calculation_method?: string
           carbon_reduced_kg?: number | null
@@ -1559,6 +1939,345 @@ export type Database = {
           },
         ]
       }
+      tablet_devices: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          device_identifier: string
+          device_name: string | null
+          device_status: string
+          id: string
+          last_seen_at: string | null
+          metadata: NonNullable<Json>
+          registered_by_staff_id: string | null
+          station_id: string | null
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          device_identifier: string
+          device_name?: string | null
+          device_status?: string
+          id?: string
+          last_seen_at?: string | null
+          metadata?: NonNullable<Json>
+          registered_by_staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          device_identifier?: string
+          device_name?: string | null
+          device_status?: string
+          id?: string
+          last_seen_at?: string | null
+          metadata?: NonNullable<Json>
+          registered_by_staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_devices_registered_by_staff_id_fkey"
+            columns: ["registered_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_devices_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablet_sync_batches: {
+        Row: {
+          actor_profile_id: string | null
+          batch_status: string
+          client_batch_id: string
+          completed_at: string | null
+          created_at: string
+          device_id: string
+          error_summary: string | null
+          id: string
+          raw_request: string | null
+          received_at: string
+          record_count: number
+          request_payload: NonNullable<Json>
+          response_payload: NonNullable<Json>
+          staff_id: string | null
+          station_id: string | null
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          actor_profile_id?: string | null
+          batch_status?: string
+          client_batch_id: string
+          completed_at?: string | null
+          created_at?: string
+          device_id: string
+          error_summary?: string | null
+          id?: string
+          raw_request?: string | null
+          received_at?: string
+          record_count?: number
+          request_payload?: NonNullable<Json>
+          response_payload?: NonNullable<Json>
+          staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actor_profile_id?: string | null
+          batch_status?: string
+          client_batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          device_id?: string
+          error_summary?: string | null
+          id?: string
+          raw_request?: string | null
+          received_at?: string
+          record_count?: number
+          request_payload?: NonNullable<Json>
+          response_payload?: NonNullable<Json>
+          staff_id?: string | null
+          station_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_sync_batches_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_batches_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_batches_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_batches_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablet_sync_conflicts: {
+        Row: {
+          business_id: string | null
+          conflict_status: string
+          conflict_type: string
+          created_at: string
+          device_id: string | null
+          id: string
+          local_id: string
+          local_payload: NonNullable<Json>
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by_staff_id: string | null
+          server_payload: NonNullable<Json>
+          staff_id: string | null
+          station_id: string | null
+          sync_record_id: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          business_id?: string | null
+          conflict_status?: string
+          conflict_type: string
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          local_id: string
+          local_payload?: NonNullable<Json>
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_staff_id?: string | null
+          server_payload?: NonNullable<Json>
+          staff_id?: string | null
+          station_id?: string | null
+          sync_record_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          conflict_status?: string
+          conflict_type?: string
+          created_at?: string
+          device_id?: string | null
+          id?: string
+          local_id?: string
+          local_payload?: NonNullable<Json>
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_staff_id?: string | null
+          server_payload?: NonNullable<Json>
+          staff_id?: string | null
+          station_id?: string | null
+          sync_record_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_sync_conflicts_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_resolved_by_staff_id_fkey"
+            columns: ["resolved_by_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_conflicts_sync_record_id_fkey"
+            columns: ["sync_record_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_sync_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tablet_sync_records: {
+        Row: {
+          actor_profile_id: string | null
+          business_id: string | null
+          created_at: string
+          device_id: string
+          id: string
+          local_id: string
+          raw_request: string | null
+          record_type: string
+          rejection_reason: string | null
+          request_payload: NonNullable<Json>
+          response_payload: NonNullable<Json>
+          server_entity_id: string | null
+          server_entity_table: string | null
+          staff_id: string | null
+          station_id: string | null
+          sync_batch_id: string
+          sync_status: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          actor_profile_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          device_id: string
+          id?: string
+          local_id: string
+          raw_request?: string | null
+          record_type: string
+          rejection_reason?: string | null
+          request_payload?: NonNullable<Json>
+          response_payload?: NonNullable<Json>
+          server_entity_id?: string | null
+          server_entity_table?: string | null
+          staff_id?: string | null
+          station_id?: string | null
+          sync_batch_id: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          actor_profile_id?: string | null
+          business_id?: string | null
+          created_at?: string
+          device_id?: string
+          id?: string
+          local_id?: string
+          raw_request?: string | null
+          record_type?: string
+          rejection_reason?: string | null
+          request_payload?: NonNullable<Json>
+          response_payload?: NonNullable<Json>
+          server_entity_id?: string | null
+          server_entity_table?: string | null
+          staff_id?: string | null
+          station_id?: string | null
+          sync_batch_id?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tablet_sync_records_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_records_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_records_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_records_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tablet_sync_records_sync_batch_id_fkey"
+            columns: ["sync_batch_id"]
+            isOneToOne: false
+            referencedRelation: "tablet_sync_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_engagement_aggregates: {
         Row: {
           calories_burned_total: number
@@ -1570,6 +2289,7 @@ export type Database = {
           last_updated: string
           profile_id: string
         }
+        ComputedFields: never
         Insert: {
           calories_burned_total?: number
           carbon_reduced_total_kg?: number
@@ -1610,6 +2330,7 @@ export type Database = {
           type: string
           wallet_id: string
         }
+        ComputedFields: never
         Insert: {
           amount: number
           created_at?: string
@@ -1647,6 +2368,7 @@ export type Database = {
           points: number
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           balance?: number
           created_at?: string
@@ -1720,7 +2442,7 @@ export type Database = {
         Returns: {
           bike_id: string
           billable_minutes: number
-          checkpoints: Json
+          checkpoints: NonNullable<Json>
           co2_saved_kg: number
           completed_at: string
           created_at: string
@@ -1733,7 +2455,51 @@ export type Database = {
           payment_label: string
           profile_id: string | null
           rate_per_minute: number
-          route: Json
+          ride_sharing_session_id: string | null
+          route: NonNullable<Json>
+          route_label: string
+          start_location: string
+          started_at: string
+          total_cost: number
+          wallet_transaction_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bike_ride_history"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_ride_recoverable: {
+        Args: {
+          p_bike_id: string
+          p_checkpoints?: Json
+          p_co2_saved_kg?: number
+          p_distance_km?: number
+          p_end_location?: string
+          p_expected_ride_started_at: string
+          p_request_id: string
+          p_route?: Json
+          p_route_label?: string
+        }
+        Returns: {
+          bike_id: string
+          billable_minutes: number
+          checkpoints: NonNullable<Json>
+          co2_saved_kg: number
+          completed_at: string
+          created_at: string
+          currency_code: string
+          distance_km: number
+          duration_sec: number
+          end_location: string
+          fare_calculation_method: string
+          id: string
+          payment_label: string
+          profile_id: string | null
+          rate_per_minute: number
+          ride_sharing_session_id: string | null
+          route: NonNullable<Json>
           route_label: string
           start_location: string
           started_at: string
@@ -1760,12 +2526,12 @@ export type Database = {
           generated_at: string
           generated_by_profile_id: string | null
           id: string
-          payment_reconciliation: Json
+          payment_reconciliation: NonNullable<Json>
           period_end: string
           period_start: string
           report_type: string
           service_downtime_minutes: number | null
-          usage_statistics: Json
+          usage_statistics: NonNullable<Json>
           user_satisfaction_score: number | null
           utilization_rate: number | null
         }
@@ -1803,25 +2569,26 @@ export type Database = {
         }
       }
       refresh_user_engagement: {
-        Args: { p_profile_id?: string | null }
+        Args: { p_profile_id?: string }
         Returns: number
       }
+      run_daily_reports: { Args: Record<PropertyKey, never>; Returns: Json }
       update_bike_status_with_event: {
         Args: {
-          p_bike_id: string
+          p_active_ride_start_location?: string
+          p_active_ride_started_at?: string
+          p_active_rider_id?: string
           p_actor_id: string
-          p_expected_status: Database["public"]["Enums"]["bike_status"]
-          p_status: Database["public"]["Enums"]["bike_status"]
-          p_last_reported_at: string
-          p_transition_kind: string
+          p_bike_id: string
           p_context: Json
-          p_expected_active_rider_id?: string | null
-          p_active_rider_id?: string | null
-          p_active_ride_started_at?: string | null
-          p_active_ride_start_location?: string | null
+          p_expected_active_rider_id?: string
+          p_expected_status: Database["public"]["Enums"]["bike_status"]
+          p_last_reported_at: string
+          p_status: Database["public"]["Enums"]["bike_status"]
+          p_transition_kind: string
         }
         Returns: {
-          active_rider_id: string | null
+          active_rider_id: string
           id: string
           status: Database["public"]["Enums"]["bike_status"]
         }[]

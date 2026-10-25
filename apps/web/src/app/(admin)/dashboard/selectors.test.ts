@@ -40,7 +40,7 @@ function makeBikeRow(overrides: Partial<BikeRow> = {}): BikeRow {
     ride_class: null,
     serial_number: null,
     station_id: null,
-    status: "available",
+    status: "ready_to_rent",
     top_speed_kmh: 24,
     updated_at: "2026-06-28T08:45:00Z",
     ...overrides
@@ -64,6 +64,7 @@ function makeRideHistoryRow(overrides: Partial<BikeRideHistoryRow> = {}): BikeRi
     payment_label: "Charged to Visa **** 4242",
     profile_id: "profile-1",
     rate_per_minute: 0.09,
+    ride_sharing_session_id: null,
     route: [],
     route_label: "Siam to Benjakitti",
     started_at: "2026-06-27T08:42:00Z",
@@ -88,7 +89,7 @@ function makeBikeStatusEventRow(overrides: Partial<BikeStatusEventRow> = {}): Bi
       source: "apps/web/src/app/api/bikes/[bikeId]/status/route.ts"
     },
     created_at: "2026-06-28T08:00:00Z",
-    from_status: "available",
+    from_status: "ready_to_rent",
     id: "bike-status-event-1",
     to_status: "in_use",
     transition_kind: "ride_start",
@@ -167,7 +168,7 @@ describe("dashboard selectors", () => {
           estimated_range_km: 18,
           id: "G-003",
           model: "Glide Mini",
-          status: "maintenance"
+          status: "maintenance_required"
         })
       ],
       bikeStatusEvents: [makeBikeStatusEventRow({ bike_id: "G-002" })],
@@ -280,7 +281,7 @@ describe("dashboard selectors", () => {
           location: "Siam Square",
           latitude: 13.7563,
           longitude: 100.5018,
-          status: "available"
+          status: "ready_to_rent"
         }),
         makeBikeRow({
           active_rider_id: "profile-1",

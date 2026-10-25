@@ -68,7 +68,7 @@ describe("/api/engagement/refresh", () => {
 
     expect(response.status).toBe(201);
     expect(body.usersRefreshed).toBe(42);
-    expect(mockRpc).toHaveBeenCalledWith("refresh_user_engagement", { p_profile_id: null });
+    expect(mockRpc).toHaveBeenCalledWith("refresh_user_engagement", {});
   });
 
   it("refreshes a single user when profileId is supplied", async () => {

@@ -1,6 +1,8 @@
 "use client";
 
 import type { BikeStatus, Coordinates, RideHistoryCheckpoint } from "@glide/shared";
+import { bikeStatusLabels } from "@glide/shared";
+
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import type {
   KeyboardEvent,
@@ -12,6 +14,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import Image, { type ImageLoaderProps } from "next/image";
 import Link from "next/link";
+
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { formatAdminDate } from "@/lib/formatting";
@@ -25,7 +28,8 @@ export interface ManagedBike {
   readonly topSpeedKmh: number;
   readonly pricingLabel: string;
   readonly ratePerMinute: number;
-  readonly status: BikeStatus;
+  readonly status: BikeStatus | "available" | "maintenance";
+
   readonly activeRiderId: string | null;
   readonly activeRiderLabel: string | null;
   readonly location: string;
@@ -79,15 +83,14 @@ export interface BikeStatusEventEntry {
 
 const statusClasses: Record<ManagedBike["status"], string> = {
   available: "bg-[var(--clay-success-soft)] text-[var(--clay-success)]",
-  charging: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
-  in_use: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
   maintenance: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]",
-  maintenance_required: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]",
-  out_of_service: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]",
   ready_to_rent: "bg-[var(--clay-success-soft)] text-[var(--clay-success)]",
   reserved: "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]",
-  returned_pending_inspection:
-    "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]"
+  in_use: "bg-[var(--clay-accent-soft)] text-[var(--clay-accent)]",
+  returned_pending_inspection: "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]",
+  charging: "bg-[var(--clay-warning-soft)] text-[var(--clay-warning)]",
+  maintenance_required: "bg-[var(--clay-danger-soft)] text-[var(--clay-danger)]",
+  out_of_service: "bg-[var(--foreground-muted)]/10 text-[var(--foreground-muted)]"
 };
 const routeReplayIntervalMs = 900;
 const coordinateEpsilon = 1e-9;
@@ -206,13 +209,18 @@ function createMarkerIcon(
 }
 
 export function RideRouteMap({ ride }: { readonly ride: BikeRideHistoryEntry }) {
+  return <RideRouteMapSession key={ride.id} ride={ride} />;
+}
+
+function RideRouteMapSession({ ride }: { readonly ride: BikeRideHistoryEntry }) {
   const checkpoints = useMemo(() => getSyntheticCheckpoints(ride), [ride]);
   const mapElementRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const currentPointRef = useRef<Coordinates | null>(null);
   const replayMarkerRef = useRef<LeafletMarker | null>(null);
   const [currentPointIndex, setCurrentPointIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackRequested, setIsPlaying] = useState(false);
+  const isPlaying = playbackRequested && currentPointIndex < ride.route.length - 1;
   const currentPoint = ride.route[currentPointIndex] ?? ride.route[0] ?? null;
   const currentCheckpoint = useMemo(
     () => getCurrentCheckpoint(ride.route, checkpoints, currentPointIndex),
@@ -222,17 +230,7 @@ export function RideRouteMap({ ride }: { readonly ride: BikeRideHistoryEntry }) 
     ride.route.length <= 1 ? 100 : Math.round((currentPointIndex / (ride.route.length - 1)) * 100);
 
   useEffect(() => {
-    setCurrentPointIndex(0);
-    setIsPlaying(false);
-  }, [ride.id]);
-
-  useEffect(() => {
     if (!isPlaying) {
-      return undefined;
-    }
-
-    if (currentPointIndex >= ride.route.length - 1) {
-      setIsPlaying(false);
       return undefined;
     }
 
@@ -482,7 +480,7 @@ function BikeStatusBadge({ status }: { readonly status: ManagedBike["status"] })
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${statusClasses[status]}`}>
-      {status.replaceAll("_", " ")}
+      {status === "available" ? "Available" : status === "maintenance" ? "Maintenance" : bikeStatusLabels[status]}
     </span>
   );
 }
@@ -660,9 +658,17 @@ export function BicycleManagementList({
                         ? getActiveRiderText(bike)
                         : bike.status === "maintenance"
                           ? "Currently offline for maintenance"
-                          : bike.status === "reserved"
-                            ? "Reserved and awaiting unlock"
-                            : "Available for riders"}
+                          : bike.status === "returned_pending_inspection"
+                          ? "Returned and waiting for staff inspection"
+                          : bike.status === "charging"
+                            ? "Charging and temporarily unavailable"
+                            : bike.status === "maintenance_required"
+                              ? "Needs maintenance before it can be rented"
+                              : bike.status === "out_of_service"
+                                ? "Out of service"
+                                : bike.status === "reserved"
+                                  ? "Reserved and awaiting unlock"
+                                  : "Ready for riders"}
                     </p>
                   </div>
                 </div>
@@ -1003,10 +1009,15 @@ export function BicycleEditor({
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="Status">
               <SelectInput defaultValue={bike.status} disabled={!isEditing} name="status">
-                <option value="available">Available</option>
+                {bike.status === "available" && <option value="available">Available (legacy)</option>}
+                {bike.status === "maintenance" && <option value="maintenance">Maintenance (legacy)</option>}
+                <option value="ready_to_rent">Ready to rent</option>
                 <option value="reserved">Reserved</option>
                 <option value="in_use">In Use</option>
-                <option value="maintenance">Maintenance</option>
+                <option value="returned_pending_inspection">Returned / Pending Inspection</option>
+                <option value="charging">Charging</option>
+                <option value="maintenance_required">Maintenance Required</option>
+                <option value="out_of_service">Out of Service</option>
               </SelectInput>
             </Field>
           </div>

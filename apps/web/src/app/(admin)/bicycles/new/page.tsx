@@ -23,7 +23,7 @@ export default async function NewBicyclePage() {
         pricingLabel: "฿1.00 / 10 min",
         ratePerMinute: 0.1,
         rideClass: "",
-        status: "available",
+        status: "ready_to_rent",
         topSpeedKmh: 25,
         updatedAt: new Date().toISOString()
       }}

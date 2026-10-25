@@ -88,8 +88,8 @@ describe("mock api services", () => {
 
   it("encodes bike ids in detail requests", async () => {
     const fetchImpl = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
+      ok: false,
+      status: 404,
       json: async () => undefined
     });
     const service = createHttpBikeService({

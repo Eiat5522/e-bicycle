@@ -13,6 +13,28 @@ describe("configuredBikeService", () => {
     }
   });
 
+  it.each(["available", "maintenance"])("rejects legacy %s instead of advertising a canonical rider status", async status => {
+    const maybeSingle = jest.fn().mockResolvedValue({ data: { id: "legacy-bike", status }, error: null });
+    const eq = jest.fn(() => ({ maybeSingle }));
+    const from = jest.fn(() => ({ select: jest.fn(() => ({ eq })) }));
+    jest.doMock("./supabase", () => ({ hasSupabaseConfig: true, supabase: { from } }));
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
+    await expect(configuredBikeService.getById("legacy-bike")).rejects.toThrow("Bike status schema requires reconciliation.");
+    expect(from).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["available", "maintenance"])("mixed nearby inventory with distant legacy %s blocks the whole response (policy unresolved)", async status => {
+    const order = jest.fn().mockResolvedValue({ data: [
+      { id: "canonical", status: "ready_to_rent", latitude: 13.75, longitude: 100.5 },
+      { id: "legacy-outside-radius", status, latitude: 50, longitude: 50 }
+    ], error: null });
+    const from = jest.fn(() => ({ select: jest.fn(() => ({ order })) }));
+    jest.doMock("./supabase", () => ({ hasSupabaseConfig: true, supabase: { from } }));
+    const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
+    await expect(configuredBikeService.listNearby({ latitude: 13.75, longitude: 100.5, radiusMeters: 1000, limit: 10 })).rejects.toThrow("Bike status schema requires reconciliation.");
+    expect(order).toHaveBeenCalledTimes(1);
+  });
+
   it("queries Supabase bikes and maps nearby rows into the shared bike shape", async () => {
     const order = jest.fn().mockResolvedValue({
       data: [
@@ -25,7 +47,7 @@ describe("configuredBikeService", () => {
           top_speed_kmh: 25,
           pricing_label: "฿1.20 / 10 min",
           rate_per_minute: 0.12,
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           latitude: 13.7466,
           longitude: 100.5328,
@@ -42,7 +64,7 @@ describe("configuredBikeService", () => {
           top_speed_kmh: 18,
           pricing_label: "฿0.50 / 10 min",
           rate_per_minute: 0.05,
-          status: "maintenance",
+          status: "maintenance_required",
           location: "Far Away",
           latitude: 14.2,
           longitude: 100.9,
@@ -120,7 +142,7 @@ describe("configuredBikeService", () => {
     );
   });
 
-  it("falls back to the mock bike list when Supabase times out", async () => {
+  it("preserves the error instead of mock inventory when Supabase times out", async () => {
     const order = jest.fn().mockResolvedValue({
       data: null,
       error: {
@@ -142,21 +164,13 @@ describe("configuredBikeService", () => {
     }));
 
     const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
-    const result = await configuredBikeService.listNearby({
+    await expect(configuredBikeService.listNearby({
       latitude: 13.7563,
       longitude: 100.5018,
       radiusMeters: 1500,
       limit: 10
-    });
-
-    expect(result.bikes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: "G-104",
-          model: "Glide Pro X"
-        })
-      ])
-    );
+    })).rejects.toThrow("Failed to fetch nearby bikes: Network request timed out");
+    expect(from).toHaveBeenCalledTimes(1);
   });
 
   it("prefers Supabase over the HTTP bike API unless the API is explicitly selected", async () => {
@@ -181,7 +195,7 @@ describe("configuredBikeService", () => {
           top_speed_kmh: 25,
           pricing_label: "฿1.20 / 10 min",
           rate_per_minute: 0.12,
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           latitude: 13.7466,
           longitude: 100.5328,
@@ -292,7 +306,7 @@ describe("configuredBikeService", () => {
           top_speed_kmh: 25,
           pricing_label: "฿1.20 / 10 min",
           rate_per_minute: 0.12,
-          status: "available",
+          status: "ready_to_rent",
           location: "Siam Square",
           latitude: 13.7466,
           longitude: 100.5328,
@@ -361,7 +375,7 @@ describe("configuredBikeService", () => {
     await expect(configuredBikeService.getById("missing-bike")).resolves.toBeUndefined();
   });
 
-  it("falls back to the mock bike by id on recoverable Supabase failures", async () => {
+  it("preserves transport failure instead of inventing a mock bike by id", async () => {
     const maybeSingle = jest.fn().mockResolvedValue({
       data: null,
       error: {
@@ -382,14 +396,8 @@ describe("configuredBikeService", () => {
     }));
 
     const { configuredBikeService } = jest.requireActual("./bike-service") as typeof import("./bike-service");
-    const bike = await configuredBikeService.getById("G-104");
-
-    expect(bike).toEqual(
-      expect.objectContaining({
-        id: "G-104",
-        model: "Glide Pro X"
-      })
-    );
+    await expect(configuredBikeService.getById("G-104")).rejects.toThrow("Failed to fetch bike: Network request failed");
+    expect(from).toHaveBeenCalledTimes(1);
   });
 
   it("uses the mock bike source when explicitly configured", async () => {

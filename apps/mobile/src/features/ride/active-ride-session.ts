@@ -17,6 +17,7 @@ export interface ActiveRideBikeSnapshot {
   readonly pricingLabel?: string;
   readonly status?: string;
   readonly activeRiderId?: string | null;
+  readonly activeRideStartedAt?: string | null;
   readonly lastReportedAt?: string;
 }
 

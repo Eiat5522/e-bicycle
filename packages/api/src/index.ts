@@ -77,7 +77,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 25,
     pricingLabel: "฿1.20 / 10 min",
     ratePerMinute: 0.12,
-    status: "available",
+    status: "ready_to_rent",
     location: "Siam Square",
     coordinates: { latitude: 13.7466, longitude: 100.5328 },
     lastReportedAt: "2026-04-06T08:55:00Z"
@@ -106,7 +106,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 20,
     pricingLabel: "฿0.80 / 10 min",
     ratePerMinute: 0.08,
-    status: "available",
+    status: "ready_to_rent",
     location: "Ari Soi 1",
     coordinates: { latitude: 13.7797, longitude: 100.5446 },
     lastReportedAt: "2026-04-06T08:58:00Z"
@@ -120,7 +120,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 20,
     pricingLabel: "฿1.40 / 10 min",
     ratePerMinute: 0.14,
-    status: "available",
+    status: "ready_to_rent",
     location: "Lumphini Park West Gate",
     coordinates: { latitude: 13.7305, longitude: 100.5418 },
     lastReportedAt: "2026-04-06T08:57:00Z"
@@ -134,7 +134,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 23,
     pricingLabel: "฿1.00 / 10 min",
     ratePerMinute: 0.1,
-    status: "available",
+    status: "ready_to_rent",
     location: "Silom Complex",
     coordinates: { latitude: 13.7286, longitude: 100.5345 },
     lastReportedAt: "2026-04-06T08:54:00Z"
@@ -147,7 +147,7 @@ export const mockBikes: readonly Bike[] = [
     topSpeedKmh: 25,
     pricingLabel: "฿1.20 / 10 min",
     ratePerMinute: 0.12,
-    status: "available",
+    status: "ready_to_rent",
     location: "Phrom Phong BTS",
     coordinates: { latitude: 13.7301, longitude: 100.5697 },
     lastReportedAt: "2026-04-06T08:59:00Z"
@@ -490,6 +490,13 @@ export const bikeService: BikeService = {
   }
 };
 
+export interface InventoryService {
+  listNearby(query: NearbyBikesQuery): Promise<InventoryResult>;
+  getById(id: string): Promise<BikeInventory | undefined>;
+}
+
+import { decodeBikeInventory, decodeInventoryResult, inventoryContractVersion, InventoryContractError, type BikeInventory, type InventoryResult } from "@glide/shared";
+
 interface CreateHttpBikeServiceOptions {
   readonly baseUrl: string;
   readonly fetchImpl?: FetchLike;
@@ -535,7 +542,9 @@ export function createHttpBikeService({
         throw new Error(`Failed to fetch nearby bikes: ${response.status}`);
       }
 
-      return (await response.json()) as NearbyBikesResult;
+      const value = await response.json();
+      if (value && typeof value === "object" && "contractVersion" in value) throw new InventoryContractError();
+      return value as NearbyBikesResult;
     },
     async getById(id) {
       const response = await fetchImpl(
@@ -550,7 +559,35 @@ export function createHttpBikeService({
         throw new Error(`Failed to fetch bike: ${response.status}`);
       }
 
-      return (await response.json()) as Bike;
+      const value: unknown = await response.json();
+      if (!value || typeof value !== "object" || "contractVersion" in value) throw new InventoryContractError();
+      const record = decodeBikeInventory({ kind: "supported", bike: value });
+      if (record.kind !== "supported") throw new InventoryContractError();
+      return record.bike;
+    }
+  };
+}
+
+export function createHttpInventoryService({ baseUrl, fetchImpl = async (input) => {
+  if (typeof globalThis.fetch !== "function") throw new Error("Global fetch is not available in this runtime.");
+  return globalThis.fetch(input);
+} }: CreateHttpBikeServiceOptions): InventoryService {
+  const base = baseUrl.replace(/\/$/, "");
+  return {
+    async listNearby(query) {
+      const params = new URLSearchParams({ lat: String(query.latitude), lng: String(query.longitude), radius: String(query.radiusMeters), contractVersion: inventoryContractVersion });
+      if (query.limit !== undefined) params.set("limit", String(query.limit));
+      const response = await fetchImpl(`${base}/bikes/nearby?${params}`);
+      if (!response.ok) throw new Error(`Failed to fetch nearby inventory: ${response.status}`);
+      return decodeInventoryResult(await response.json());
+    },
+    async getById(id) {
+      const response = await fetchImpl(`${base}/bikes/${encodeURIComponent(id)}?contractVersion=${inventoryContractVersion}`);
+      if (response.status === 404) return undefined;
+      if (!response.ok) throw new Error(`Failed to fetch inventory: ${response.status}`);
+      const value: unknown = await response.json();
+      if (!value || typeof value !== "object" || !("contractVersion" in value) || value.contractVersion !== inventoryContractVersion || !("inventory" in value)) throw new InventoryContractError();
+      return decodeBikeInventory(value.inventory);
     }
   };
 }
