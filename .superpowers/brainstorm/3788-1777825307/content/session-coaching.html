@@ -1,0 +1,28 @@
+<h2>Live Ride Intelligence: Session Timing</h2>
+<p class="subtitle">How should ARI "coach" the rider as they approach their session limit?</p>
+
+<div class="options">
+  <div class="option" data-choice="thresholds" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Fixed Threshold Alerts</h3>
+      <p>Traditional alerts at milestones (e.g., 10m, 5m, 1m). Simple and predictable.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="spatial" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Spatial-Aware Coaching</h3>
+      <p>The "nudge" depends on location. If you have 5m left but are 10m from the nearest hub, ARI starts alerting <b>now</b>.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="auto-reroute" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Auto-Pivot to Drop-off</h3>
+      <p>As the limit nears, the map UI pivots to <b>"Return Mode"</b>, highlighting the most efficient hubs that fit your time window.</p>
+    </div>
+  </div>
+</div>

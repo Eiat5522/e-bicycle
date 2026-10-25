@@ -1,0 +1,14 @@
+{
+  "extends": ["expo/tsconfig.base", "../../tsconfig.base.json"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@glide/shared": ["../../packages/shared/src/index.ts"],
+      "@glide/api": ["../../packages/api/src/index.ts"]
+    },
+    "strict": true,
+    "types": ["jest"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+}

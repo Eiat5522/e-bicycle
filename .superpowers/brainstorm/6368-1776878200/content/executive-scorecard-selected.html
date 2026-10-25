@@ -1,0 +1,40 @@
+<h2>Selected direction: Executive Scorecard as the default dashboard tab</h2>
+<p class="subtitle">This mockup shows the planned first viewport and tab structure. The existing operations view stays available as a second tab.</p>
+
+<div class="mockup">
+  <div class="mockup-header">/dashboard</div>
+  <div class="mockup-body">
+    <div class="mock-nav">Glide Admin | Home | Dashboard | Users | Bicycles</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="mock-button">Executive Scorecard</button>
+      <button class="mock-button" style="opacity:.62">Operations</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.5fr .9fr;gap:14px;margin-top:14px">
+      <div class="placeholder" style="min-height:112px;text-align:left;padding:16px">
+        <strong>Revenue + demand headline</strong><br>
+        Wallet float, tracked revenue, active rides, and utilization delta summarized for leadership.
+      </div>
+      <div class="placeholder" style="min-height:112px;text-align:left;padding:16px">
+        <strong>Latest sync</strong><br>
+        Data freshness, active rider, and support pressure in compact form.
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px">
+      <div class="placeholder">Tracked revenue<br><strong>trend</strong></div>
+      <div class="placeholder">Active rides<br><strong>trend</strong></div>
+      <div class="placeholder">Fleet utilization<br><strong>trend</strong></div>
+      <div class="placeholder">Support load<br><strong>trend</strong></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;margin-top:14px">
+      <div class="placeholder" style="min-height:140px">Recharts line/bar combo: revenue and rides over time</div>
+      <div class="placeholder" style="min-height:140px">Executive insights: strongest route, range risk, next action</div>
+    </div>
+
+    <div class="placeholder" style="margin-top:14px;min-height:72px">Compact table: top recent routes by revenue</div>
+  </div>
+</div>
+
+<p class="subtitle">If this structure works, I’ll finalize the implementation plan around tabs, typed mock KPI trends, Recharts client components, and focused tests.</p>
